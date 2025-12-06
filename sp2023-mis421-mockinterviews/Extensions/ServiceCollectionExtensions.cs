@@ -129,32 +129,16 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddDatabases(this IServiceCollection services, IConfiguration config, IHostEnvironment env)
     {
-        if (env.IsProduction() || env.IsStaging())
-        {
-            var usersConnectionString = config[$"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Users"]
-                ?? throw new InvalidOperationException($"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Users not found.");
-            var signupsConnectionString = config[$"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Signups"]
-                ?? throw new InvalidOperationException($"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Signups not found.");
 
-            services.AddDbContextPool<IUserDbContext, UsersDbContext>(options =>
-                options.UseNpgsql(usersConnectionString));
-            services.AddDbContextPool<ISignupDbContext, MockInterviewsDbContext>(options =>
-                options.UseNpgsql(signupsConnectionString));
-        }
-        else
-        {
-            var usersConnectionString = config["ConnectionStrings:SqlServer:Development:Users"]
-                ?? throw new InvalidOperationException("ConnectionStrings:SqlServer:Development:Users not found.");
-            var signupsConnectionString = config["ConnectionStrings:SqlServer:Development:Signups"]
-                ?? throw new InvalidOperationException("ConnectionStrings:SqlServer:Development:Signups not found.");
+        var usersConnectionString = config[$"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Users"]
+            ?? throw new InvalidOperationException($"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Users not found.");
+        var signupsConnectionString = config[$"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Signups"]
+            ?? throw new InvalidOperationException($"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Signups not found.");
 
-            services.AddDbContext<IUserDbContext, UserDataDbContext>(options =>
-                options.UseSqlServer(usersConnectionString, sqlServerOptions => sqlServerOptions.EnableRetryOnFailure()),
-                ServiceLifetime.Scoped);
-            services.AddDbContext<ISignupDbContext, MockInterviewDataDbContext>(options =>
-                options.UseSqlServer(signupsConnectionString, sqlServerOptions => sqlServerOptions.EnableRetryOnFailure()),
-                ServiceLifetime.Scoped);
-        }
+        services.AddDbContextPool<IUserDbContext, UsersDbContext>(options =>
+            options.UseNpgsql(usersConnectionString));
+        services.AddDbContextPool<ISignupDbContext, MockInterviewsDbContext>(options =>
+            options.UseNpgsql(signupsConnectionString));
 
         services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -163,20 +147,10 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddIdentityAndAuth(this IServiceCollection services, IConfiguration config, IHostEnvironment env)
     {
-        if (env.IsProduction() || env.IsStaging())
-        {
-            services.AddIdentity<ApplicationUser, IdentityRole>()
-                .AddEntityFrameworkStores<UsersDbContext>()
-                .AddDefaultUI()
-                .AddDefaultTokenProviders();
-        }
-        else
-        {
-            services.AddIdentity<ApplicationUser, IdentityRole>()
-                .AddEntityFrameworkStores<UserDataDbContext>()
-                .AddDefaultUI()
-                .AddDefaultTokenProviders();
-        }
+        services.AddIdentity<ApplicationUser, IdentityRole>()
+            .AddEntityFrameworkStores<UsersDbContext>()
+            .AddDefaultUI()
+            .AddDefaultTokenProviders();
 
         services.AddScoped<RoleManager<IdentityRole>>();
         services.AddScoped<UserManager<ApplicationUser>>();
