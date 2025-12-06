@@ -56,7 +56,7 @@ jobs:
         run: dotnet restore ./sp2023-mis421-mockinterviews/sp2023-mis421-mockinterviews.csproj
 
       - name: Install dotnet-ef
-        run: dotnet tool install -g dotnet-ef
+        run: dotnet tool install -g dotnet-ef --version 8.*
 
       - name: Build Users Bundle
         run: |
