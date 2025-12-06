@@ -29,6 +29,10 @@ COPY --from=publish /app/publish ./
 COPY --from=build /src/ ./src/
 COPY Directory.Packages.props ./
 
+# Install EF Core tools globally
+RUN dotnet tool install --global dotnet-ef --version 8.0.11
+ENV PATH="$PATH:/root/.dotnet/tools"
+
 ENV ASPNETCORE_URLS=http://+:8001
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
@@ -42,8 +46,10 @@ RUN echo '#!/bin/bash\n\
 set -e\n\
 echo "Running database migrations..."\n\
 cd /app/src\n\
-dotnet ef database update --context UsersDbContext --startup-project . --no-build || echo "Users migration completed or failed"\n\
-dotnet ef database update --context MockInterviewsDbContext --startup-project . --no-build || echo "MockInterviews migration completed or failed"\n\
+echo "EF Core tools version:"\n\
+dotnet ef --version\n\
+dotnet ef database update --context UsersDbContext --startup-project . --no-build --verbose || echo "Users migration completed or failed"\n\
+dotnet ef database update --context MockInterviewsDbContext --startup-project . --no-build --verbose || echo "MockInterviews migration completed or failed"\n\
 echo "Starting application..."\n\
 cd /app\n\
 exec dotnet sp2023-mis421-mockinterviews.dll' > /app/start.sh && chmod +x /app/start.sh
