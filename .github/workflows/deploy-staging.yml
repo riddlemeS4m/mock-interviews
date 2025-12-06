@@ -1,4 +1,3 @@
-# .github/workflows/deploy-staging.yml
 name: Deploy to Staging
 
 on:
@@ -46,3 +45,68 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      # ---- EF Core Bundle Generation ----
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install dependencies
+        run: dotnet restore ./sp2023-mis421-mockinterviews/sp2023-mis421-mockinterviews.csproj
+
+      - name: Install dotnet-ef
+        run: dotnet tool install -g dotnet-ef
+
+      - name: Build Users Bundle
+        run: |
+          dotnet ef migrations bundle \
+            --project ./sp2023-mis421-mockinterviews/sp2023-mis421-mockinterviews.csproj \
+            --context UsersDbContext \
+            --self-contained \
+            -r linux-x64 \
+            --output usersbundle-staging
+
+      - name: Build MockInterviews Bundle
+        run: |
+          dotnet ef migrations bundle \
+            --project ./sp2023-mis421-mockinterviews/sp2023-mis421-mockinterviews.csproj \
+            --context MockInterviewsDbContext \
+            --self-contained \
+            -r linux-x64 \
+            --output mockreviewsbundle-staging
+
+      - name: Upload Migration Bundles
+        uses: actions/upload-artifact@v3
+        with:
+          name: migration-bundles-staging
+          path: |
+            usersbundle-staging
+            mockreviewsbundle-staging
+          retention-days: 1
+
+  migrate-databases:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Migration Bundles
+        uses: actions/download-artifact@v3
+        with:
+          name: migration-bundles-staging
+
+      - name: Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Run Users Migration
+        run: |
+          chmod +x usersbundle-staging
+          ./usersbundle-staging --connection "${{ secrets.CONNECTION_STRING_USERS_STAGING }}"
+
+      - name: Run MockInterviews Migration
+        run: |
+          chmod +x mockreviewsbundle-staging
+          ./mockreviewsbundle-staging --connection "${{ secrets.CONNECTION_STRING_MOCK_STAGING }}"
