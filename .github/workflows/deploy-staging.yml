@@ -1,8 +1,8 @@
-name: Build, Publish, and Migrate
+name: Deploy to Staging
 
 on:
   push:
-    branches: [main, master]
+    branches: [staging]
   workflow_dispatch:
 
 env:
@@ -34,8 +34,8 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
-            type=sha,prefix=prod-
-            type=raw,value=latest
+            type=sha,prefix=staging-
+            type=raw,value=staging-latest
       
       - name: Build and Push Docker image
         uses: docker/build-push-action@v6
@@ -65,7 +65,7 @@ jobs:
             --context UsersDbContext \
             --self-contained \
             -r linux-x64 \
-            --output usersbundle
+            --output usersbundle-staging
 
       - name: Build MockInterviews Bundle
         run: |
@@ -74,15 +74,15 @@ jobs:
             --context MockInterviewsDbContext \
             --self-contained \
             -r linux-x64 \
-            --output mockreviewsbundle
+            --output mockreviewsbundle-staging
 
       - name: Upload Migration Bundles
         uses: actions/upload-artifact@v4
         with:
-          name: migration-bundles
+          name: migration-bundles-staging
           path: |
-            usersbundle
-            mockreviewsbundle
+            usersbundle-staging
+            mockreviewsbundle-staging
           retention-days: 1
 
   migrate-databases:
@@ -92,7 +92,7 @@ jobs:
       - name: Download Migration Bundles
         uses: actions/download-artifact@v4
         with:
-          name: migration-bundles
+          name: migration-bundles-staging
 
       - name: Tailscale
         uses: tailscale/github-action@v2
@@ -103,10 +103,10 @@ jobs:
 
       - name: Run Users Migration
         run: |
-          chmod +x usersbundle
-          ./usersbundle --connection "${{ secrets.CONNECTION_STRING_USERS }}"
+          chmod +x usersbundle-staging
+          ./usersbundle-staging --connection "${{ secrets.CONNECTION_STRING_USERS_STAGING }}"
 
       - name: Run MockInterviews Migration
         run: |
-          chmod +x mockreviewsbundle
-          ./mockreviewsbundle --connection "${{ secrets.CONNECTION_STRING_MOCK }}"
+          chmod +x mockreviewsbundle-staging
+          ./mockreviewsbundle-staging --connection "${{ secrets.CONNECTION_STRING_MOCK_STAGING }}"

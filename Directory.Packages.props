@@ -13,7 +13,6 @@
 
     <!-- EF Core runtime + ONE provider (keep only the provider you use) -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="[8.0.20,9.0.0)" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="[8.0.20,9.0.0)" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="[8.0.11,9.0.0)" />
     <!-- Design/Tools are build-time only (PrivateAssets=all in csproj) -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="[8.0.20,9.0.0)" />
@@ -35,6 +34,12 @@
     <PackageVersion Include="MessagePack" Version="[2.5.198,3.0.0)" />
     <PackageVersion Include="SendGrid" Version="[9.29.3,10.0.0)" />
     <PackageVersion Include="VaultSharp" Version="[1.17.5.1,2.0.0)" />
+    
+    <!-- Serilog -->
+    <PackageVersion Include="Serilog" Version="[4.1.0,5.0.0)" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="[8.0.2,9.0.0)" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="[6.0.0,7.0.0)" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="[6.0.0,7.0.0)" />
 
     <!-- System.* (only if you truly need them on net8) -->
     <PackageVersion Include="System.Text.Json" Version="[8.0.6,9.0.0)" />

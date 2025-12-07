@@ -305,7 +305,22 @@ namespace sp2023_mis421_mockinterviews.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            var requestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+            
+            // Log the error with additional context
+            var exceptionFeature = HttpContext.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+            if (exceptionFeature != null)
+            {
+                _logger.LogError(exceptionFeature.Error, 
+                    "Unhandled exception occurred. RequestId: {RequestId}, Path: {Path}", 
+                    requestId, exceptionFeature.Path);
+            }
+            else
+            {
+                _logger.LogWarning("Error page accessed without exception context. RequestId: {RequestId}", requestId);
+            }
+
+            return View(new ErrorViewModel { RequestId = requestId });
         }
 
         public async Task<IActionResult> EmailStudents()

@@ -21,14 +21,11 @@ RUN dotnet publish ./sp2023-mis421-mockinterviews.csproj -c Release -o /app/publ
     --no-restore /p:UseAppHost=false
 
 # ---- Final runtime image ----
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish ./
 
 ENV ASPNETCORE_URLS=http://+:8001
-
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -fsS http://localhost:8001/health || exit 1

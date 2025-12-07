@@ -1,6 +1,7 @@
 using Google.Apis.Download;
 using Google.Apis.Upload;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
+using sp2023_mis421_mockinterviews.Options;
 using System.Text.Json;
 
 namespace sp2023_mis421_mockinterviews.Services.GoogleDrive
@@ -32,7 +33,6 @@ namespace sp2023_mis421_mockinterviews.Services.GoogleDrive
 
         public static string SerializeCredentials(IConfigurationSection googleCredentialSection)
         {
-
             var googleCredentialJson = new
             {
                 type = googleCredentialSection["type"],
@@ -45,6 +45,26 @@ namespace sp2023_mis421_mockinterviews.Services.GoogleDrive
                 token_uri = googleCredentialSection["token_uri"],
                 auth_provider_x509_cert_url = googleCredentialSection["auth_provider_x509_cert_url"],
                 client_x509_cert_url = googleCredentialSection["client_x509_cert_url"]
+            };
+
+            return JsonSerializer.Serialize(googleCredentialJson);
+        }
+
+        // Overload for Options pattern
+        public static string SerializeCredentials(GoogleCredentialOptions credentialOptions)
+        {
+            var googleCredentialJson = new
+            {
+                type = credentialOptions.type,
+                project_id = credentialOptions.project_id,
+                private_key_id = credentialOptions.private_key_id,
+                private_key = credentialOptions.private_key,
+                client_email = credentialOptions.client_email,
+                client_id = credentialOptions.client_id,
+                auth_uri = credentialOptions.auth_uri,
+                token_uri = credentialOptions.token_uri,
+                auth_provider_x509_cert_url = credentialOptions.auth_provider_x509_cert_url,
+                client_x509_cert_url = credentialOptions.client_x509_cert_url
             };
 
             return JsonSerializer.Serialize(googleCredentialJson);
