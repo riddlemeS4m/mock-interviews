@@ -16,7 +16,7 @@ using sp2023_mis421_mockinterviews.Models.ViewModels;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using sp2023_mis421_mockinterviews.Data.Access.Emails;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
+using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Services.UserDb;
 using sp2023_mis421_mockinterviews.Services.SignupDb;
 using sp2023_mis421_mockinterviews.Services.SignalR;
@@ -91,7 +91,7 @@ namespace sp2023_mis421_mockinterviews.Controllers
     {
         private readonly IManageInterviews _manager;
         private readonly ISignupDbServiceFactory _signupDb;
-        private readonly ISignupDbContext _context;
+        private readonly MockInterviewsDbContext _context;
         private readonly TimeslotService _timeslotService;
         private readonly InterviewService _interviewService;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -103,7 +103,7 @@ namespace sp2023_mis421_mockinterviews.Controllers
 
         public InterviewEventsController(IManageInterviews manager,
             ISignupDbServiceFactory signupDb,
-            ISignupDbContext context, 
+            MockInterviewsDbContext context,
             TimeslotService timeslotService,
             InterviewService interviewService,
             UserManager<ApplicationUser> userManager, 

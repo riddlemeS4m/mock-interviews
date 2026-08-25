@@ -11,20 +11,19 @@ using sp2023_mis421_mockinterviews.Services.SignalR;
 using sp2023_mis421_mockinterviews.Services.UserDb;
 using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Data.Constants;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
 
 namespace sp2023_mis421_mockinterviews.Controllers
 {
     public class SignupInterviewersController : Controller
     {
-        private readonly ISignupDbContext _context;
+        private readonly MockInterviewsDbContext _context;
         private readonly UserService _userService;
         private readonly ISendGridClient _sendGridClient;
         private readonly IHubContext<AvailableInterviewersHub> _hubContext;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<SignupInterviewersController> _logger;
 
-        public SignupInterviewersController(ISignupDbContext context,
+        public SignupInterviewersController(MockInterviewsDbContext context,
             UserService userService,
             ISendGridClient sendGridClient,
             IHubContext<AvailableInterviewersHub> hubContext,

@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic.FileIO;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using sp2023_mis421_mockinterviews.Data.Contexts;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
 using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
 using sp2023_mis421_mockinterviews.Models.ViewModels;
 
@@ -18,9 +17,9 @@ namespace sp2023_mis421_mockinterviews.Controllers
 {
     public class MSTeamsStudentUploadsController : Controller
     {
-        private readonly ISignupDbContext _context;
+        private readonly MockInterviewsDbContext _context;
 
-        public MSTeamsStudentUploadsController(ISignupDbContext context)
+        public MSTeamsStudentUploadsController(MockInterviewsDbContext context)
         {
             _context = context;
         }

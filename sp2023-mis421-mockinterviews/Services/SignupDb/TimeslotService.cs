@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Data.Constants;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
+using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
 
 namespace sp2023_mis421_mockinterviews.Services.SignupDb
@@ -8,7 +8,7 @@ namespace sp2023_mis421_mockinterviews.Services.SignupDb
     public class TimeslotService : GenericSignupDbService<Timeslot>
     {
         private readonly ILogger<TimeslotService> _logger;
-        public TimeslotService(ISignupDbContext context,
+        public TimeslotService(MockInterviewsDbContext context,
             ILogger<TimeslotService> logger) : base(context)
         {
             _logger = logger;

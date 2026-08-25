@@ -14,7 +14,6 @@ using sp2023_mis421_mockinterviews.Data.Constants;
 using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Services.GoogleDrive;
 using sp2023_mis421_mockinterviews.Data.Contexts;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
 
 namespace sp2023_mis421_mockinterviews.Areas.Identity.Pages.Account.Manage
 {
@@ -22,14 +21,14 @@ namespace sp2023_mis421_mockinterviews.Areas.Identity.Pages.Account.Manage
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly ISignupDbContext _context;
+        private readonly MockInterviewsDbContext _context;
         private readonly GoogleDriveResumeService _driveResumeService;
         private readonly GoogleDrivePfpService _drivePfpService;
 
         public IndexModel(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            ISignupDbContext context,
+            MockInterviewsDbContext context,
             GoogleDriveResumeService driveResumeService,
             GoogleDrivePfpService drivePfpService)
         {

@@ -9,7 +9,6 @@ using Google.Apis.Services;
 using SendGrid;
 using sp2023_mis421_mockinterviews.Options;
 using sp2023_mis421_mockinterviews.Models.UserDb;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
 using sp2023_mis421_mockinterviews.Services.GoogleDrive;
 using sp2023_mis421_mockinterviews.Services.Controllers;
@@ -122,9 +121,9 @@ public static class ServiceCollectionExtensions
         var usersConnectionString = config["ConnectionStrings:Users"]!;
         var signupsConnectionString = config["ConnectionStrings:Signups"]!;
 
-        services.AddDbContextPool<IUserDbContext, UsersDbContext>(options =>
+        services.AddDbContextPool<UsersDbContext>(options =>
             options.UseNpgsql(usersConnectionString));
-        services.AddDbContextPool<ISignupDbContext, MockInterviewsDbContext>(options =>
+        services.AddDbContextPool<MockInterviewsDbContext>(options =>
             options.UseNpgsql(signupsConnectionString));
 
         services.AddDatabaseDeveloperPageExceptionFilter();

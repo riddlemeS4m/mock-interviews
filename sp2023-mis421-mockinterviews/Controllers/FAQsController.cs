@@ -8,7 +8,6 @@ using sp2023_mis421_mockinterviews.Data.Access.Emails;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Data.Seeds;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
 using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
 using sp2023_mis421_mockinterviews.Models.UserDb;
@@ -19,12 +18,12 @@ namespace sp2023_mis421_mockinterviews.Controllers
 {
     public class FAQsController : Controller
     {
-        private readonly ISignupDbContext _context;
+        private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISendGridClient _sendGridClient;
         private readonly ILogger<FAQsController> _logger;
         private readonly GoogleDriveSiteContentService _driveService;
-        public FAQsController(ISignupDbContext context, 
+        public FAQsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager, 
             ISendGridClient sendGridClient,
             ILogger<FAQsController> logger,

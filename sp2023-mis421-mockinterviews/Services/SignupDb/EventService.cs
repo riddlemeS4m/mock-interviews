@@ -1,4 +1,4 @@
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
+using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
 
 namespace sp2023_mis421_mockinterviews.Services.SignupDb
@@ -6,7 +6,7 @@ namespace sp2023_mis421_mockinterviews.Services.SignupDb
     public class EventService : GenericSignupDbService<Event>
     {
         private readonly ILogger<EventService> _logger;
-        public EventService(ISignupDbContext context,
+        public EventService(MockInterviewsDbContext context,
             ILogger<EventService> logger) : base(context)
         {
             _logger = logger;

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using sp2023_mis421_mockinterviews.Data.Seeds;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
+using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Models.UserDb;
 using sp2023_mis421_mockinterviews.Services.GoogleDrive;
 using sp2023_mis421_mockinterviews.Services.SignupDb;
@@ -18,7 +18,7 @@ public static class StartupTasks
         try
         {
             // Db contexts + managers
-            var signupDb = scope.ServiceProvider.GetRequiredService<ISignupDbContext>();
+            var signupDb = scope.ServiceProvider.GetRequiredService<MockInterviewsDbContext>();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 

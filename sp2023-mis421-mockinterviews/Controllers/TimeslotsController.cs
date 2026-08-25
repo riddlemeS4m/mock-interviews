@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Data.Constants;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
+using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
 using sp2023_mis421_mockinterviews.Models.UserDb;
 using sp2023_mis421_mockinterviews.Models.ViewModels.TimeslotsController;
@@ -15,12 +15,12 @@ namespace sp2023_mis421_mockinterviews.Controllers
     [Authorize(Roles = RolesConstants.AdminRole)]
     public class TimeslotsController : Controller
     {
-        private readonly ISignupDbContext _context;
+        private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly TimeslotService _timeslotService;
         private readonly ILogger<TimeslotsController> _logger;
 
-        public TimeslotsController(ISignupDbContext context, 
+        public TimeslotsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
             TimeslotService timeslotService,
             ILogger<TimeslotsController> logger)

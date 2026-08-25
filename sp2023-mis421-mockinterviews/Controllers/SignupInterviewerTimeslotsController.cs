@@ -17,18 +17,17 @@ using sp2023_mis421_mockinterviews.Data.Access.Reports;
 using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
 using sp2023_mis421_mockinterviews.Models.UserDb;
 using sp2023_mis421_mockinterviews.Models.ViewModels;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
 
 
 namespace sp2023_mis421_mockinterviews.Controllers
 {
     public class SignupInterviewerTimeslotsController : Controller
     {
-        private readonly ISignupDbContext _context;
+        private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISendGridClient _sendGridClient;
 
-        public SignupInterviewerTimeslotsController(ISignupDbContext context, 
+        public SignupInterviewerTimeslotsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
             ISendGridClient sendGridClient)
         {
