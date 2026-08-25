@@ -46,13 +46,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddDatabases(this IServiceCollection services, IConfiguration config)
     {
 
-        var usersConnectionString = config["ConnectionStrings:Users"]!;
-        var signupsConnectionString = config["ConnectionStrings:Signups"]!;
+        var connectionString = config["ConnectionString:DefaultConnection"]!;
 
-        services.AddDbContextPool<UsersDbContext>(options =>
-            options.UseNpgsql(usersConnectionString));
         services.AddDbContextPool<MockInterviewsDbContext>(options =>
-            options.UseNpgsql(signupsConnectionString));
+            options.UseNpgsql(connectionString));
 
         services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -62,7 +59,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddIdentityAndAuth(this IServiceCollection services, IConfiguration config)
     {
         services.AddIdentity<ApplicationUser, IdentityRole>()
-            .AddEntityFrameworkStores<UsersDbContext>()
+            .AddEntityFrameworkStores<MockInterviewsDbContext>()
             .AddDefaultUI()
             .AddDefaultTokenProviders();
 

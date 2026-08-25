@@ -6,10 +6,10 @@ namespace sp2023_mis421_mockinterviews.Services.UserDb
 {
     public class GenericUserDbService<T> : IAccessData<T> where T : class
     {
-        protected readonly UsersDbContext _context;
+        protected readonly MockInterviewsDbContext _context;
         protected readonly DbSet<T> _dbSet;
 
-        public GenericUserDbService(UsersDbContext context)
+        public GenericUserDbService(MockInterviewsDbContext context)
         {
             _context = context;
             _dbSet = _context.Set<T>();

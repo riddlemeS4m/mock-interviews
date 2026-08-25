@@ -8,7 +8,7 @@ namespace sp2023_mis421_mockinterviews.Services.UserDb
     public class UserService : GenericUserDbService<ApplicationUser>
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        public UserService(UsersDbContext context,
+        public UserService(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager) : base(context)
         {
             _userManager = userManager;

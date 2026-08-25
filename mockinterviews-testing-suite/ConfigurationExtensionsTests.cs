@@ -1,5 +1,9 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Extensions;
+using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
+using sp2023_mis421_mockinterviews.Models.UserDb;
 
 namespace mockinterviews_testing_suite;
 
@@ -96,8 +100,7 @@ public sealed class ConfigurationExtensionsTests
     {
         Assert.Equal(
             [
-                "ConnectionStrings:Users",
-                "ConnectionStrings:Signups",
+                "ConnectionString:DefaultConnection",
                 "Authentication:Microsoft:ClientId",
                 "Authentication:Microsoft:ClientSecret",
                 "SendGrid:ApiKey",
@@ -111,22 +114,54 @@ public sealed class ConfigurationExtensionsTests
     {
         var configuration = BuildConfiguration(new Dictionary<string, string?>
         {
-            ["ConnectionStrings:Users"] = "   ",
+            ["ConnectionString:DefaultConnection"] = "   ",
             ["Authentication:Microsoft:ClientId"] = "secret-value-that-must-not-appear"
         });
 
         var exception = Assert.Throws<InvalidOperationException>(configuration.ValidateRequiredConfiguration);
 
-        Assert.Contains("ConnectionStrings:Users", exception.Message);
-        Assert.Contains("ConnectionStrings:Signups", exception.Message);
+        Assert.Contains("ConnectionString:DefaultConnection", exception.Message);
         Assert.Contains("SendGrid:ApiKey", exception.Message);
         Assert.DoesNotContain("secret-value-that-must-not-appear", exception.Message);
         Assert.DoesNotContain("Postgres:development", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void CombinedContext_ContainsIdentityAndDomainEntities()
+    {
+        using var context = CreateContext();
+
+        Assert.NotNull(context.Model.FindEntityType(typeof(ApplicationUser)));
+        Assert.NotNull(context.Model.FindEntityType(typeof(Interview)));
+    }
+
+    [Theory]
+    [InlineData(typeof(Interview), nameof(Interview.StudentId))]
+    [InlineData(typeof(VolunteerTimeslot), nameof(VolunteerTimeslot.StudentId))]
+    [InlineData(typeof(InterviewerSignup), nameof(InterviewerSignup.InterviewerId))]
+    [InlineData(typeof(InterviewerLocation), nameof(InterviewerLocation.InterviewerId))]
+    public void UserForeignKeys_UseRestrictedDeletion(Type dependentType, string foreignKeyProperty)
+    {
+        using var context = CreateContext();
+        var entityType = context.Model.FindEntityType(dependentType)!;
+        var foreignKey = entityType.GetForeignKeys().Single(key =>
+            key.PrincipalEntityType.ClrType == typeof(ApplicationUser)
+            && key.Properties.Single().Name == foreignKeyProperty);
+
+        Assert.Equal(DeleteBehavior.Restrict, foreignKey.DeleteBehavior);
+    }
+
     private static IConfiguration BuildConfiguration(IEnumerable<KeyValuePair<string, string?>> values)
     {
         return new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+    }
+
+    private static MockInterviewsDbContext CreateContext()
+    {
+        var options = new DbContextOptionsBuilder<MockInterviewsDbContext>()
+            .UseNpgsql("Host=localhost;Database=model_tests;Username=postgres;Password=postgres")
+            .Options;
+        return new MockInterviewsDbContext(options);
     }
 
     private static string CreateTemporaryDirectory()

@@ -9,6 +9,7 @@
 <h3>Are you sure you want to delete @Model.FirstName's account?</h3>
 <div>
     <hr />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <dl class="row">
         <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.FirstName)
