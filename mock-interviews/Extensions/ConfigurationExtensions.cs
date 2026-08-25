@@ -8,6 +8,7 @@ public static class ApplicationConfigurationExtensions
     [
         "ConnectionString:DefaultConnection",
         "SendGrid:ApiKey",
+        "SuperUser:Email",
         "SeededAdminPwd"
     ];
 

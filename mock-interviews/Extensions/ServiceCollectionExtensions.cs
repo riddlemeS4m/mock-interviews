@@ -39,6 +39,16 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    public static IServiceCollection AddSuperUserOptions(this IServiceCollection services, IConfiguration config)
+    {
+        services.AddOptions<SuperUserOptions>()
+            .Bind(config.GetSection(SuperUserOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        return services;
+    }
+
     public static IServiceCollection AddDatabases(this IServiceCollection services, IConfiguration config)
     {
 
