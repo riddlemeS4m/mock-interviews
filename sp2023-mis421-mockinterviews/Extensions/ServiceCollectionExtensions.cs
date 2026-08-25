@@ -48,25 +48,14 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddGoogleDrive(this IServiceCollection services, IConfiguration config, IHostEnvironment env)
+    public static IServiceCollection AddGoogleDrive(this IServiceCollection services, IConfiguration config)
     {
         services.AddOptions<GoogleDriveOptions>()
             .Configure(options =>
             {
-                var environment = env.EnvironmentName.ToLowerInvariant();
-                options.SiteContentFolderId = config[$"GoogleDriveFolders:{environment}:SiteContent"] ?? "";
-                options.ResumesFolderId = config[$"GoogleDriveFolders:{environment}:Resumes"] ?? "";
-                options.PfpsFolderId = config[$"GoogleDriveFolders:{environment}:PFPs"] ?? "";
-                
-                if (!env.IsDevelopment())
-                {
-                    if (string.IsNullOrEmpty(options.SiteContentFolderId))
-                        throw new InvalidOperationException($"GoogleDriveFolders:{environment}:SiteContent not found.");
-                    if (string.IsNullOrEmpty(options.ResumesFolderId))
-                        throw new InvalidOperationException($"GoogleDriveFolders:{environment}:Resumes not found.");
-                    if (string.IsNullOrEmpty(options.PfpsFolderId))
-                        throw new InvalidOperationException($"GoogleDriveFolders:{environment}:PFPs not found.");
-                }
+                options.SiteContentFolderId = config["GoogleDriveFolders:SiteContent"] ?? "";
+                options.ResumesFolderId = config["GoogleDriveFolders:Resumes"] ?? "";
+                options.PfpsFolderId = config["GoogleDriveFolders:PFPs"] ?? "";
             })
             .ValidateDataAnnotations()
             .ValidateOnStart();
@@ -127,13 +116,11 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddDatabases(this IServiceCollection services, IConfiguration config, IHostEnvironment env)
+    public static IServiceCollection AddDatabases(this IServiceCollection services, IConfiguration config)
     {
 
-        var usersConnectionString = config[$"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Users"]
-            ?? throw new InvalidOperationException($"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Users not found.");
-        var signupsConnectionString = config[$"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Signups"]
-            ?? throw new InvalidOperationException($"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Signups not found.");
+        var usersConnectionString = config["ConnectionStrings:Users"]!;
+        var signupsConnectionString = config["ConnectionStrings:Signups"]!;
 
         services.AddDbContextPool<IUserDbContext, UsersDbContext>(options =>
             options.UseNpgsql(usersConnectionString));
@@ -145,7 +132,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddIdentityAndAuth(this IServiceCollection services, IConfiguration config, IHostEnvironment env)
+    public static IServiceCollection AddIdentityAndAuth(this IServiceCollection services, IConfiguration config)
     {
         services.AddIdentity<ApplicationUser, IdentityRole>()
             .AddEntityFrameworkStores<UsersDbContext>()
@@ -158,8 +145,8 @@ public static class ServiceCollectionExtensions
         services.AddAuthentication()
             .AddMicrosoftAccount(microsoftOptions =>
             {
-                microsoftOptions.ClientId = config["Authentication:Microsoft:ClientId"] ?? throw new InvalidOperationException("Azure AD Client ID not found.");
-                microsoftOptions.ClientSecret = config["Authentication:Microsoft:ClientSecret"] ?? throw new InvalidOperationException("Azure AD Client Secret not found.");
+                microsoftOptions.ClientId = config["Authentication:Microsoft:ClientId"]!;
+                microsoftOptions.ClientSecret = config["Authentication:Microsoft:ClientSecret"]!;
             });
 
         return services;
