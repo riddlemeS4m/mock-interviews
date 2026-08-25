@@ -1,5 +1,12 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.EntityFrameworkCore;
+using MockInterviews.Controllers;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Extensions;
 using MockInterviews.Models.Entities;
@@ -101,8 +108,6 @@ public sealed class ConfigurationExtensionsTests
         Assert.Equal(
             [
                 "ConnectionString:DefaultConnection",
-                "Authentication:Microsoft:ClientId",
-                "Authentication:Microsoft:ClientSecret",
                 "SendGrid:ApiKey",
                 "SeededAdminPwd"
             ],
@@ -114,8 +119,7 @@ public sealed class ConfigurationExtensionsTests
     {
         var configuration = BuildConfiguration(new Dictionary<string, string?>
         {
-            ["ConnectionString:DefaultConnection"] = "   ",
-            ["Authentication:Microsoft:ClientId"] = "secret-value-that-must-not-appear"
+            ["ConnectionString:DefaultConnection"] = "   "
         });
 
         var exception = Assert.Throws<InvalidOperationException>(configuration.ValidateRequiredConfiguration);
@@ -124,6 +128,38 @@ public sealed class ConfigurationExtensionsTests
         Assert.Contains("SendGrid:ApiKey", exception.Message);
         Assert.DoesNotContain("secret-value-that-must-not-appear", exception.Message);
         Assert.DoesNotContain("Postgres:development", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task AddIdentityAndAuth_UsesIdentityCookiesWithoutAnExternalProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddIdentityAndAuth();
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var schemes = serviceProvider.GetRequiredService<IAuthenticationSchemeProvider>();
+
+        Assert.NotNull(await schemes.GetSchemeAsync(IdentityConstants.ApplicationScheme));
+        Assert.Equal(IdentityConstants.ApplicationScheme, (await schemes.GetDefaultAuthenticateSchemeAsync())!.Name);
+        Assert.Null(await schemes.GetSchemeAsync("Microsoft"));
+    }
+
+    [Fact]
+    public void AttemptLogin_RedirectsAnonymousUsersToTheIdentityLoginPage()
+    {
+        var httpContext = new DefaultHttpContext
+        {
+            User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity())
+        };
+        var controller = new HomeController(null!, null!, null!, NullLogger<HomeController>.Instance)
+        {
+            ControllerContext = new ControllerContext { HttpContext = httpContext }
+        };
+
+        var result = Assert.IsType<RedirectToPageResult>(controller.AttemptLogin());
+
+        Assert.Equal("/Account/Login", result.PageName);
+        Assert.Equal("Identity", result.RouteValues!["area"]);
     }
 
     [Fact]
