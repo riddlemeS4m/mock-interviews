@@ -1,0 +1,6 @@
+[build]
+builder = "DOCKERFILE"
+
+[deploy]
+preDeployCommand = ["/bin/sh -c './efbundle --connection \"$ConnectionString__DefaultConnection\"'"]
+healthcheckPath = "/health"
