@@ -2,8 +2,12 @@ name: Create Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
 
 jobs:
   create-release:
@@ -11,9 +15,37 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine release tag
+        id: release_tag
+        shell: bash
+        run: |
+          year="$(date --utc +%Y)"
+          latest_number="$(git tag --list "v${year}.*" | sed -nE "s/^v${year}\\.([0-9]+)$/\\1/p" | sort -n | tail -n 1)"
+
+          if [[ -z "$latest_number" ]]; then
+            number=1
+          else
+            number=$((latest_number + 1))
+          fi
+
+          echo "tag=v${year}.${number}" >> "$GITHUB_OUTPUT"
+
+      - name: Tag main
+        env:
+          TAG: ${{ steps.release_tag.outputs.tag }}
+        run: |
+          git tag --annotate "$TAG" --message "Release $TAG" "$GITHUB_SHA"
+          git push origin "$TAG"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
           generate_release_notes: true
           draft: false
           prerelease: false
