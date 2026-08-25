@@ -7,8 +7,6 @@ public static class ApplicationConfigurationExtensions
     public static readonly string[] RequiredConfigurationKeys =
     [
         "ConnectionString:DefaultConnection",
-        "Authentication:Microsoft:ClientId",
-        "Authentication:Microsoft:ClientSecret",
         "SendGrid:ApiKey",
         "SeededAdminPwd"
     ];

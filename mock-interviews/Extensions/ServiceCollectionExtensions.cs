@@ -52,7 +52,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddIdentityAndAuth(this IServiceCollection services, IConfiguration config)
+    public static IServiceCollection AddIdentityAndAuth(this IServiceCollection services)
     {
         services.AddIdentity<ApplicationUser, IdentityRole>()
             .AddEntityFrameworkStores<MockInterviewsDbContext>()
@@ -61,13 +61,6 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<RoleManager<IdentityRole>>();
         services.AddScoped<UserManager<ApplicationUser>>();
-
-        services.AddAuthentication()
-            .AddMicrosoftAccount(microsoftOptions =>
-            {
-                microsoftOptions.ClientId = config["Authentication:Microsoft:ClientId"]!;
-                microsoftOptions.ClientSecret = config["Authentication:Microsoft:ClientSecret"]!;
-            });
 
         return services;
     }

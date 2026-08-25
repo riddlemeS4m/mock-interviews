@@ -16,7 +16,7 @@ namespace MockInterviews
             // Add services
             builder.Services.AddForwardedHeaders();
             builder.Services.AddDatabases(builder.Configuration);
-            builder.Services.AddIdentityAndAuth(builder.Configuration);
+            builder.Services.AddIdentityAndAuth();
             builder.Services.AddSendGrid(builder.Configuration);
             builder.Services.AddApplicationServices();
             builder.Services.AddExternalIntegrations(builder.Configuration);
