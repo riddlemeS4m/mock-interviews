@@ -11,20 +11,7 @@ public static class ApplicationConfigurationExtensions
         "Authentication:Microsoft:ClientId",
         "Authentication:Microsoft:ClientSecret",
         "SendGrid:ApiKey",
-        "SeededAdminPwd",
-        "GoogleDriveFolders:SiteContent",
-        "GoogleDriveFolders:Resumes",
-        "GoogleDriveFolders:PFPs",
-        "GoogleCredential:type",
-        "GoogleCredential:project_id",
-        "GoogleCredential:private_key_id",
-        "GoogleCredential:private_key",
-        "GoogleCredential:client_email",
-        "GoogleCredential:client_id",
-        "GoogleCredential:auth_uri",
-        "GoogleCredential:token_uri",
-        "GoogleCredential:auth_provider_x509_cert_url",
-        "GoogleCredential:client_x509_cert_url"
+        "SeededAdminPwd"
     ];
 
     public static void LoadDevelopmentEnvironment(string? workingDirectory = null)

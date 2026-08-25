@@ -18,7 +18,6 @@ namespace sp2023_mis421_mockinterviews
             builder.Services.AddDatabases(builder.Configuration);
             builder.Services.AddIdentityAndAuth(builder.Configuration);
             builder.Services.AddSendGrid(builder.Configuration);
-            builder.Services.AddGoogleDrive(builder.Configuration);
             builder.Services.AddApplicationServices();
             builder.Services.AddExternalIntegrations(builder.Configuration);
 
