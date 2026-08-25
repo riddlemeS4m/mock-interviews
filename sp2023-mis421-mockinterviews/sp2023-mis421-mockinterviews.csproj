@@ -4,7 +4,6 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>aspnet-sp2023_mis421_mockinterviews-6d184366-7fbc-4612-b0c8-5e40c252810f</UserSecretsId>
     <RootNamespace>sp2023_mis421_mockinterviews</RootNamespace>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <StartupObject></StartupObject>
@@ -30,8 +29,8 @@
     </PackageReference>
 
     <!-- Extensions & config -->
+    <PackageReference Include="DotNetEnv" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
 
     <!-- IdentityModel stack -->
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
@@ -45,7 +44,6 @@
     <PackageReference Include="Google.Apis.Drive.v3" />
     <PackageReference Include="MessagePack" />
     <PackageReference Include="SendGrid" />
-    <PackageReference Include="VaultSharp" />
     
     <!-- Serilog -->
     <PackageReference Include="Serilog" />

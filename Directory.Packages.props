@@ -19,8 +19,8 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="[8.0.20,9.0.0)" />
 
     <!-- Extensions & config -->
+    <PackageVersion Include="DotNetEnv" Version="3.2.0" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="[8.0.1,9.0.0)" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="[8.0.1,9.0.0)" />
 
     <!-- IdentityModel stack -->
     <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="[6.36.0,7.0.0)" />
@@ -33,7 +33,6 @@
     <PackageVersion Include="Google.Apis.Drive.v3" Version="[1.70.0.3893,2.0.0)" />
     <PackageVersion Include="MessagePack" Version="[2.5.198,3.0.0)" />
     <PackageVersion Include="SendGrid" Version="[9.29.3,10.0.0)" />
-    <PackageVersion Include="VaultSharp" Version="[1.17.5.1,2.0.0)" />
     
     <!-- Serilog -->
     <PackageVersion Include="Serilog" Version="[4.1.0,5.0.0)" />
