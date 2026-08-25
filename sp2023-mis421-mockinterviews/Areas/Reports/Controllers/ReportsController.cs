@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Data.Constants;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
+using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
 using sp2023_mis421_mockinterviews.Models.ViewModels.ReportsController;
 using sp2023_mis421_mockinterviews.Models.ViewModels.TimeslotsController;
@@ -15,11 +15,11 @@ namespace sp2023_mis421_mockinterviews.Areas.Reports.Controllers
     public class ReportsController : Controller
     {
         private readonly EventService _eventService;
-        private readonly ISignupDbContext _context;
+        private readonly MockInterviewsDbContext _context;
         private readonly ILogger<ReportsController> _logger;
 
         public ReportsController(EventService eventService, 
-            ISignupDbContext context, 
+            MockInterviewsDbContext context,
             ILogger<ReportsController> logger)
         {
             _eventService = eventService;

@@ -8,31 +8,26 @@ using sp2023_mis421_mockinterviews.Models.ViewModels;
 using sp2023_mis421_mockinterviews.Models.UserDb;
 using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
 using sp2023_mis421_mockinterviews.Services.SignalR;
-using sp2023_mis421_mockinterviews.Services.UserDb;
 using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Data.Constants;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
 
 namespace sp2023_mis421_mockinterviews.Controllers
 {
     public class SignupInterviewersController : Controller
     {
-        private readonly ISignupDbContext _context;
-        private readonly UserService _userService;
+        private readonly MockInterviewsDbContext _context;
         private readonly ISendGridClient _sendGridClient;
         private readonly IHubContext<AvailableInterviewersHub> _hubContext;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<SignupInterviewersController> _logger;
 
-        public SignupInterviewersController(ISignupDbContext context,
-            UserService userService,
+        public SignupInterviewersController(MockInterviewsDbContext context,
             ISendGridClient sendGridClient,
             IHubContext<AvailableInterviewersHub> hubContext,
             UserManager<ApplicationUser> userManager,
             ILogger<SignupInterviewersController> logger)
         {
             _context = context;
-            _userService = userService;
             _sendGridClient = sendGridClient;
             _hubContext = hubContext;
             _userManager = userManager;
@@ -79,22 +74,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
                 SignupInterviewer = signupInterviewer
             };
 
-            var studentIds = await _context.Interviews
-                .Where(x => x.InterviewerTimeslot.InterviewerSignupId == id)
-                .Select(x => x.StudentId)
-                .ToListAsync();
-            
-            if(studentIds.Count > 0)
-            {
-                var students = await _userService.GetUsersByIds(studentIds);
-                var dictionary = students.Values.ToDictionary(x => x.GetFullName(), x => $"https://drive.google.com/file/d/{x.Resume}");
-                vm.Resumes = dictionary;
-            }
-            else
-            {
-                vm.Resumes = new Dictionary<string, string>();
-            }  
-        
             return View(vm);
         }
 

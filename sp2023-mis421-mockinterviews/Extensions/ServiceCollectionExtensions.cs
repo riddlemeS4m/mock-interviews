@@ -1,17 +1,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.HttpOverrides;
-using Google.Apis.Drive.v3;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Services;
+using Microsoft.Extensions.Options;
 using SendGrid;
 using sp2023_mis421_mockinterviews.Options;
 using sp2023_mis421_mockinterviews.Models.UserDb;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
-using sp2023_mis421_mockinterviews.Services.GoogleDrive;
 using sp2023_mis421_mockinterviews.Services.Controllers;
 using sp2023_mis421_mockinterviews.Services.SignalR;
 using sp2023_mis421_mockinterviews.Services.UserDb;
@@ -48,96 +43,15 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddGoogleDrive(this IServiceCollection services, IConfiguration config, IHostEnvironment env)
-    {
-        services.AddOptions<GoogleDriveOptions>()
-            .Configure(options =>
-            {
-                var environment = env.EnvironmentName.ToLowerInvariant();
-                options.SiteContentFolderId = config[$"GoogleDriveFolders:{environment}:SiteContent"] ?? "";
-                options.ResumesFolderId = config[$"GoogleDriveFolders:{environment}:Resumes"] ?? "";
-                options.PfpsFolderId = config[$"GoogleDriveFolders:{environment}:PFPs"] ?? "";
-                
-                if (!env.IsDevelopment())
-                {
-                    if (string.IsNullOrEmpty(options.SiteContentFolderId))
-                        throw new InvalidOperationException($"GoogleDriveFolders:{environment}:SiteContent not found.");
-                    if (string.IsNullOrEmpty(options.ResumesFolderId))
-                        throw new InvalidOperationException($"GoogleDriveFolders:{environment}:Resumes not found.");
-                    if (string.IsNullOrEmpty(options.PfpsFolderId))
-                        throw new InvalidOperationException($"GoogleDriveFolders:{environment}:PFPs not found.");
-                }
-            })
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        services.AddOptions<GoogleCredentialOptions>()
-            .Bind(config.GetSection("GoogleCredential"))
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        services.AddSingleton<DriveService>(provider =>
-        {
-            var credentialOptions = provider.GetRequiredService<IOptions<GoogleCredentialOptions>>().Value;
-            var driveOptions = provider.GetRequiredService<IOptions<GoogleDriveOptions>>().Value;
-            
-            string json = GoogleDriveUtility.SerializeCredentials(credentialOptions);
-
-            GoogleCredential credential;
-            using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)))
-            {
-                credential = GoogleCredential.FromStream(stream).CreateScoped(new[]
-                {
-                    DriveService.Scope.DriveFile
-                });
-            }
-
-            return new DriveService(new BaseClientService.Initializer()
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = driveOptions.ApplicationName
-            });
-        });
-
-        services.AddScoped<GoogleDriveSiteContentService>(serviceProvider =>
-        {
-            var driveService = serviceProvider.GetRequiredService<DriveService>();
-            var logger = serviceProvider.GetRequiredService<ILogger<IGoogleDrive>>();
-            var options = serviceProvider.GetRequiredService<IOptions<GoogleDriveOptions>>().Value;
-            return new GoogleDriveSiteContentService(options.SiteContentFolderId, driveService, logger);
-        });
-
-        services.AddScoped<GoogleDriveResumeService>(serviceProvider =>
-        {
-            var logger = serviceProvider.GetRequiredService<ILogger<IGoogleDrive>>();
-            var driveService = serviceProvider.GetRequiredService<DriveService>();
-            var options = serviceProvider.GetRequiredService<IOptions<GoogleDriveOptions>>().Value;
-            return new GoogleDriveResumeService(options.ResumesFolderId, driveService, logger);
-        });
-
-        services.AddScoped<GoogleDrivePfpService>(serviceProvider =>
-        {
-            var logger = serviceProvider.GetRequiredService<ILogger<IGoogleDrive>>();
-            var driveService = serviceProvider.GetRequiredService<DriveService>();
-            var cacheService = serviceProvider.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
-            var options = serviceProvider.GetRequiredService<IOptions<GoogleDriveOptions>>().Value;
-            return new GoogleDrivePfpService(options.PfpsFolderId, driveService, cacheService, logger);
-        });
-
-        return services;
-    }
-
-    public static IServiceCollection AddDatabases(this IServiceCollection services, IConfiguration config, IHostEnvironment env)
+    public static IServiceCollection AddDatabases(this IServiceCollection services, IConfiguration config)
     {
 
-        var usersConnectionString = config[$"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Users"]
-            ?? throw new InvalidOperationException($"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Users not found.");
-        var signupsConnectionString = config[$"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Signups"]
-            ?? throw new InvalidOperationException($"ConnectionStrings:Postgres:{env.EnvironmentName.ToLowerInvariant()}:Signups not found.");
+        var usersConnectionString = config["ConnectionStrings:Users"]!;
+        var signupsConnectionString = config["ConnectionStrings:Signups"]!;
 
-        services.AddDbContextPool<IUserDbContext, UsersDbContext>(options =>
+        services.AddDbContextPool<UsersDbContext>(options =>
             options.UseNpgsql(usersConnectionString));
-        services.AddDbContextPool<ISignupDbContext, MockInterviewsDbContext>(options =>
+        services.AddDbContextPool<MockInterviewsDbContext>(options =>
             options.UseNpgsql(signupsConnectionString));
 
         services.AddDatabaseDeveloperPageExceptionFilter();
@@ -145,7 +59,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddIdentityAndAuth(this IServiceCollection services, IConfiguration config, IHostEnvironment env)
+    public static IServiceCollection AddIdentityAndAuth(this IServiceCollection services, IConfiguration config)
     {
         services.AddIdentity<ApplicationUser, IdentityRole>()
             .AddEntityFrameworkStores<UsersDbContext>()
@@ -158,8 +72,8 @@ public static class ServiceCollectionExtensions
         services.AddAuthentication()
             .AddMicrosoftAccount(microsoftOptions =>
             {
-                microsoftOptions.ClientId = config["Authentication:Microsoft:ClientId"] ?? throw new InvalidOperationException("Azure AD Client ID not found.");
-                microsoftOptions.ClientSecret = config["Authentication:Microsoft:ClientSecret"] ?? throw new InvalidOperationException("Azure AD Client Secret not found.");
+                microsoftOptions.ClientId = config["Authentication:Microsoft:ClientId"]!;
+                microsoftOptions.ClientSecret = config["Authentication:Microsoft:ClientSecret"]!;
             });
 
         return services;
@@ -170,7 +84,6 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient();
         services.AddSignalR();
         services.AddResponseCompression(opts => { opts.EnableForHttps = true; });
-        services.AddMemoryCache();
         services.AddHealthChecks();
         services.AddControllersWithViews();
         services.AddRazorPages();

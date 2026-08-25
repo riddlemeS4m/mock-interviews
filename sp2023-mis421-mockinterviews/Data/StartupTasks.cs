@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using sp2023_mis421_mockinterviews.Data.Seeds;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
 using sp2023_mis421_mockinterviews.Models.UserDb;
-using sp2023_mis421_mockinterviews.Services.GoogleDrive;
 using sp2023_mis421_mockinterviews.Services.SignupDb;
 
 namespace sp2023_mis421_mockinterviews.Data;
@@ -17,13 +15,11 @@ public static class StartupTasks
 
         try
         {
-            // Db contexts + managers
-            var signupDb = scope.ServiceProvider.GetRequiredService<ISignupDbContext>();
+            // Managers
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
             // App services
-            var drive = scope.ServiceProvider.GetRequiredService<GoogleDriveSiteContentService>();
             var settings = scope.ServiceProvider.GetRequiredService<SettingsService>();
             var timeslots = scope.ServiceProvider.GetRequiredService<TimeslotService>();
             var eventsSvc = scope.ServiceProvider.GetRequiredService<EventService>();
@@ -32,16 +28,6 @@ public static class StartupTasks
             await UserDbContextSeed.SeedSuperAdminAsync(userManager, app.Configuration["SeededAdminPwd"]!);
             await TimeslotSeed.SeedTimeslots(eventsSvc, timeslots);
             await SettingsSeed.SeedSettings(settings);
-
-            try
-            {
-                await new GoogleDriveServiceSeed(drive, signupDb).Test();
-                logger.LogInformation("Google Drive connectivity verified.");
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Google Drive connectivity check failed - continuing without Google Drive features.");
-            }
 
             logger.LogInformation("Startup tasks completed.");
         }

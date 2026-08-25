@@ -22,7 +22,6 @@ using sp2023_mis421_mockinterviews.Data.Constants;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Data.Contexts;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
 
 namespace sp2023_mis421_mockinterviews.Areas.Identity.Pages.Account
 {
@@ -35,7 +34,7 @@ namespace sp2023_mis421_mockinterviews.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<ApplicationUser> _emailStore;
         private readonly IEmailSender _emailSender;
         private readonly ILogger<ExternalLoginModel> _logger;
-        private readonly ISignupDbContext _context;
+        private readonly MockInterviewsDbContext _context;
         public bool IsStudent { get; set; }
 
         public ExternalLoginModel(
@@ -44,7 +43,7 @@ namespace sp2023_mis421_mockinterviews.Areas.Identity.Pages.Account
             IUserStore<ApplicationUser> userStore,
             ILogger<ExternalLoginModel> logger,
             IEmailSender emailSender,
-            ISignupDbContext context)
+            MockInterviewsDbContext context)
         {
             _signInManager = signInManager;
             _userManager = userManager;

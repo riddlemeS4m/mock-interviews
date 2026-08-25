@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
+using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
 
 namespace sp2023_mis421_mockinterviews.Services.SignupDb
 {
     public class GenericSignupDbService<T> : IAccessData<T> where T : class
     {
-        protected readonly ISignupDbContext _context;
+        protected readonly MockInterviewsDbContext _context;
         protected readonly DbSet<T> _dbSet;
 
-        public GenericSignupDbService(ISignupDbContext context)
+        public GenericSignupDbService(MockInterviewsDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context), "Database context cannot be null.");
             _dbSet = context.Set<T>();
@@ -55,7 +55,7 @@ namespace sp2023_mis421_mockinterviews.Services.SignupDb
         {
             foreach (var entity in entities)
             {
-                var trackedEntity = _context.GetChangeTracker<T>()
+                var trackedEntity = _context.ChangeTracker.Entries<T>()
                     .FirstOrDefault(e => e.Entity.Equals(entity));
 
                 if (trackedEntity != null)

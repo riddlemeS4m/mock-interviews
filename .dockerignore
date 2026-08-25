@@ -42,6 +42,7 @@ packages/
 *.swp
 *.tmp
 *.pid
+.env*
 
 # ---- Project launch/debug artifacts (not used in containers) ----
 **/Properties/launchSettings.json

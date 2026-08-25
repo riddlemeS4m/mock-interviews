@@ -4,50 +4,34 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- ASP.NET Core / EF Core: stay on .NET 8 LTS -->
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="[8.0.20,9.0.0)" />
-    <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="[8.0.20,9.0.0)" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="[8.0.20,9.0.0)" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.UI" Version="[8.0.20,9.0.0)" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="[8.0.20,9.0.0)" />
+    <!-- ASP.NET Core / EF Core: .NET 10 LTS -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.UI" Version="10.0.11" />
 
-    <!-- EF Core runtime + ONE provider (keep only the provider you use) -->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="[8.0.20,9.0.0)" />
-    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="[8.0.11,9.0.0)" />
-    <!-- Design/Tools are build-time only (PrivateAssets=all in csproj) -->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="[8.0.20,9.0.0)" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="[8.0.20,9.0.0)" />
+    <!-- EF Core runtime + PostgreSQL provider -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.11" />
 
     <!-- Extensions & config -->
-    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="[8.0.1,9.0.0)" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="[8.0.1,9.0.0)" />
-
-    <!-- IdentityModel stack -->
-    <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="[6.36.0,7.0.0)" />
-    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="[6.36.0,7.0.0)" />
-
-    <!-- Data providers -->
-    <PackageVersion Include="Npgsql" Version="[8.0.7,9.0.0)" />
+    <PackageVersion Include="DotNetEnv" Version="3.2.0" />
 
     <!-- Third-party libs -->
-    <PackageVersion Include="Google.Apis.Drive.v3" Version="[1.70.0.3893,2.0.0)" />
-    <PackageVersion Include="MessagePack" Version="[2.5.198,3.0.0)" />
-    <PackageVersion Include="SendGrid" Version="[9.29.3,10.0.0)" />
-    <PackageVersion Include="VaultSharp" Version="[1.17.5.1,2.0.0)" />
+    <PackageVersion Include="SendGrid" Version="9.29.3" />
     
     <!-- Serilog -->
-    <PackageVersion Include="Serilog" Version="[4.1.0,5.0.0)" />
-    <PackageVersion Include="Serilog.AspNetCore" Version="[8.0.2,9.0.0)" />
-    <PackageVersion Include="Serilog.Sinks.Console" Version="[6.0.0,7.0.0)" />
-    <PackageVersion Include="Serilog.Sinks.File" Version="[6.0.0,7.0.0)" />
-
-    <!-- System.* (only if you truly need them on net8) -->
-    <PackageVersion Include="System.Text.Json" Version="[8.0.6,9.0.0)" />
+    <PackageVersion Include="Serilog" Version="4.4.0" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
 
     <!-- Test stack (applies to your test project) -->
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="[17.14.1,18.0.0)" />
-    <PackageVersion Include="xunit" Version="[2.9.3,3.0.0)" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="[2.8.2,3.0.0)" />
-    <PackageVersion Include="coverlet.collector" Version="[3.2.0,4.0.0)" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
   </ItemGroup>
 </Project>

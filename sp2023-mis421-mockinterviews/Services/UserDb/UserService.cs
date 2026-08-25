@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
+using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Models.UserDb;
 
 namespace sp2023_mis421_mockinterviews.Services.UserDb
@@ -8,7 +8,7 @@ namespace sp2023_mis421_mockinterviews.Services.UserDb
     public class UserService : GenericUserDbService<ApplicationUser>
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        public UserService(IUserDbContext context, 
+        public UserService(UsersDbContext context,
             UserManager<ApplicationUser> userManager) : base(context)
         {
             _userManager = userManager;

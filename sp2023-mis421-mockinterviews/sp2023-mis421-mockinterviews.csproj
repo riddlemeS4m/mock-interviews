@@ -1,10 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>aspnet-sp2023_mis421_mockinterviews-6d184366-7fbc-4612-b0c8-5e40c252810f</UserSecretsId>
     <RootNamespace>sp2023_mis421_mockinterviews</RootNamespace>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <StartupObject></StartupObject>
@@ -16,7 +15,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" />
 
     <!-- EF Core (Design/Tools keep PrivateAssets/IncludeAssets) -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
@@ -30,31 +28,19 @@
     </PackageReference>
 
     <!-- Extensions & config -->
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
+    <PackageReference Include="DotNetEnv" />
 
-    <!-- IdentityModel stack -->
-    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
-
-    <!-- Data providers -->
-    <PackageReference Include="Npgsql" />
+    <!-- Data provider -->
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
 
     <!-- Third-party libs -->
-    <PackageReference Include="Google.Apis.Drive.v3" />
-    <PackageReference Include="MessagePack" />
     <PackageReference Include="SendGrid" />
-    <PackageReference Include="VaultSharp" />
     
     <!-- Serilog -->
     <PackageReference Include="Serilog" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Sinks.Console" />
     <PackageReference Include="Serilog.Sinks.File" />
-
-    <!-- System.* (keep only what you truly need on net8.0) -->
-    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
 </Project>

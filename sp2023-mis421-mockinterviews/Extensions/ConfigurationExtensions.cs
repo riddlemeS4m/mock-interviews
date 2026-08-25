@@ -1,64 +1,63 @@
-using VaultSharp;
-using VaultSharp.V1.AuthMethods.Token;
+using Microsoft.Extensions.Configuration;
 
 namespace sp2023_mis421_mockinterviews.Extensions;
 
-public static class ConfigurationExtensions
+public static class ApplicationConfigurationExtensions
 {
-    public static async Task AddHashiCorpVaultAsync(this WebApplicationBuilder builder)
+    public static readonly string[] RequiredConfigurationKeys =
+    [
+        "ConnectionStrings:Users",
+        "ConnectionStrings:Signups",
+        "Authentication:Microsoft:ClientId",
+        "Authentication:Microsoft:ClientSecret",
+        "SendGrid:ApiKey",
+        "SeededAdminPwd"
+    ];
+
+    public static void LoadDevelopmentEnvironment(string? workingDirectory = null)
     {
-        var env = builder.Environment;
-        if (!(env.IsProduction() || env.IsStaging())) return;
-
-        try
+        if (!IsDevelopmentEnvironment())
         {
-            var tokenFile = Environment.GetEnvironmentVariable("VAULT_TOKEN_FILE")
-                ?? "/vault/tokens/app-token";
-
-            string vaultToken;
-            if (File.Exists(tokenFile))
-            {
-                vaultToken = File.ReadAllText(tokenFile).Trim();
-            }
-            else
-            {
-                vaultToken = Environment.GetEnvironmentVariable("VAULT_TOKEN")
-                    ?? throw new InvalidOperationException("VAULT_TOKEN environment variable not found.");
-            }
-
-            var vaultUrl = Environment.GetEnvironmentVariable("VAULT_URL")
-                ?? "http://vault:8200";
-
-            var authMethod = new TokenAuthMethodInfo(vaultToken);
-            var vaultClientSettings = new VaultClientSettings(vaultUrl, authMethod);
-            var vaultClient = new VaultClient(vaultClientSettings);
-
-            var path = $"mockinterviews/{env.EnvironmentName.ToLowerInvariant()}";
-            var secrets = await vaultClient.V1.Secrets.KeyValue.V2
-                .ReadSecretAsync(path: path, mountPoint: "secret");
-
-            var vaultConfig = new Dictionary<string, string?>();
-            foreach (var kvp in secrets.Data.Data)
-            {
-                vaultConfig[kvp.Key] = kvp.Value?.ToString();
-            }
-
-            builder.Configuration.AddInMemoryCollection(vaultConfig);
+            return;
         }
-        catch (Exception ex)
-        {
-            var logger = builder.Services.BuildServiceProvider().GetService<ILogger>();
-            logger?.LogError(ex, "Failed to load configuration from Vault: {Message}", ex.Message);
 
-            throw;
+        var environmentFile = FindNearestEnvironmentFile(workingDirectory ?? Directory.GetCurrentDirectory());
+        if (environmentFile is not null)
+        {
+            DotNetEnv.Env.NoClobber().Load(environmentFile);
         }
     }
 
-    public static void AddUserSecrets(this WebApplicationBuilder builder)
+    public static string? FindNearestEnvironmentFile(string workingDirectory)
     {
-        if (builder.Environment.IsDevelopment())
+        for (var directory = new DirectoryInfo(Path.GetFullPath(workingDirectory)); directory is not null; directory = directory.Parent)
         {
-            builder.Configuration.AddUserSecrets<Program>();
+            var environmentFile = Path.Combine(directory.FullName, ".env");
+            if (File.Exists(environmentFile))
+            {
+                return environmentFile;
+            }
         }
+
+        return null;
+    }
+
+    public static void ValidateRequiredConfiguration(this IConfiguration configuration)
+    {
+        var missingKeys = RequiredConfigurationKeys
+            .Where(key => string.IsNullOrWhiteSpace(configuration[key]))
+            .ToArray();
+
+        if (missingKeys.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Missing required configuration values: {string.Join(", ", missingKeys)}.");
+        }
+    }
+
+    private static bool IsDevelopmentEnvironment()
+    {
+        return string.Equals(Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
     }
 }

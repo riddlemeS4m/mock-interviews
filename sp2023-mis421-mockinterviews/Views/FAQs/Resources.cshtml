@@ -5,6 +5,8 @@
 
 @{
     ViewData["Title"] = "Resources";
+    var manualUrl = ViewData["ManualUrl"] as string;
+    var parkingPassUrl = ViewData["ParkingPassUrl"] as string;
 }
 
 <div id="center-everything" class="row">
@@ -69,7 +71,8 @@
 
         <br />
 
-        @if (User.IsInRole(RolesConstants.InterviewerRole))
+        @if (User.IsInRole(RolesConstants.InterviewerRole)
+            && (manualUrl != null || parkingPassUrl != null))
         {
             <hr style="width:100px;margin:auto;"/>
             <br />
@@ -78,8 +81,14 @@
                     Resources for Interviewers
                 </h3>
                 <div style="text-align:center">
-                    <a id="manual-button" class="btn btn-primary" asp-controller="FAQs" asp-action="DownloadManual">Download Mock Interview Manual</a> &nbsp;
-                    <a id="parking-button" class="btn btn-secondary" asp-controller="FAQs" asp-action="DownloadParking">Download Parking Pass</a>
+                    @if (manualUrl != null)
+                    {
+                        <a id="manual-button" class="btn btn-primary" href="@manualUrl" target="_blank" rel="noopener">View Mock Interview Manual</a>
+                    }
+                    @if (parkingPassUrl != null)
+                    {
+                        <a id="parking-button" class="btn btn-secondary" href="@parkingPassUrl" target="_blank" rel="noopener">View Parking Pass</a>
+                    }
                 </div>
             </div>
         }

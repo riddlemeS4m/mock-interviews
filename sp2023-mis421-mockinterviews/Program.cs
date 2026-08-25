@@ -7,20 +7,17 @@ namespace sp2023_mis421_mockinterviews
     {
         public static async Task Main(string[] args)
         {
+            ApplicationConfigurationExtensions.LoadDevelopmentEnvironment();
             var builder = WebApplication.CreateBuilder(args);
 
             builder.AddSerilogLogging();
-
-            // Configuration setup
-            await builder.AddHashiCorpVaultAsync();
-            builder.AddUserSecrets();
+            builder.Configuration.ValidateRequiredConfiguration();
 
             // Add services
             builder.Services.AddForwardedHeaders();
-            builder.Services.AddDatabases(builder.Configuration, builder.Environment);
-            builder.Services.AddIdentityAndAuth(builder.Configuration, builder.Environment);
+            builder.Services.AddDatabases(builder.Configuration);
+            builder.Services.AddIdentityAndAuth(builder.Configuration);
             builder.Services.AddSendGrid(builder.Configuration);
-            builder.Services.AddGoogleDrive(builder.Configuration, builder.Environment);
             builder.Services.AddApplicationServices();
             builder.Services.AddExternalIntegrations(builder.Configuration);
 

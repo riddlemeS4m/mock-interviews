@@ -24,24 +24,14 @@
                 <label>Class:</label>
                 <span>@Model.Class</span>
             </div>
-            <div>
-                <label>Resume:</label>
-                <a href="@Url.Action("DownloadResume", "Users", new { userId = Model.Id })" class="btn btn-primary">Download Resume</a>
+            <div style="padding-top: 15px;">
+                <label>Profile Picture:</label>
+                <br />
+                <img src="~/images/SabanHeadshot.jpg"
+                     alt="Default profile picture"
+                     style="width: 350px; height: 350px; object-fit: cover" />
             </div>
-
-@*        <div>
-            <label>Profile picture:</label>
-            @if (Model.Input.ProfilePicture != null)
-            {
-                <img src="data:image/*;base64,@(Convert.ToBase64String(Model.Input.ProfilePicture))" style="width: 350px; height: 350px; object-fit: cover" />
-            }
-            else
-            {
-                <span>No profile picture uploaded</span>
-            }
-        </div>
-*@    </div>
+    </div>
     <a asp-controller="Home" asp-action="Index">Back to Home</a>
 
 </div>
-

@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
+using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
 
 namespace sp2023_mis421_mockinterviews.Services.SignupDb
@@ -7,7 +7,7 @@ namespace sp2023_mis421_mockinterviews.Services.SignupDb
     public class InterviewerLocationService : GenericSignupDbService<InterviewerLocation>
     {
         private readonly ILogger<InterviewerLocationService> _logger;
-        public InterviewerLocationService(ISignupDbContext context, ILogger<InterviewerLocationService> logger) : base(context)
+        public InterviewerLocationService(MockInterviewsDbContext context, ILogger<InterviewerLocationService> logger) : base(context)
         {
             _logger = logger;
         }

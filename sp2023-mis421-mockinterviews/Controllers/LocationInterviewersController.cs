@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using sp2023_mis421_mockinterviews.Data.Contexts;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
 using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
 using sp2023_mis421_mockinterviews.Models.UserDb;
 using sp2023_mis421_mockinterviews.Models.ViewModels;
@@ -21,10 +20,10 @@ namespace sp2023_mis421_mockinterviews.Controllers
     [Authorize(Roles = RolesConstants.AdminRole)]
     public class LocationInterviewersController : Controller
     {
-        private readonly ISignupDbContext _context;
+        private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public LocationInterviewersController(ISignupDbContext context, UserManager<ApplicationUser> userManager)
+        public LocationInterviewersController(MockInterviewsDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _userManager = userManager;

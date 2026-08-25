@@ -1,5 +1,5 @@
 using System.Reflection;
-using sp2023_mis421_mockinterviews.Interfaces.IDbContext;
+using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
 
 namespace sp2023_mis421_mockinterviews.Services.SignupDb
@@ -26,7 +26,7 @@ namespace sp2023_mis421_mockinterviews.Services.SignupDb
 
         private object CreateService(Type serviceType, IServiceProvider serviceProvider)
         {
-            var dbContext = serviceProvider.GetRequiredService<ISignupDbContext>();
+            var dbContext = serviceProvider.GetRequiredService<MockInterviewsDbContext>();
             var loggerType = typeof(ILogger<>).MakeGenericType(serviceType);
             var logger = serviceProvider.GetService(loggerType);
 

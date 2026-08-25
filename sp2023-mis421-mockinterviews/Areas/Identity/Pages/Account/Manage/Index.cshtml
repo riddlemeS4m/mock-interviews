@@ -37,17 +37,6 @@
                     <span>No class specified</span>
                 }
             </div>
-            <div style="padding-bottom: 15px;">
-                <label>Resume:</label>
-                @if (Model.Input.Resume != null)
-                {
-                    <a href="@Url.Action("DownloadResume", "Users", new { userId = Model.Id })">Download Resume</a>
-                }
-                else
-                {
-                    <span>No resume uploaded</span>
-                }
-            </div>
         }
         @if(User.IsInRole(RolesConstants.InterviewerRole))
         {
@@ -67,16 +56,9 @@
         <div style="padding-bottom: 15px;">
             <label>Profile Picture:</label>
             <br />
-            @if (Model.Input.ProfilePicture != null)
-            {
-                <img src="/Image/Proxy/@Model.Input.ProfilePicture" 
-                    style="width: 350px; height: 350px; object-fit: cover" />
-            }
-            else
-            {
-                <span>No profile picture uploaded</span>
-            }
+            <img src="~/images/SabanHeadshot.jpg"
+                 alt="Default profile picture"
+                 style="width: 350px; height: 350px; object-fit: cover" />
         </div>
     </div>
 </div>
-

@@ -4,9 +4,7 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "ASPNETCORE_Kestrel__Certificates__Default__Path": "/Users/samth/.aspnet/https/localhost.pfx",
-        "ASPNETCORE_Kestrel__Certificates__Default__Password": "temp-pass"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:7281"
@@ -19,13 +17,6 @@
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5157"
-    },  
-    "IIS Express": {
-      "commandName": "IISExpress",
-      "launchBrowser": true,
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
     },
     "Docker": {
       "commandName": "Docker",
@@ -33,14 +24,6 @@
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
       "publishAllPorts": true,
       "useSSL": true
-    }
-  },
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iisExpress": {
-      "applicationUrl": "http://localhost:53052",
-      "sslPort": 44315
     }
   }
 }
