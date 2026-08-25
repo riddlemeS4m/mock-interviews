@@ -1,0 +1,62 @@
+﻿@using MockInterviews.Data.Constants;
+@model MockInterviews.Models.Entities.InterviewerTimeslot
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h1>Interviewer Cancellation</h1>
+
+<h3>Are you sure you want to cancel this?</h3>
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            Name
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.InterviewerSignup.FirstName) @Html.DisplayFor(model => model.InterviewerSignup.LastName)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Timeslot.Time)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Timeslot.Time)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Timeslot.Event.Date)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Timeslot.Event.Date)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.InterviewerSignup.Type)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.InterviewerSignup.Type)
+        </dd>
+        <dt>
+            In-Person or Virtual:
+        </dt>
+
+        @if (Model.InterviewerSignup.IsVirtual)
+        {
+            <dd>Virtual</dd>
+        }
+        else if (Model.InterviewerSignup.InPerson)
+        {
+            <dd>In Person</dd>
+        }
+    </dl>
+    
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <input type="submit" value="Cancel" class="btn btn-primary" /> |
+        @Html.ActionLink("Return to Home",
+        "Index",   // <-- ActionMethod
+        "Home",  // <-- Controller Name.
+        null, // <-- Route arguments.
+        null
+        )
+    </form>
+</div>

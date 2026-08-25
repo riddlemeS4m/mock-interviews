@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33414.496
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "mock-interviews", "mock-interviews\mock-interviews.csproj", "{DA2B1776-8F17-48CE-B26B-D370945292F6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mock-interviews-tests", "mock-interviews-tests\mock-interviews-tests.csproj", "{B60596B0-DF77-4E79-8E46-9D6A4851C21A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DA2B1776-8F17-48CE-B26B-D370945292F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA2B1776-8F17-48CE-B26B-D370945292F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA2B1776-8F17-48CE-B26B-D370945292F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA2B1776-8F17-48CE-B26B-D370945292F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B60596B0-DF77-4E79-8E46-9D6A4851C21A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B60596B0-DF77-4E79-8E46-9D6A4851C21A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B60596B0-DF77-4E79-8E46-9D6A4851C21A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B60596B0-DF77-4E79-8E46-9D6A4851C21A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B7ADEA3B-3E93-49FB-ABA6-F52CB589AD17}
+	EndGlobalSection
+EndGlobal

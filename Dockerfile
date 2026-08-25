@@ -8,21 +8,21 @@ WORKDIR /src
 
 COPY Directory.Packages.props global.json ./
 COPY .config/dotnet-tools.json .config/dotnet-tools.json
-COPY sp2023-mis421-mockinterviews/sp2023-mis421-mockinterviews.csproj sp2023-mis421-mockinterviews/
+COPY mock-interviews/mock-interviews.csproj mock-interviews/
 
-RUN dotnet restore sp2023-mis421-mockinterviews/sp2023-mis421-mockinterviews.csproj
+RUN dotnet restore mock-interviews/mock-interviews.csproj
 
-COPY sp2023-mis421-mockinterviews/ sp2023-mis421-mockinterviews/
-WORKDIR /src/sp2023-mis421-mockinterviews
+COPY mock-interviews/ mock-interviews/
+WORKDIR /src/mock-interviews
 
-RUN dotnet build sp2023-mis421-mockinterviews.csproj -c Release -o /app/build --no-restore
+RUN dotnet build mock-interviews.csproj -c Release -o /app/build --no-restore
 
 RUN dotnet tool restore \
     && dotnet ef migrations bundle --configuration Release --no-build --output /app/efbundle
 
 # ---- Publish stage ----
 FROM build AS publish
-RUN dotnet publish sp2023-mis421-mockinterviews.csproj -c Release -o /app/publish \
+RUN dotnet publish mock-interviews.csproj -c Release -o /app/publish \
     --no-restore /p:UseAppHost=false
 
 # ---- Final runtime image ----
@@ -36,4 +36,4 @@ ENV ASPNETCORE_URLS=http://+:8001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -fsS http://localhost:8001/health || exit 1
 
-ENTRYPOINT ["dotnet", "sp2023-mis421-mockinterviews.dll"]
+ENTRYPOINT ["dotnet", "mock-interviews.dll"]

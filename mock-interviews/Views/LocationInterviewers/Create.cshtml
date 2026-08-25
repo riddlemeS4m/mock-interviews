@@ -1,0 +1,49 @@
+﻿@model MockInterviews.Models.ViewModels.LocationInterviewerCreateViewModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+@*            <input type="hidden" asp-for="LocationInterviewer.InterviewerId" />
+*@            <div class="form-group">
+                <label asp-for="@Model.LocationInterviewer.InterviewerId" class="control-label"></label>
+                <select asp-for="@Model.LocationInterviewer.InterviewerId" class ="form-control" asp-items="@Model.InterviewerNames"></select>
+            </div>
+            <div class="form-group">
+                <label asp-for="@Model.LocationInterviewer.LocationId" class="control-label"></label>
+                <select asp-for="@Model.LocationInterviewer.LocationId" class ="form-control" asp-items="@Model.Locations"></select>
+            </div>
+            <div class="form-group">
+                <label asp-for="@Model.LocationInterviewer.EventId" class="control-label"></label>
+                <select asp-for="@Model.LocationInterviewer.EventId" class="form-control" asp-items="@Model.Dates"></select>
+            </div>
+            <p></p>
+            <div class="form-check form-check-inline">
+                <input id="InPersonTrue" class="form-check-input" type="radio" name="InPerson" value="true" data-val="true" data-val-required="Please select an option">
+                <label class="form-check-label" for="InPersonTrue">In Person</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input id="InPersonFalse" class="form-check-input" type="radio" name="InPerson" value="false" data-val="true" data-val-required="Please select an option">
+                <label class="form-check-label" for="InPersonFalse">Virtual</label>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

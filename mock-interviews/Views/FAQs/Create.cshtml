@@ -1,0 +1,49 @@
+﻿@using MockInterviews.Data.Constants;
+@using MockInterviews.Models.Entities
+@model Question
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4 id="center-everything">FAQs</h4>
+<hr />
+<div class="row" id="center-everything">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Q" class="control-label"></label>
+                <input asp-for="Q" class="form-control" />
+                <span asp-validation-for="Q" class="text-danger"></span>
+            </div>
+            <p></p>
+            @if(User.IsInRole(RolesConstants.AdminRole))
+            {
+                <div class="form-group">
+                    <label asp-for="A" class="control-label"></label>
+                    <input asp-for="A" class="form-control" />
+                    <span asp-validation-for="A" class="text-danger"></span>
+                </div>
+                <p></p>
+            }
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+@if(User.IsInRole(RolesConstants.AdminRole))
+{
+    <div id="center-everything">
+        <a asp-action="Index">Back to List</a>
+    </div>
+}
+
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

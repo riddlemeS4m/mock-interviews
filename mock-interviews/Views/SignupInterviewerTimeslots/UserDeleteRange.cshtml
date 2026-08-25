@@ -1,0 +1,22 @@
+﻿@model MockInterviews.Models.ViewModels.TimeRangeViewModel
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h1>Confirmation</h1>
+<hr />
+@*<h3>Are you sure you want to cancel this?</h3>
+*@
+<div id="center-everything">
+    <h4>Are you sure that you'd like to cancel all your availability?</h4>
+    <br />
+    <form asp-action="UserDeleteRangeConfirmed" asp-controller="SignupInterviewerTimeslots">
+        <input type="hidden" name="id" value="@Model.SignupInterviewerId" />
+        <div>
+            <input type="submit" value="Yes, Cancel" class="btn btn-primary" /> |
+            <button asp-action="Index" asp-controller="Home" class="btn btn-secondary">No, Go Back</button>
+        </div>
+    </form>
+</div>
+

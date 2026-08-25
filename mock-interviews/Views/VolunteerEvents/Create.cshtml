@@ -1,0 +1,100 @@
+﻿@using MockInterviews.Data;
+@using MockInterviews.Data.Constants;
+@model MockInterviews.Models.ViewModels.VolunteerEventSignupViewModel;
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Sign up to Volunteer!</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8" id="center-everything">
+        <div>
+            <span asp-validation-for="SelectedEventIds1" class="text-danger"></span>
+        </div>
+        @if (!Model.SignedUp)
+        {
+            <div class="row">
+                <div class="col-md-6" style="padding-bottom: 10px;">
+                    <button type="button" class="selectAllButton btn btn-primary" data-target="SelectedEventIds1">Select Day @(Model.EventDates.IndexOf(Model.EventDates[0]) + 1)</button>
+                </div>
+                <br />
+                @if (Model.Timeslots[0].EventId != Model.Timeslots[^1].EventId)
+                {
+                    <div class="col-md-6">
+                        <button type="button" class="selectAllButton btn btn-primary" data-target="SelectedEventIds2">Select Day @(Model.EventDates.IndexOf(Model.EventDates[^1]) + 1)</button>
+                    </div>
+                }
+                <br />
+            </div>
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3>@Model.Timeslots[0].Event.Name</h3>
+                        <h4 class="date-column">@Model.Timeslots[0].Event.Date</h4>
+                        @foreach (var timeslot in Model.Timeslots)
+                        {
+                            if (timeslot.EventId == Model.Timeslots[0].EventId)
+                            {
+                                <div>
+                                    <input type="checkbox" id="@timeslot.Id" name="SelectedEventIds1" value="@timeslot.Id">
+                                    <input type="hidden" name="Timeslots[@timeslot.Id]" value="@timeslot.Id">
+                                    <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
+                                </div>
+                            }
+                        }
+                    </div>
+                    @if (Model.Timeslots[0].EventId != Model.Timeslots[^1].EventId)
+                    {
+                        <div class="col-md-6">
+                            <h3>@Model.Timeslots[^1].Event.Name</h3>
+                            <h4 class="date-column">@Model.Timeslots[^1].Event.Date</h4>
+                            @foreach (var timeslot in Model.Timeslots)
+                            {
+                                if (timeslot.EventId == Model.Timeslots[^1].EventId)
+                                {
+                                    <div>
+                                        <input type="checkbox" id="@timeslot.Id" name="SelectedEventIds2" value="@timeslot.Id">
+                                        <input type="hidden" name="Timeslots[@timeslot.Id]" value="@timeslot.Id">
+                                        <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+
+                </div>
+                <div class="form-group">
+                    <input type="submit" value="Sign Up!" class="btn btn-primary" />
+                </div>
+                @if (User.IsInRole(RolesConstants.AdminRole))
+                {
+                    <div>
+                        <a asp-action="Index">Back to List</a>
+                    </div>
+                }
+            </form>
+        }
+        else
+        {
+            <div class="alert alert-danger" role="alert">
+                You've already signed up to volunteer for all available timeslots.
+            </div>
+        }
+
+    </div>
+    <div class="col-md-2"></div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        selectAll();
+    </script>
+}

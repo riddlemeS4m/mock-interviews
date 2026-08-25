@@ -1,0 +1,41 @@
+using Microsoft.AspNetCore.Identity;
+using MockInterviews.Data.Seeds;
+using MockInterviews.Models.Identity;
+using MockInterviews.Services;
+
+namespace MockInterviews.Data;
+
+public static class StartupTasks
+{
+    public static async Task RunStartupTasksAsync(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+
+        try
+        {
+            // Managers
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+            // App services
+            var settings = scope.ServiceProvider.GetRequiredService<SettingsService>();
+            var timeslots = scope.ServiceProvider.GetRequiredService<TimeslotService>();
+            var eventsSvc = scope.ServiceProvider.GetRequiredService<EventService>();
+
+            await IdentitySeed.SeedRolesAsync(roleManager);
+            await IdentitySeed.SeedSuperAdminAsync(userManager, app.Configuration["SeededAdminPwd"]!);
+            await TimeslotSeed.SeedTimeslots(eventsSvc, timeslots);
+            await SettingsSeed.SeedSettings(settings);
+
+            logger.LogInformation("Startup tasks completed.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Startup tasks failed.");
+            // choose: rethrow to fail fast in prod, or continue in dev
+            if (!env.IsDevelopment()) throw;
+        }
+    }
+}

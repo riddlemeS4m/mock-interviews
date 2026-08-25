@@ -1,0 +1,189 @@
+﻿@using MockInterviews.Data.Constants
+@model MockInterviews.Models.Entities.Event
+
+@{
+    ViewData["Title"] = "Edit Event Date";
+}
+
+<h1>Edit</h1>
+
+<h4>EventDate</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <label asp-for="Date" class="control-label"></label>
+                <input asp-for="Date" class="form-control" />
+                <span asp-validation-for="Date" class="text-danger"></span>
+            </div>
+            <br />
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <br />
+                <label class="control-label">Which students is this event for?</label>
+            <br />
+
+            @if(Model.For221 == For221.b)
+            {
+                <div class="form-check form-check-inline">
+                    <input id="For221True"
+                           class="form-check-input"
+                           type="checkbox"
+                           name="For221True"
+                           value="y"
+                           checked="checked"
+                           data-val="true"
+                           data-val-required="Please select an option">
+                    <label class="form-check-label" for="For221True">MIS 221</label>
+                </div>
+                    <div class="form-check form-check-inline">
+                        <input id="For221False"
+                               class="form-check-input"
+                               type="checkbox"
+                               name="For221False"
+                               value="n"
+                               checked="checked"
+                               data-val="true"
+                               data-val-required="Please select an option">
+                        <label class="form-check-label" for="For221False">MIS 321 & Above</label>
+                    </div>
+            }
+            else if(Model.For221 == For221.y)
+            {
+                <div class="form-check form-check-inline">
+                    <input id="For221True"
+                           class="form-check-input"
+                           type="checkbox"
+                           name="For221True"
+                           value="y"
+                           checked="checked"
+                           data-val="true"
+                           data-val-required="Please select an option">
+                    <label class="form-check-label" for="For221True">MIS 221</label>
+                </div>
+                    <div class="form-check form-check-inline">
+                        <input id="For221False"
+                               class="form-check-input"
+                               type="checkbox"
+                               name="For221False"
+                               value="n"
+                               data-val="true"
+                               data-val-required="Please select an option">
+                        <label class="form-check-label" for="For221False">MIS 321 & Above</label>
+                    </div>
+            }
+            else
+            {
+                <div class="form-check form-check-inline">
+                    <input id="For221True"
+                           class="form-check-input"
+                           type="checkbox"
+                           name="For221True"
+                           value="y"
+                           data-val="true"
+                           data-val-required="Please select an option">
+                    <label class="form-check-label" for="For221True">MIS 221</label>
+                </div>
+                    <div class="form-check form-check-inline">
+                        <input id="For221False"
+                               class="form-check-input"
+                               type="checkbox"
+                               name="For221False"
+                               value="n"
+                               checked="checked"
+                               data-val="true"
+                               data-val-required="Please select an option">
+                        <label class="form-check-label" for="For221False">MIS 321 & Above</label>
+                    </div>
+            }
+            
+            <span asp-validation-for="For221" class="text-danger"></span>
+            <br />
+
+            <br />
+                <label class="control-label">Is this event currently active?</label>
+            <br />
+            
+            @if(Model.IsActive)
+            {
+                
+                <div class="form-check form-check-inline">
+                    <input 
+                        id="IsActiveTrue" 
+                        class="form-check-input" 
+                        type="radio" 
+                        name="IsActive" 
+                        value="true" 
+                        checked="checked" 
+                        data-val="true" 
+                        data-val-required="Please select an option"
+                    >
+                    <label class="form-check-label" for="IsActiveTrue">Yes</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input 
+                        id="IsActiveFalse" 
+                        class="form-check-input" 
+                        type="radio" 
+                        name="IsActive" 
+                        value="false" 
+                        data-val="true" 
+                        data-val-required="Please select an option"
+                    >
+                    <label class="form-check-label" for="IsActiveFalse">No</label>
+                </div>
+            }
+            else
+            {
+                <div class="form-check form-check-inline">
+                    <input 
+                        id="IsActiveTrue" 
+                        class="form-check-input" 
+                        type="radio" 
+                        name="IsActive" 
+                        value="true" 
+                        data-val="true" 
+                        data-val-required="Please select an option"
+                    >
+                    <label class="form-check-label" for="IsActiveTrue">Yes</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input 
+                        id="IsActiveFalse" 
+                        class="form-check-input" 
+                        type="radio" 
+                        name="IsActive" 
+                        value="false" 
+                        checked="checked" 
+                        data-val="true" 
+                        data-val-required="Please select an option"
+                    >
+                    <label class="form-check-label" for="IsActiveFalse">No</label>
+                </div>
+            }
+            
+
+            <span asp-validation-for="IsActive" class="text-danger"></span>
+            <br /><br />
+
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-controller="EventDates" asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

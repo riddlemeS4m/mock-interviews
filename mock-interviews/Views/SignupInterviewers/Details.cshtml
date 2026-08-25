@@ -1,0 +1,60 @@
+﻿@model MockInterviews.Models.ViewModels.SignupInterviewerViewModel
+
+@{
+    ViewData["Title"] = "Interviewer Schedule";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>SignupInterviewer</h4>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.SignupInterviewer.FirstName)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.SignupInterviewer.FirstName)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.SignupInterviewer.LastName)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.SignupInterviewer.LastName)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.SignupInterviewer.IsVirtual)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.SignupInterviewer.IsVirtual)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.SignupInterviewer.InPerson)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.SignupInterviewer.InPerson)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.SignupInterviewer.IsTechnical)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.SignupInterviewer.IsTechnical)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.SignupInterviewer.IsBehavioral)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.SignupInterviewer.IsBehavioral)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.SignupInterviewer.InterviewerId)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.SignupInterviewer.InterviewerId)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.SignupInterviewer.Id">Edit</a> |
+    <a asp-action="Index">Back to List</a>
+</div>

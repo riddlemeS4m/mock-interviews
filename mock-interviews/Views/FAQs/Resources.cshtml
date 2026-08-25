@@ -1,0 +1,104 @@
+﻿@using MockInterviews.Models.Entities
+@using MockInterviews.Data;
+@using MockInterviews.Data.Constants;
+@model IEnumerable<Question>
+
+@{
+    ViewData["Title"] = "Resources";
+    var manualUrl = ViewData["ManualUrl"] as string;
+    var parkingPassUrl = ViewData["ParkingPassUrl"] as string;
+}
+
+<div id="center-everything" class="row">
+    <h1>Resources</h1>
+
+    <div class="col-md-2"></div>
+    <div id="center-everything" class="col-md-8">
+        <div id="center-everything">
+            <hr style="width:100px;margin:auto;"/>
+            <br />
+            <h3>Point of Contact</h3>
+            <p style="font-size:20px; text-align:center; padding-top: 10px; width: 75%; margin: auto; margin-bottom: 1rem;">
+                For sign-in issues or other questions not listed below, please contact <span style="font-weight: bold; color: black;">Kate Owens</span> at <a target="_blank" href="mailto:nkowens@crimson.ua.edu">nkowens@crimson.ua.edu</a>.
+            </p>
+        </div>
+        
+        @if(Model.Any() && Model.Count() > 0)
+        {
+            <hr style="width:100px;margin:auto;"/>
+            <br />
+            <div id="center-everything">
+                <h3>FAQs</h3>
+                <div class="row">
+                    @for(int i = 0; i < Model.Count(); i++)
+                    {
+                        var faq = Model.ElementAt(i);
+
+                        <div class="card shadow-sm p-3 m-3 border-1 rounded col">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">@faq.Q</h5>
+                                <p class="card-text">@faq.A</p>
+                            </div>
+                        </div>
+
+                        if(i % 2 != 0)
+                        {
+                            <div class="w-100"></div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+
+        <br />
+
+        @if (User.IsInRole(RolesConstants.StudentRole) || User.IsInRole(RolesConstants.InterviewerRole))
+        {
+            <hr style="width:100px;margin:auto;"/>
+            <br />
+            <div id="center-everything">
+                <h3>
+                    Ask a Question!
+                </h3>
+            
+                <div>
+                    <h4 style="text-align: center;">
+                        <a asp-action="Create" class="btn btn-primary">Question Form</a>
+                    </h4>
+                </div>
+            </div>
+        }
+
+        <br />
+
+        @if (User.IsInRole(RolesConstants.InterviewerRole)
+            && (manualUrl != null || parkingPassUrl != null))
+        {
+            <hr style="width:100px;margin:auto;"/>
+            <br />
+            <div id="center-everything">
+                <h3>
+                    Resources for Interviewers
+                </h3>
+                <div style="text-align:center">
+                    @if (manualUrl != null)
+                    {
+                        <a id="manual-button" class="btn btn-primary" href="@manualUrl" target="_blank" rel="noopener">View Mock Interview Manual</a>
+                    }
+                    @if (parkingPassUrl != null)
+                    {
+                        <a id="parking-button" class="btn btn-secondary" href="@parkingPassUrl" target="_blank" rel="noopener">View Parking Pass</a>
+                    }
+                </div>
+            </div>
+        }
+
+    </div>
+    <div class="col-md-2"></div>
+</div>
+
+@section Scripts {
+    <script>
+        displayResources();
+    </script>
+}

@@ -23,10 +23,10 @@ jobs:
           global-json-file: global.json
 
       - name: Restore
-        run: dotnet restore sp2023-mis421-mockinterviews.sln
+        run: dotnet restore mock-interviews.sln
 
       - name: Build
-        run: dotnet build sp2023-mis421-mockinterviews.sln --configuration Release --no-restore
+        run: dotnet build mock-interviews.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test sp2023-mis421-mockinterviews.sln --configuration Release --no-build
+        run: dotnet test mock-interviews.sln --configuration Release --no-build
