@@ -6,6 +6,11 @@
 # localhost certs
 localhost+*.pem
 
+# Local development environment values
+/.env
+/.env.*
+!/.env.example
+
 # sql migrations
 *.sql
 
