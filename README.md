@@ -5,6 +5,10 @@
 2. Copy the template with `cp .env.example .env`
 3. Run `dotnet restore && dotnet build`, then start the app with either `dotnet run --project sp2023-mis421-mockinterviews` from the repository root or `dotnet run` from `sp2023-mis421-mockinterviews`.
 
+## Resource Links
+
+Set `mock_interview_manual` and `guest_parking_pass` to public HTTP(S) URLs in the admin Event Configuration screen. Unconfigured or invalid resource URLs are not shown to interviewers.
+
 ### Production
 The root `.env` file is loaded only for local Development runs. Process environment variables override `.env` values. Set `ASPNETCORE_ENVIRONMENT=Production` and `ASPNETCORE_URLS=http://+:${PORT}` as described in Railway's [ASP.NET Core deployment guide](https://docs.railway.com/guides/aspnet-core).
 
