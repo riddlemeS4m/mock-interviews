@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SendGrid;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.ViewModels.InterviewsController;
@@ -19,6 +20,7 @@ using MockInterviews.Interfaces.IServices;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Services;
 using MockInterviews.Services.SignalR;
+using MockInterviews.Options;
 
 namespace MockInterviews.Controllers
 {
@@ -98,6 +100,7 @@ namespace MockInterviews.Controllers
         private readonly IHubContext<AssignInterviewsHub> _hubContext;
         private readonly IHubContext<AvailableInterviewersHub> _hubContextInterviewer;
         private readonly ILogger<InterviewEventsController> _logger;
+        private readonly string _superUserEmail;
 
         public InterviewEventsController(IManageInterviews manager,
             MockInterviewsDbContext context,
@@ -108,7 +111,8 @@ namespace MockInterviews.Controllers
             ISendGridClient sendGridClient,
             IHubContext<AssignInterviewsHub> hubContext,
             IHubContext<AvailableInterviewersHub> hubContextInterviewer,
-            ILogger<InterviewEventsController> logger)
+            ILogger<InterviewEventsController> logger,
+            IOptions<SuperUserOptions> superUserOptions)
         {
             _manager = manager;
             _context = context;
@@ -120,6 +124,7 @@ namespace MockInterviews.Controllers
             _hubContext = hubContext;
             _hubContextInterviewer = hubContextInterviewer;
             _logger = logger;
+            _superUserEmail = superUserOptions.Value.Email;
         }
 	    // adding a dummy comment bc I feel like it
         //--Dalton Wright, Fall 2023
@@ -707,7 +712,7 @@ namespace MockInterviews.Controllers
                 }
 
                 ASendAnEmail emailer = new StudentSignupEmail();
-                await emailer.SendEmailAsync(_sendGridClient, "UA MIS Mock Interview Sign-Up Confirmation", user.Email, user.FirstName, interviewDetails, calendarEvents); ;
+                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "UA MIS Mock Interview Sign-Up Confirmation", user.Email, user.FirstName, interviewDetails, calendarEvents); ;
 
 				return RedirectToAction("Index", "Home");
             }

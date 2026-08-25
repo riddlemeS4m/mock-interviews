@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SendGrid;
 using MockInterviews.Data.Access.Emails;
 using MockInterviews.Data.Constants;
@@ -10,6 +11,7 @@ using MockInterviews.Data.Contexts;
 using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
+using MockInterviews.Options;
 
 namespace MockInterviews.Controllers
 {
@@ -19,15 +21,18 @@ namespace MockInterviews.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISendGridClient _sendGridClient;
         private readonly ILogger<FAQsController> _logger;
+        private readonly string _superUserEmail;
         public FAQsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager, 
             ISendGridClient sendGridClient,
-            ILogger<FAQsController> logger)
+            ILogger<FAQsController> logger,
+            IOptions<SuperUserOptions> superUserOptions)
         {
             _context = context;
             _userManager = userManager;
             _sendGridClient = sendGridClient;
             _logger = logger;
+            _superUserEmail = superUserOptions.Value.Email;
         }
 
         // GET: FAQs
@@ -99,7 +104,7 @@ namespace MockInterviews.Controllers
                 else
                 {
                     ASendAnEmail emailer = new NewFAQSubmitted();
-                    await emailer.SendEmailAsync(_sendGridClient, "A Required: Student Submitted New Question", SuperUser.Email, user.FirstName + " " + user.LastName, faq.Q, null);
+                    await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "A Required: Student Submitted New Question", _superUserEmail, user.FirstName + " " + user.LastName, faq.Q, null);
 
                     return RedirectToAction("Resources", "Question");
                 }
