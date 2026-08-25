@@ -99,6 +99,18 @@ public sealed class ConfigurationExtensionsTests
     }
 
     [Fact]
+    public void DesignTimeFactory_UsesConnectionStringFromEnvironment()
+    {
+        const string connectionString = "Host=localhost;Database=factory_test;Username=factory_user;Password=factory_password";
+
+        using var environment = new EnvironmentVariablesScope(
+            ("ConnectionString__DefaultConnection", connectionString));
+        using var context = new MockInterviewsDbContextFactory().CreateDbContext([]);
+
+        Assert.Equal(connectionString, context.Database.GetDbConnection().ConnectionString);
+    }
+
+    [Fact]
     public void ValidateRequiredConfiguration_AcceptsCompleteConfiguration()
     {
         var configuration = BuildConfiguration(ApplicationConfigurationExtensions.RequiredConfigurationKeys
@@ -177,6 +189,26 @@ public sealed class ConfigurationExtensionsTests
         Assert.NotNull(await schemes.GetSchemeAsync(IdentityConstants.ApplicationScheme));
         Assert.Equal(IdentityConstants.ApplicationScheme, (await schemes.GetDefaultAuthenticateSchemeAsync())!.Name);
         Assert.Null(await schemes.GetSchemeAsync("Microsoft"));
+    }
+
+    [Theory]
+    [InlineData("Development", false)]
+    [InlineData("Production", true)]
+    public void AddIdentityAndAuth_RelaxesPasswordPolicyOnlyInDevelopment(
+        string environmentName,
+        bool requiresComplexPassword)
+    {
+        var services = new ServiceCollection();
+        services.AddIdentityAndAuth(new TestHostEnvironment { EnvironmentName = environmentName });
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var options = serviceProvider.GetRequiredService<IOptions<IdentityOptions>>().Value;
+
+        Assert.Equal(requiresComplexPassword, options.Password.RequireDigit);
+        Assert.Equal(requiresComplexPassword, options.Password.RequireLowercase);
+        Assert.Equal(requiresComplexPassword, options.Password.RequireUppercase);
+        Assert.Equal(requiresComplexPassword, options.Password.RequireNonAlphanumeric);
+        Assert.Equal(6, options.Password.RequiredLength);
     }
 
     [Fact]
