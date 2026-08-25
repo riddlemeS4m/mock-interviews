@@ -1,15 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
-using SendGrid.Helpers.Mail;
-using sp2023_mis421_mockinterviews.Areas.Identity.Pages.Account.Manage;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using sp2023_mis421_mockinterviews.Models.UserDb;
 using sp2023_mis421_mockinterviews.Models.ViewModels;
-using sp2023_mis421_mockinterviews.Services.GoogleDrive;
-using System.Net.Mime;
 
 namespace sp2023_mis421_mockinterviews.Controllers
 {
@@ -22,15 +17,9 @@ namespace sp2023_mis421_mockinterviews.Controllers
     public class UsersController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly GoogleDriveResumeService _driveResumeService;
-        private readonly GoogleDrivePfpService _drivePfpService;
-        public UsersController(UserManager<ApplicationUser> userManager,
-            GoogleDriveResumeService driveResumeService,
-            GoogleDrivePfpService drivePfpService)
+        public UsersController(UserManager<ApplicationUser> userManager)
         {
             _userManager = userManager;
-            _driveResumeService = driveResumeService;
-            _drivePfpService = drivePfpService;
         }
 
         [Authorize(Roles = RolesConstants.AdminRole)]
@@ -48,45 +37,12 @@ namespace sp2023_mis421_mockinterviews.Controllers
 
             var viewModel = new ExternalUserProfileViewModel
             {
-                Id = user.Id,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Class = ClassConstants.GetClassText((Classes)user.Class)
             };
 
             return View(viewModel);
-        }
-
-        //[HttpGet]
-        //[Route("Users/DownloadResume/{userId}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> DownloadResume(string userId)
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            var resume = user.Resume;
-            if (string.IsNullOrEmpty(resume))
-            {
-                return NotFound();
-            }
-
-            var contentDisposition = new ContentDisposition
-            {
-                FileName = $"{user.FirstName}_{user.LastName}_Resume.docx",
-                Inline = false
-            };
-
-            Response.Headers.Add("Content-Disposition", contentDisposition.ToString());
-
-            (Google.Apis.Drive.v3.Data.File file, MemoryStream stream) = await _driveResumeService.GetOneFile(resume, true);
-            
-            stream.Position = 0;
-
-            return File(stream.ToArray(), file.MimeType);
         }
 
         [Authorize(Roles = RolesConstants.AdminRole)]
@@ -172,26 +128,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
 
             // If model state is not valid or user creation fails, return to the creation page with errors
             return View(model);
-        }
-
-        [HttpGet]
-        [Route("Image/Proxy/{fileId}")]
-        public async Task<IActionResult> ProxyImage(string fileId)
-        {
-            try
-            {
-                (Google.Apis.Drive.v3.Data.File file, MemoryStream stream) = await _drivePfpService.GetOneFile(fileId, true);
-                stream.Position = 0;
-
-                // Set HTTP cache headers
-                Response.Headers["Cache-Control"] = "public,max-age=3600"; // Adjust the cache duration as needed
-
-                return File(stream, file.MimeType);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"An error occurred: {ex.Message}");
-            }
         }
 
         [HttpGet]
