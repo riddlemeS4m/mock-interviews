@@ -14,7 +14,7 @@ updates:
           - "version-update:semver-major"
 
   - package-ecosystem: "dotnet-sdk"
-    directory: "/sp2023-mis421-mockinterviews"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
