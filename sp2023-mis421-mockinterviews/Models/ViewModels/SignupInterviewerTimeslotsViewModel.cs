@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
-using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
+using sp2023_mis421_mockinterviews.Models.Entities;
 using System.ComponentModel;
 
 namespace sp2023_mis421_mockinterviews.Models.ViewModels

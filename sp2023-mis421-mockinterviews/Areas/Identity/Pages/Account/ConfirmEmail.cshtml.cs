@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
-using sp2023_mis421_mockinterviews.Models.UserDb;
+using sp2023_mis421_mockinterviews.Models.Identity;
 
 namespace sp2023_mis421_mockinterviews.Areas.Identity.Pages.Account
 {

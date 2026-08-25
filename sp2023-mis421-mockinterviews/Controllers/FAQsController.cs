@@ -8,8 +8,8 @@ using sp2023_mis421_mockinterviews.Data.Access.Emails;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
-using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
-using sp2023_mis421_mockinterviews.Models.UserDb;
+using sp2023_mis421_mockinterviews.Models.Entities;
+using sp2023_mis421_mockinterviews.Models.Identity;
 
 namespace sp2023_mis421_mockinterviews.Controllers
 {
@@ -34,17 +34,10 @@ namespace sp2023_mis421_mockinterviews.Controllers
         [Authorize(Roles = RolesConstants.AdminRole)]
         public async Task<IActionResult> Index()
         {
-              return _context.Questions != null ? 
-                          View(await _context.Questions.ToListAsync()) :
-                          Problem("Entity set 'ApplicationDbContext.Question'  is null.");
+            return View(await _context.Questions.ToListAsync());
         }
         public async Task<IActionResult> Resources()
         {
-            if (_context.Questions == null)
-            {
-                return Problem("Entity set 'ApplicationDbContext.Question' is null.");
-            }
-
             var manualUrl = await _context.Settings
                 .Where(x => x.Name == SettingsConstants.MockInterviewManual.Name)
                 .Select(x => x.Value)
@@ -190,10 +183,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
         [Authorize(Roles = RolesConstants.AdminRole)]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.Questions == null)
-            {
-                return Problem("Entity set 'ApplicationDbContext.Question'  is null.");
-            }
             var fAQs = await _context.Questions.FindAsync(id);
             if (fAQs != null)
             {

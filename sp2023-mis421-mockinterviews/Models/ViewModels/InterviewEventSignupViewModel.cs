@@ -1,5 +1,5 @@
-﻿using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
-using sp2023_mis421_mockinterviews.Models.UserDb;
+﻿using sp2023_mis421_mockinterviews.Models.Entities;
+using sp2023_mis421_mockinterviews.Models.Identity;
 
 namespace sp2023_mis421_mockinterviews.Models.ViewModels
 {

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using sp2023_mis421_mockinterviews.Data.Seeds;
-using sp2023_mis421_mockinterviews.Models.UserDb;
-using sp2023_mis421_mockinterviews.Services.SignupDb;
+using sp2023_mis421_mockinterviews.Models.Identity;
+using sp2023_mis421_mockinterviews.Services;
 
 namespace sp2023_mis421_mockinterviews.Data;
 
@@ -24,8 +24,8 @@ public static class StartupTasks
             var timeslots = scope.ServiceProvider.GetRequiredService<TimeslotService>();
             var eventsSvc = scope.ServiceProvider.GetRequiredService<EventService>();
 
-            await UserDbContextSeed.SeedRolesAsync(roleManager);
-            await UserDbContextSeed.SeedSuperAdminAsync(userManager, app.Configuration["SeededAdminPwd"]!);
+            await IdentitySeed.SeedRolesAsync(roleManager);
+            await IdentitySeed.SeedSuperAdminAsync(userManager, app.Configuration["SeededAdminPwd"]!);
             await TimeslotSeed.SeedTimeslots(eventsSvc, timeslots);
             await SettingsSeed.SeedSettings(settings);
 

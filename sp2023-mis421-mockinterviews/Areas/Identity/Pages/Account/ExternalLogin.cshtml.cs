@@ -17,7 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
-using sp2023_mis421_mockinterviews.Models.UserDb;
+using sp2023_mis421_mockinterviews.Models.Identity;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;

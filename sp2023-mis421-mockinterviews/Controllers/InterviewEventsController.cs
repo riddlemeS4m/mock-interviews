@@ -9,16 +9,15 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using SendGrid;
-using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
+using sp2023_mis421_mockinterviews.Models.Entities;
 using sp2023_mis421_mockinterviews.Models.ViewModels.InterviewsController;
-using sp2023_mis421_mockinterviews.Models.UserDb;
+using sp2023_mis421_mockinterviews.Models.Identity;
 using sp2023_mis421_mockinterviews.Models.ViewModels;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using sp2023_mis421_mockinterviews.Data.Access.Emails;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
 using sp2023_mis421_mockinterviews.Data.Contexts;
-using sp2023_mis421_mockinterviews.Services.UserDb;
-using sp2023_mis421_mockinterviews.Services.SignupDb;
+using sp2023_mis421_mockinterviews.Services;
 using sp2023_mis421_mockinterviews.Services.SignalR;
 
 namespace sp2023_mis421_mockinterviews.Controllers
@@ -90,7 +89,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
     public class InterviewEventsController : Controller
     {
         private readonly IManageInterviews _manager;
-        private readonly ISignupDbServiceFactory _signupDb;
         private readonly MockInterviewsDbContext _context;
         private readonly TimeslotService _timeslotService;
         private readonly InterviewService _interviewService;
@@ -102,7 +100,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
         private readonly ILogger<InterviewEventsController> _logger;
 
         public InterviewEventsController(IManageInterviews manager,
-            ISignupDbServiceFactory signupDb,
             MockInterviewsDbContext context,
             TimeslotService timeslotService,
             InterviewService interviewService,
@@ -114,7 +111,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
             ILogger<InterviewEventsController> logger)
         {
             _manager = manager;
-            _signupDb = signupDb;
             _context = context;
             _timeslotService = timeslotService;
             _interviewService = interviewService;
@@ -1164,10 +1160,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.Interviews == null)
-            {
-                return Problem("Entity set 'MockInterviewDataDbContext.Interview'  is null.");
-            }
             var interviewEvent = await _context.Interviews.FindAsync(id);
             if (interviewEvent != null)
             {
@@ -1377,10 +1369,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
         [Authorize(Roles = RolesConstants.StudentRole)]
         public async Task<IActionResult> UserDeleteConfirmed(int id)
         {
-            if (_context.Interviews == null)
-            {
-                return Problem("Entity set 'MockInterviewDataDbContext.Interview'  is null.");
-            }
             var interviewEvent = await _context.Interviews.FindAsync(id);
             if (interviewEvent != null && interviewEvent.StudentId == User.FindFirstValue(ClaimTypes.NameIdentifier))
             {

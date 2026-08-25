@@ -14,8 +14,8 @@ using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using sp2023_mis421_mockinterviews.Data.Access.Emails;
 using sp2023_mis421_mockinterviews.Data.Access.Reports;
-using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
-using sp2023_mis421_mockinterviews.Models.UserDb;
+using sp2023_mis421_mockinterviews.Models.Entities;
+using sp2023_mis421_mockinterviews.Models.Identity;
 using sp2023_mis421_mockinterviews.Models.ViewModels;
 
 
@@ -973,10 +973,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.InterviewerTimeslots == null)
-            {
-                return Problem("Entity set 'MockInterviewDataDbContext.InterviewerTimeslot'  is null.");
-            }
             var signupInterviewerTimeslot = await _context.InterviewerTimeslots.FindAsync(id);
             if (signupInterviewerTimeslot != null)
             {
@@ -1048,10 +1044,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
         [Authorize(Roles = RolesConstants.InterviewerRole)]
         public async Task<IActionResult> UserDeleteConfirmed(int id)
         {
-            if (_context.InterviewerTimeslots == null)
-            {
-                return Problem("Entity set 'MockInterviewDataDbContext.InterviewerTimeslot'  is null.");
-            }
             var signupInterviewerTimeslot = await _context.InterviewerTimeslots
                 .Include(s => s.InterviewerSignup)
                 .Include(s => s.Timeslot)

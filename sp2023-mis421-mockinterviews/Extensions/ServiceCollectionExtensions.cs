@@ -1,16 +1,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using SendGrid;
 using sp2023_mis421_mockinterviews.Options;
-using sp2023_mis421_mockinterviews.Models.UserDb;
+using sp2023_mis421_mockinterviews.Models.Identity;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
-using sp2023_mis421_mockinterviews.Services.Controllers;
-using sp2023_mis421_mockinterviews.Services.SignalR;
-using sp2023_mis421_mockinterviews.Services.UserDb;
-using sp2023_mis421_mockinterviews.Services.SignupDb;
+using sp2023_mis421_mockinterviews.Services;
 using sp2023_mis421_mockinterviews.Data.Contexts;
 
 namespace sp2023_mis421_mockinterviews.Extensions;
@@ -46,13 +42,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddDatabases(this IServiceCollection services, IConfiguration config)
     {
 
-        var usersConnectionString = config["ConnectionStrings:Users"]!;
-        var signupsConnectionString = config["ConnectionStrings:Signups"]!;
+        var connectionString = config["ConnectionString:DefaultConnection"]!;
 
-        services.AddDbContextPool<UsersDbContext>(options =>
-            options.UseNpgsql(usersConnectionString));
         services.AddDbContextPool<MockInterviewsDbContext>(options =>
-            options.UseNpgsql(signupsConnectionString));
+            options.UseNpgsql(connectionString));
 
         services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -62,7 +55,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddIdentityAndAuth(this IServiceCollection services, IConfiguration config)
     {
         services.AddIdentity<ApplicationUser, IdentityRole>()
-            .AddEntityFrameworkStores<UsersDbContext>()
+            .AddEntityFrameworkStores<MockInterviewsDbContext>()
             .AddDefaultUI()
             .AddDefaultTokenProviders();
 
@@ -102,17 +95,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<InterviewerTimeslotService>();
         services.AddScoped<UserService>();
 
-        services.AddScoped<ISignupDbServiceFactory, SignupDbServiceFactory>();
-
-        services.AddTransient<IManageInterviews, ManageInterviewsService>(serviceProvider => {
-            var factory = serviceProvider.GetRequiredService<ISignupDbServiceFactory>();
-            var users = serviceProvider.GetRequiredService<UserService>();
-            var sendGrid = serviceProvider.GetRequiredService<ISendGridClient>();
-            var interviews = serviceProvider.GetRequiredService<IHubContext<AssignInterviewsHub>>();
-            var interviewers = serviceProvider.GetRequiredService<IHubContext<AvailableInterviewersHub>>();
-            var logger = serviceProvider.GetRequiredService<ILogger<ManageInterviewsService>>();
-            return new ManageInterviewsService(factory, users, sendGrid, interviews, interviewers, logger);
-        });
+        services.AddTransient<IManageInterviews, ManageInterviewsService>();
 
         return services;
     }

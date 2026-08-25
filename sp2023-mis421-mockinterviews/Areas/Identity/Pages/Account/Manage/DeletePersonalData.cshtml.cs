@@ -9,9 +9,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using sp2023_mis421_mockinterviews.Data.Constants;
-using sp2023_mis421_mockinterviews.Models.UserDb;
+using sp2023_mis421_mockinterviews.Data.Contexts;
+using sp2023_mis421_mockinterviews.Models.Identity;
 
 namespace sp2023_mis421_mockinterviews.Areas.Identity.Pages.Account.Manage
 {
@@ -21,15 +23,18 @@ namespace sp2023_mis421_mockinterviews.Areas.Identity.Pages.Account.Manage
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<DeletePersonalDataModel> _logger;
+        private readonly MockInterviewsDbContext _context;
 
         public DeletePersonalDataModel(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            ILogger<DeletePersonalDataModel> logger)
+            ILogger<DeletePersonalDataModel> logger,
+            MockInterviewsDbContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
+            _context = context;
         }
 
         /// <summary>
@@ -90,6 +95,12 @@ namespace sp2023_mis421_mockinterviews.Areas.Identity.Pages.Account.Manage
                 }
             }
 
+            if (await HasRelatedDomainRecordsAsync(user.Id))
+            {
+                ModelState.AddModelError(string.Empty, "Your account cannot be deleted because it has related interview or signup records.");
+                return Page();
+            }
+
             var result = await _userManager.DeleteAsync(user);
             var userId = await _userManager.GetUserIdAsync(user);
             if (!result.Succeeded)
@@ -102,6 +113,14 @@ namespace sp2023_mis421_mockinterviews.Areas.Identity.Pages.Account.Manage
             _logger.LogInformation("User with ID '{UserId}' deleted themselves.", userId);
 
             return Redirect("~/");
+        }
+
+        private async Task<bool> HasRelatedDomainRecordsAsync(string userId)
+        {
+            return await _context.Interviews.AnyAsync(interview => interview.StudentId == userId)
+                || await _context.VolunteerTimeslots.AnyAsync(timeslot => timeslot.StudentId == userId)
+                || await _context.InterviewerSignups.AnyAsync(signup => signup.InterviewerId == userId)
+                || await _context.InterviewerLocations.AnyAsync(location => location.InterviewerId == userId);
         }
     }
 }

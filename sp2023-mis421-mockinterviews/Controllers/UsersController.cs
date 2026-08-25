@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Data.Constants;
-using sp2023_mis421_mockinterviews.Models.UserDb;
+using sp2023_mis421_mockinterviews.Data.Contexts;
+using sp2023_mis421_mockinterviews.Models.Identity;
 using sp2023_mis421_mockinterviews.Models.ViewModels;
 
 namespace sp2023_mis421_mockinterviews.Controllers
@@ -17,9 +18,12 @@ namespace sp2023_mis421_mockinterviews.Controllers
     public class UsersController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        public UsersController(UserManager<ApplicationUser> userManager)
+        private readonly MockInterviewsDbContext _context;
+
+        public UsersController(UserManager<ApplicationUser> userManager, MockInterviewsDbContext context)
         {
             _userManager = userManager;
+            _context = context;
         }
 
         [Authorize(Roles = RolesConstants.AdminRole)]
@@ -63,19 +67,42 @@ namespace sp2023_mis421_mockinterviews.Controllers
         }
 
         [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> DeleteUserConfirmed(string Id)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteUserConfirmed(string id)
         {
-            var user = await _userManager.FindByIdAsync(Id);
+            var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return Problem("User not found.");
             }
-            else
+
+            if (await HasRelatedDomainRecordsAsync(user.Id))
             {
-                await _userManager.DeleteAsync(user);
+                ModelState.AddModelError(string.Empty, "This account cannot be deleted because it has related interview or signup records.");
+                return View("DeleteUser", user);
+            }
+
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+            {
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                return View("DeleteUser", user);
             }
 
             return RedirectToAction("Index", "UserRoles");
+        }
+
+        private async Task<bool> HasRelatedDomainRecordsAsync(string userId)
+        {
+            return await _context.Interviews.AnyAsync(interview => interview.StudentId == userId)
+                || await _context.VolunteerTimeslots.AnyAsync(timeslot => timeslot.StudentId == userId)
+                || await _context.InterviewerSignups.AnyAsync(signup => signup.InterviewerId == userId)
+                || await _context.InterviewerLocations.AnyAsync(location => location.InterviewerId == userId);
         }
 
         [HttpGet]

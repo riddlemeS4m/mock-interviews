@@ -1,4 +1,4 @@
-﻿@model sp2023_mis421_mockinterviews.Models.UserDb.ApplicationUser
+﻿@model sp2023_mis421_mockinterviews.Models.Identity.ApplicationUser
 @{
     ViewData["Title"] = "DeleteUser";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -9,6 +9,7 @@
 <h3>Are you sure you want to delete @Model.FirstName's account?</h3>
 <div>
     <hr />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <dl class="row">
         <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.FirstName)

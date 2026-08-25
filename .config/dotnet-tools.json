@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "microsoft.dotnet-msidentity": {
+      "version": "2.0.2",
+      "commands": [
+        "dotnet-msidentity"
+      ]
+    },
+    "dotnet-ef": {
+      "version": "10.0.11",
+      "commands": [
+        "dotnet-ef"
+      ]
+    }
+  }
+}
