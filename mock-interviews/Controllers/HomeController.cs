@@ -392,10 +392,7 @@ namespace MockInterviews.Controllers
             {
                 return RedirectToAction("Index", "Home");
             }
-            else
-            {
-                return View("LandingPage");
-            }
+            return RedirectToPage("/Account/Login", new { area = "Identity" });
         }
 
         public IActionResult AttemptLogout()
