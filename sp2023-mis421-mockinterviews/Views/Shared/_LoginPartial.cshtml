@@ -1,24 +1,11 @@
 ﻿@using Microsoft.AspNetCore.Identity
 @using sp2023_mis421_mockinterviews.Models.UserDb;
 @inject SignInManager<ApplicationUser> SignInManager
-@inject UserManager<ApplicationUser> UserManager
-
-@{
-    var user = UserManager.GetUserAsync(User).Result;
-}
 
 <div id="center-everything">
 <ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
 {
-    @* <li class="nav-item" style="align-self: center; padding: 10px;">
-        @if (user.ProfilePicture != null)
-        {
-            <img 
-                style="width:40px;height:40px; object-fit:cover; border-radius:30px; margin-right: 0px;"
-                     src="/Image/Proxy/@user.ProfilePicture">
-        }
-    </li> *@
         <li class="nav-item" style="align-self: center; margin-right: 10px; margin-bottom: 6px; ">
                 <a class="btn btn-outline-primary ms-2 ms-lg-3 w-40" asp-area="Identity" asp-page="/Account/Manage/Index" title="Profile" style="width: 120px; font-size: 12px;">Profile</a>
         </li>
@@ -54,5 +41,3 @@ else
 }
 </ul>
 </div>
-
-

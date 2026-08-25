@@ -52,39 +52,9 @@
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.SignupInterviewer.InterviewerId)
         </dd>
-        @if(Model.Resumes.Any() && Model.Resumes.Count > 0)
-        {
-            <hr class = "col-sm-12"/>
-            <h5>Students</h5>
-            foreach(var item in Model.Resumes)
-            {
-                <dt class = "col-sm-2" style="margin: auto;">
-                    @item.Key
-                </dt>
-                <dd class = "col-sm-10">
-                    <a target="_blank" href=@item.Value>View</a> | 
-                    <button class="copy-btn btn btn-light btn-sm" data-id="@item.Value">
-                        <i class="bi bi-clipboard"></i> <!-- Bootstrap Copy Icon -->
-                    </button>
-                </dd>
-            }
-        }
     </dl>
 </div>
 <div>
     <a asp-action="Edit" asp-route-id="@Model?.SignupInterviewer.Id">Edit</a> |
     <a asp-action="Index">Back to List</a>
 </div>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-
-    <script>
-        $(document).ready(function () {
-            $(".copy-btn").click(function () {
-                let interviewId = $(this).data("id");
-                navigator.clipboard.writeText(interviewId)
-            });
-        });
-    </script>
-}
