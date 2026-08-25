@@ -39,6 +39,8 @@ jobs:
         env:
           TAG: ${{ steps.release_tag.outputs.tag }}
         run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag --annotate "$TAG" --message "Release $TAG" "$GITHUB_SHA"
           git push origin "$TAG"
 
