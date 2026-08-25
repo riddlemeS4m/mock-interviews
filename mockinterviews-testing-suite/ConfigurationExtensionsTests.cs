@@ -1,0 +1,143 @@
+using Microsoft.Extensions.Configuration;
+using sp2023_mis421_mockinterviews.Extensions;
+
+namespace mockinterviews_testing_suite;
+
+public sealed class ConfigurationExtensionsTests
+{
+    [Fact]
+    public void LoadDevelopmentEnvironment_LoadsNearestAncestorFile()
+    {
+        var variableName = $"CONFIG_TEST_{Guid.NewGuid():N}";
+        var root = CreateTemporaryDirectory();
+        var projectDirectory = Directory.CreateDirectory(Path.Combine(root, "project"));
+        var nestedDirectory = Directory.CreateDirectory(Path.Combine(projectDirectory.FullName, "src"));
+        File.WriteAllText(Path.Combine(root, ".env"), $"{variableName}=parent");
+        File.WriteAllText(Path.Combine(projectDirectory.FullName, ".env"), $"{variableName}=nearest");
+
+        using var environment = new EnvironmentVariablesScope(
+            ("DOTNET_ENVIRONMENT", null),
+            ("ASPNETCORE_ENVIRONMENT", "Development"),
+            (variableName, null));
+        try
+        {
+            ApplicationConfigurationExtensions.LoadDevelopmentEnvironment(nestedDirectory.FullName);
+
+            Assert.Equal("nearest", Environment.GetEnvironmentVariable(variableName));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void LoadDevelopmentEnvironment_IgnoresFilesOutsideDevelopment()
+    {
+        var variableName = $"CONFIG_TEST_{Guid.NewGuid():N}";
+        var root = CreateTemporaryDirectory();
+        File.WriteAllText(Path.Combine(root, ".env"), $"{variableName}=file-value");
+
+        using var environment = new EnvironmentVariablesScope(
+            ("DOTNET_ENVIRONMENT", "Production"),
+            ("ASPNETCORE_ENVIRONMENT", "Production"),
+            (variableName, null));
+        try
+        {
+            ApplicationConfigurationExtensions.LoadDevelopmentEnvironment(root);
+
+            Assert.Null(Environment.GetEnvironmentVariable(variableName));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void LoadDevelopmentEnvironment_DoesNotOverrideProcessVariables_AndMapsEscapedNewlines()
+    {
+        var overrideVariable = $"CONFIG_TEST_{Guid.NewGuid():N}";
+        var root = CreateTemporaryDirectory();
+        File.WriteAllText(
+            Path.Combine(root, ".env"),
+            $"{overrideVariable}=file-value{Environment.NewLine}GoogleCredential__private_key=\"first\\nsecond\\n\"");
+
+        using var environment = new EnvironmentVariablesScope(
+            ("DOTNET_ENVIRONMENT", "Development"),
+            (overrideVariable, "process-value"),
+            ("GoogleCredential__private_key", null));
+        try
+        {
+            ApplicationConfigurationExtensions.LoadDevelopmentEnvironment(root);
+            var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+
+            Assert.Equal("process-value", Environment.GetEnvironmentVariable(overrideVariable));
+            Assert.Equal("first\nsecond\n", configuration["GoogleCredential:private_key"]);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ValidateRequiredConfiguration_AcceptsCompleteConfiguration()
+    {
+        var configuration = BuildConfiguration(ApplicationConfigurationExtensions.RequiredConfigurationKeys
+            .ToDictionary(key => key, _ => "configured"));
+
+        configuration.ValidateRequiredConfiguration();
+    }
+
+    [Fact]
+    public void ValidateRequiredConfiguration_ReportsAllMissingAndWhitespaceKeysWithoutValues()
+    {
+        var configuration = BuildConfiguration(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Users"] = "   ",
+            ["Authentication:Microsoft:ClientId"] = "secret-value-that-must-not-appear"
+        });
+
+        var exception = Assert.Throws<InvalidOperationException>(configuration.ValidateRequiredConfiguration);
+
+        Assert.Contains("ConnectionStrings:Users", exception.Message);
+        Assert.Contains("ConnectionStrings:Signups", exception.Message);
+        Assert.Contains("GoogleCredential:private_key", exception.Message);
+        Assert.DoesNotContain("secret-value-that-must-not-appear", exception.Message);
+        Assert.DoesNotContain("Postgres:development", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IConfiguration BuildConfiguration(IEnumerable<KeyValuePair<string, string?>> values)
+    {
+        return new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+    }
+
+    private static string CreateTemporaryDirectory()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "mockinterviews-configuration-tests", Guid.NewGuid().ToString("N"));
+        return Directory.CreateDirectory(path).FullName;
+    }
+
+    private sealed class EnvironmentVariablesScope : IDisposable
+    {
+        private readonly Dictionary<string, string?> _originalValues = new(StringComparer.Ordinal);
+
+        public EnvironmentVariablesScope(params (string Name, string? Value)[] values)
+        {
+            foreach (var (name, value) in values)
+            {
+                _originalValues[name] = Environment.GetEnvironmentVariable(name);
+                Environment.SetEnvironmentVariable(name, value);
+            }
+        }
+
+        public void Dispose()
+        {
+            foreach (var (name, value) in _originalValues)
+            {
+                Environment.SetEnvironmentVariable(name, value);
+            }
+        }
+    }
+}
