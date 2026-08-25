@@ -30,7 +30,6 @@
 
     <!-- Extensions & config -->
     <PackageReference Include="DotNetEnv" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
 
     <!-- IdentityModel stack -->
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
@@ -41,7 +40,6 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
 
     <!-- Third-party libs -->
-    <PackageReference Include="Google.Apis.Drive.v3" />
     <PackageReference Include="MessagePack" />
     <PackageReference Include="SendGrid" />
     
