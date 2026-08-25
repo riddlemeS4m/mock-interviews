@@ -19,6 +19,11 @@ public static class ApplicationConfigurationExtensions
             return;
         }
 
+        LoadEnvironmentFile(workingDirectory);
+    }
+
+    public static void LoadEnvironmentFile(string? workingDirectory = null)
+    {
         var environmentFile = FindNearestEnvironmentFile(workingDirectory ?? Directory.GetCurrentDirectory());
         if (environmentFile is not null)
         {
