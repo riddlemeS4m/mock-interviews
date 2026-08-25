@@ -44,6 +44,20 @@
                     <button type="submit" class="btn btn-lg btn-primary btn-block">Sign In</button>
                 </div>
                 </form>
+                @if ((Model.ExternalLogins?.Count ?? 0) > 0)
+                {
+                    <div class="text-center my-3">OR</div>
+                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                        <div class="d-grid gap-2">
+                            @foreach (var provider in Model.ExternalLogins!)
+                            {
+                                <button type="submit" class="btn btn-outline-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">
+                                    Sign in with @provider.DisplayName
+                                </button>
+                            }
+                        </div>
+                    </form>
+                }
             @*<div class="col-12" mx-auto;">
                 <p class="col-12" style="display: flex; justify-content: center;">
                     <a id="forgot-password" asp-page="./ForgotPassword">Forgot your password?</a>

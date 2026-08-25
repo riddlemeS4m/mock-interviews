@@ -26,12 +26,15 @@ namespace MockInterviews.Data.Seeds
             }
         }
 
-        public static async Task SeedSuperAdminAsync(UserManager<ApplicationUser> userManager, string adminPwd)
+        public static async Task SeedSuperAdminAsync(
+            UserManager<ApplicationUser> userManager,
+            string adminEmail,
+            string adminPwd)
         {
             var defaultUser = new ApplicationUser
             {
-                UserName = SuperUser.UserName,
-                Email = SuperUser.Email,
+                UserName = adminEmail,
+                Email = adminEmail,
                 FirstName = SuperUser.FirstName,
                 LastName = SuperUser.LastName,
                 EmailConfirmed = true,

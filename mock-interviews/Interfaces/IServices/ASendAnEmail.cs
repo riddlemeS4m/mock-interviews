@@ -19,9 +19,16 @@ namespace MockInterviews.Interfaces.IServices
 
         public abstract void InjectHTMLContent();
 
-        public async Task SendEmailAsync(ISendGridClient sendGridClient, string subject, string emailto, string emailname, string times, List<string> base64CalendarContent)
+        public async Task SendEmailAsync(
+            ISendGridClient sendGridClient,
+            string senderEmail,
+            string subject,
+            string emailto,
+            string emailname,
+            string times,
+            List<string>? base64CalendarContent)
         {
-            FromEmail = new EmailAddress(SuperUser.Email, "UA MIS " + SuperUser.FirstName + " " + SuperUser.LastName);
+            FromEmail = new EmailAddress(senderEmail, "UA MIS " + SuperUser.FirstName + " " + SuperUser.LastName);
             Subject = subject;
             PlainTextContent = "";
             ToName = emailname;

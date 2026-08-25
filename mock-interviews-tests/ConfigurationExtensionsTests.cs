@@ -1,9 +1,21 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
+using MockInterviews.Controllers;
+using MockInterviews.Data;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Extensions;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
+using MockInterviews.Options;
 
 namespace MockInterviews.Tests;
 
@@ -101,9 +113,8 @@ public sealed class ConfigurationExtensionsTests
         Assert.Equal(
             [
                 "ConnectionString:DefaultConnection",
-                "Authentication:Microsoft:ClientId",
-                "Authentication:Microsoft:ClientSecret",
                 "SendGrid:ApiKey",
+                "SuperUser:Email",
                 "SeededAdminPwd"
             ],
             ApplicationConfigurationExtensions.RequiredConfigurationKeys);
@@ -114,16 +125,82 @@ public sealed class ConfigurationExtensionsTests
     {
         var configuration = BuildConfiguration(new Dictionary<string, string?>
         {
-            ["ConnectionString:DefaultConnection"] = "   ",
-            ["Authentication:Microsoft:ClientId"] = "secret-value-that-must-not-appear"
+            ["ConnectionString:DefaultConnection"] = "   "
         });
 
         var exception = Assert.Throws<InvalidOperationException>(configuration.ValidateRequiredConfiguration);
 
         Assert.Contains("ConnectionString:DefaultConnection", exception.Message);
         Assert.Contains("SendGrid:ApiKey", exception.Message);
+        Assert.Contains("SuperUser:Email", exception.Message);
+        Assert.Contains("SeededAdminPwd", exception.Message);
         Assert.DoesNotContain("secret-value-that-must-not-appear", exception.Message);
         Assert.DoesNotContain("Postgres:development", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("Development", true)]
+    [InlineData("Staging", false)]
+    [InlineData("Production", false)]
+    public void TimeslotBackfill_RunsOnlyInDevelopment(string environmentName, bool expected)
+    {
+        var environment = new TestHostEnvironment { EnvironmentName = environmentName };
+
+        Assert.Equal(expected, StartupTasks.ShouldRunTimeslotBackfill(environment));
+    }
+
+    [Fact]
+    public void AddSuperUserOptions_RejectsInvalidEmail()
+    {
+        var configuration = BuildConfiguration(new Dictionary<string, string?>
+        {
+            ["SuperUser:Email"] = "not-an-email"
+        });
+        var services = new ServiceCollection();
+        services.AddSuperUserOptions(configuration);
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        Assert.Throws<OptionsValidationException>(
+            () => serviceProvider.GetRequiredService<IOptions<SuperUserOptions>>().Value);
+    }
+
+    [Fact]
+    public async Task AddIdentityAndAuth_UsesIdentityCookiesWithoutAnExternalProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddIdentityAndAuth();
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var schemes = serviceProvider.GetRequiredService<IAuthenticationSchemeProvider>();
+
+        Assert.NotNull(await schemes.GetSchemeAsync(IdentityConstants.ApplicationScheme));
+        Assert.Equal(IdentityConstants.ApplicationScheme, (await schemes.GetDefaultAuthenticateSchemeAsync())!.Name);
+        Assert.Null(await schemes.GetSchemeAsync("Microsoft"));
+    }
+
+    [Fact]
+    public void AttemptLogin_RedirectsAnonymousUsersToTheIdentityLoginPage()
+    {
+        var httpContext = new DefaultHttpContext
+        {
+            User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity())
+        };
+        var controller = new HomeController(
+            null!,
+            null!,
+            null!,
+            NullLogger<HomeController>.Instance,
+            Microsoft.Extensions.Options.Options.Create(
+                new SuperUserOptions { Email = "admin@example.com" }))
+        {
+            ControllerContext = new ControllerContext { HttpContext = httpContext }
+        };
+
+        var result = Assert.IsType<RedirectToPageResult>(controller.AttemptLogin());
+
+        Assert.Equal("/Account/Login", result.PageName);
+        Assert.Equal("Identity", result.RouteValues!["area"]);
     }
 
     [Fact]
@@ -190,5 +267,13 @@ public sealed class ConfigurationExtensionsTests
                 Environment.SetEnvironmentVariable(name, value);
             }
         }
+    }
+
+    private sealed class TestHostEnvironment : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = Environments.Production;
+        public string ApplicationName { get; set; } = nameof(ConfigurationExtensionsTests);
+        public string ContentRootPath { get; set; } = Directory.GetCurrentDirectory();
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
 }

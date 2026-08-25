@@ -18,25 +18,7 @@
 else
 {
     <li class="nav-item">
-        <form id="external-account" asp-area="Identity" asp-page="/Account/ExternalLogin" asp-route-returnUrl="/" method="post" class="form-horizontal">
-            <div>
-                <p>
-                    <div class="form-group" style="display: flex; justify-content: center;">
-                        <button type="submit" class="btn btn-primary ms-2 ms-lg-3 w-40" name="provider" value="Microsoft" title="Log in using your Microosft account" style="width: 120px;">Student Login</button>
-                    </div>
-                </p>
-            </div>
-        </form>
-    </li>
-
-    <li class="nav-item form-horizontal">
-        <div>
-            <p>
-                <div class="form-group" style="display: flex; justify-content: center;">
-                    <a class="btn btn-secondary ms-2 ms-lg-3" asp-area="Identity" asp-page="/Account/Login" style="width: 120px;">Guest Login</a>
-                </div>
-            </p>
-        </div>
+        <a class="btn btn-primary ms-2 ms-lg-3" asp-area="Identity" asp-page="/Account/Login" style="width: 120px;">Log In</a>
     </li>
 }
 </ul>

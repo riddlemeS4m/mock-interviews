@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SendGrid;
 using System.Diagnostics;
 using System.Security.Claims;
@@ -12,6 +13,7 @@ using MockInterviews.Data.Constants;
 using MockInterviews.Data.Access.Reports;
 using MockInterviews.Data.Access.Emails;
 using MockInterviews.Interfaces.IServices;
+using MockInterviews.Options;
 
 namespace MockInterviews.Controllers
 {
@@ -21,18 +23,21 @@ namespace MockInterviews.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISendGridClient _sendGridClient;
         private readonly ILogger<HomeController> _logger;
+        private readonly string _superUserEmail;
 
 
         public HomeController(
             MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
             ISendGridClient sendGridClient,
-            ILogger<HomeController> logger)
+            ILogger<HomeController> logger,
+            IOptions<SuperUserOptions> superUserOptions)
         {
             _context = context;
             _userManager = userManager;
             _sendGridClient = sendGridClient;
             _logger = logger;
+            _superUserEmail = superUserOptions.Value.Email;
         }
 
         public async Task<IActionResult> Index()
@@ -345,7 +350,7 @@ namespace MockInterviews.Controllers
                 }
 
                 ASendAnEmail emailer = new StudentReminderEmail();
-                await emailer.SendEmailAsync(_sendGridClient, "Mock Interviews Reminder", userFull.Email, userFull.FirstName, times, null);
+                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Mock Interviews Reminder", userFull.Email, userFull.FirstName, times, null);
             }
 
             return RedirectToAction("Index", "Home");
@@ -380,7 +385,7 @@ namespace MockInterviews.Controllers
 				}
 
 				ASendAnEmail emailer = new InterviewerReminderEmail();
-                await emailer.SendEmailAsync(_sendGridClient, "UA MIS Mock Interviews Reminder", userFull.Email, userFull.FirstName, times, null);
+                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "UA MIS Mock Interviews Reminder", userFull.Email, userFull.FirstName, times, null);
             }
 
             return RedirectToAction("Index", "Home");
@@ -392,10 +397,7 @@ namespace MockInterviews.Controllers
             {
                 return RedirectToAction("Index", "Home");
             }
-            else
-            {
-                return View("LandingPage");
-            }
+            return RedirectToPage("/Account/Login", new { area = "Identity" });
         }
 
         public IActionResult AttemptLogout()

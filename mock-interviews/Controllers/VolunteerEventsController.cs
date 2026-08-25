@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SendGrid;
 using System.Globalization;
 using System.Text;
@@ -16,6 +17,7 @@ using MockInterviews.Data.Access.Reports;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels;
+using MockInterviews.Options;
 
 
 namespace MockInterviews.Controllers
@@ -25,14 +27,17 @@ namespace MockInterviews.Controllers
         private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISendGridClient _sendGridClient;
+        private readonly string _superUserEmail;
     
         public VolunteerEventsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
-            ISendGridClient sendGridClient)
+            ISendGridClient sendGridClient,
+            IOptions<SuperUserOptions> superUserOptions)
         {
             _context = context;
             _userManager = userManager;
             _sendGridClient = sendGridClient;
+            _superUserEmail = superUserOptions.Value.Email;
         }
 
         // GET: VolunteerEvents
@@ -293,7 +298,7 @@ namespace MockInterviews.Controllers
                 string fullName = user.FirstName + " " + user.LastName;
 
                 ASendAnEmail emailNotification = new VolunteerCancellationNotification();
-                await emailNotification.SendEmailAsync(_sendGridClient, "Volunteer Cancellation Notification: " + fullName, SuperUser.Email, fullName, volunteerEvent.ToString(), null);
+                await emailNotification.SendEmailAsync(_sendGridClient, _superUserEmail, "Volunteer Cancellation Notification: " + fullName, _superUserEmail, fullName, volunteerEvent.ToString(), null);
 
                 _context.VolunteerTimeslots.Remove(volunteerEvent);
             }
@@ -331,12 +336,12 @@ namespace MockInterviews.Controllers
             }
 
             ASendAnEmail emailer = new VolunteerSignupConfirmation();
-            await emailer.SendEmailAsync(_sendGridClient, "Volunteer Sign-Up Confirmation", user.Email, user.FirstName, times, calendarEvents);
+            await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Volunteer Sign-Up Confirmation", user.Email, user.FirstName, times, calendarEvents);
 
             string fullName = user.FirstName + " " + user.LastName;
 
             ASendAnEmail emailNotification = new VolunteerSignupNotification();
-            await emailNotification.SendEmailAsync(_sendGridClient, "Volunteer Sign-Up Notification: " + fullName, SuperUser.Email, fullName, times, null);
+            await emailNotification.SendEmailAsync(_sendGridClient, _superUserEmail, "Volunteer Sign-Up Notification: " + fullName, _superUserEmail, fullName, times, null);
         }
 
         [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.AdminRole)]
