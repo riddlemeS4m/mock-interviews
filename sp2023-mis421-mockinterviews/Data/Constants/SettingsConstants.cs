@@ -10,7 +10,9 @@ namespace sp2023_mis421_mockinterviews.Data.Constants
             new Setting { Name = DisruptionBanner.Name, Value = DisruptionBanner.DefaultValue },
             new Setting { Name = InterviewIndexHours.Name, Value = InterviewIndexHours.DefaultValue },
             new Setting { Name = MaximumTimeslotSignups.Name, Value = MaximumTimeslotSignups.DefaultValue },
-            new Setting { Name = AutomaticallyReleaseTimeslots.Name, Value = AutomaticallyReleaseTimeslots.DefaultValue }
+            new Setting { Name = AutomaticallyReleaseTimeslots.Name, Value = AutomaticallyReleaseTimeslots.DefaultValue },
+            new Setting { Name = MockInterviewManual.Name, Value = MockInterviewManual.DefaultValue },
+            new Setting { Name = GuestParkingPass.Name, Value = GuestParkingPass.DefaultValue }
         };
 
         public static IEnumerable<Setting> GetSettings()
@@ -52,6 +54,18 @@ namespace sp2023_mis421_mockinterviews.Data.Constants
         {
             public const string Name = "automatically_release_timeslots";
             public const string DefaultValue = "0";
+        }
+
+        public class MockInterviewManual
+        {
+            public const string Name = "mock_interview_manual";
+            public const string DefaultValue = "";
+        }
+
+        public class GuestParkingPass
+        {
+            public const string Name = "guest_parking_pass";
+            public const string DefaultValue = "";
         }
     }
 }
