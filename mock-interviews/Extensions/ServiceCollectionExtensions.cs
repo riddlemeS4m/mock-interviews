@@ -62,9 +62,19 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddIdentityAndAuth(this IServiceCollection services)
+    public static IServiceCollection AddIdentityAndAuth(this IServiceCollection services, IHostEnvironment? environment = null)
     {
-        services.AddIdentity<ApplicationUser, IdentityRole>()
+        services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+            {
+                if (environment?.IsDevelopment() == true)
+                {
+                    options.Password.RequireDigit = false;
+                    options.Password.RequireLowercase = false;
+                    options.Password.RequireUppercase = false;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.Password.RequiredLength = 6;
+                }
+            })
             .AddEntityFrameworkStores<MockInterviewsDbContext>()
             .AddDefaultUI()
             .AddDefaultTokenProviders();

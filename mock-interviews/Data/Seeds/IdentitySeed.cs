@@ -22,7 +22,9 @@ namespace MockInterviews.Data.Seeds
             if (!await roleManager.RoleExistsAsync(roleName))
             {
                 // If the role doesn't exist, create it
-                await roleManager.CreateAsync(new IdentityRole(roleName));
+                EnsureSucceeded(
+                    await roleManager.CreateAsync(new IdentityRole(roleName)),
+                    $"creating the '{roleName}' role");
             }
         }
 
@@ -31,30 +33,47 @@ namespace MockInterviews.Data.Seeds
             string adminEmail,
             string adminPwd)
         {
-            var defaultUser = new ApplicationUser
+            var user = await userManager.FindByEmailAsync(adminEmail);
+            if (user is null)
             {
-                UserName = adminEmail,
-                Email = adminEmail,
-                FirstName = SuperUser.FirstName,
-                LastName = SuperUser.LastName,
-                EmailConfirmed = true,
-                PhoneNumberConfirmed = true
-            };
-
-            if (userManager.Users.All(u => u.Email != defaultUser.Email))
-            {
-                var user = await userManager.FindByEmailAsync(defaultUser.Email);
-                if (user == null)
+                user = new ApplicationUser
                 {
-                    await userManager.CreateAsync(defaultUser, adminPwd);
+                    UserName = adminEmail,
+                    Email = adminEmail,
+                    FirstName = SuperUser.FirstName,
+                    LastName = SuperUser.LastName,
+                    EmailConfirmed = true,
+                    PhoneNumberConfirmed = true
+                };
 
-                    foreach(var roleItem in RolesConstants.GetRoleOptions())
-                    {
-                        var role = roleItem.Value;
-                        await userManager.AddToRoleAsync(defaultUser, role);
-                    }
+                EnsureSucceeded(
+                    await userManager.CreateAsync(user, adminPwd),
+                    $"creating seeded administrator '{adminEmail}'");
+            }
+
+            foreach(var roleItem in RolesConstants.GetRoleOptions())
+            {
+                var role = roleItem.Value;
+                if (!await userManager.IsInRoleAsync(user, role))
+                {
+                    EnsureSucceeded(
+                        await userManager.AddToRoleAsync(user, role),
+                        $"adding the seeded administrator '{adminEmail}' to the '{role}' role");
                 }
             }
+        }
+
+        private static void EnsureSucceeded(IdentityResult result, string operation)
+        {
+            if (result.Succeeded)
+            {
+                return;
+            }
+
+            var errors = string.Join(
+                "; ",
+                result.Errors.Select(error => $"{error.Code}: {error.Description}"));
+            throw new InvalidOperationException($"Identity seeding failed while {operation}: {errors}");
         }
     }
 }
