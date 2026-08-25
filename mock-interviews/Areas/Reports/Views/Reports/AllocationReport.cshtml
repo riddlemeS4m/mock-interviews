@@ -1,0 +1,125 @@
+﻿@model MockInterviews.Models.ViewModels.ReportsController.AllocationReportViewModel
+
+@{
+    ViewData["Title"] = "Allocation Report";
+}
+
+<h1>Allocation Report</h1>
+<hr />
+<h3>@Html.DisplayNameFor(model => model.Top10Underserved)</h3>
+<p></p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Top10Underserved[0].Timeslot.Time)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Top10Underserved[0].Timeslot.Event.Date)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Top10Underserved[0].StudentCount)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Top10Underserved[0].InterviewerCount)
+            </th>
+@*            <th>
+                @Html.DisplayNameFor(model => model.Top10Underserved[0].VolunteerCount)
+            </th>
+*@            <th>
+                @Html.DisplayNameFor(model => model.Top10Underserved[0].Timeslot.MaxSignUps)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Top10Underserved[0].Difference)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Top10Underserved)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Timeslot.Time)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Timeslot.Event.Date)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.StudentCount)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.InterviewerCount)
+                </td>
+@*                <td>
+                    @Html.DisplayFor(modelItem => item.VolunteerCount)
+                </td>
+*@                <td>
+                    @Html.DisplayFor(modelItem => item.Timeslot.MaxSignUps)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Difference) Interviewers Needed
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<p></p>
+<h3>@Html.DisplayNameFor(model => model.Top10Available)</h3>
+<p></p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Top10Available[0].Timeslot.Time)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Top10Available[0].Timeslot.Event.Date)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Top10Available[0].StudentCount)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Top10Available[0].InterviewerCount)
+            </th>
+            @*            <th>
+            @Html.DisplayNameFor(model => model.Top10Underserved[0].VolunteerCount)
+            </th>
+            *@
+            <th>
+                @Html.DisplayNameFor(model => model.Top10Available[0].Timeslot.MaxSignUps)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Top10Available[0].Difference)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Top10Available)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Timeslot.Time)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Timeslot.Event.Date)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.StudentCount)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.InterviewerCount)
+                </td>
+                @*                <td>
+            @Html.DisplayFor(modelItem => item.VolunteerCount)
+            </td>
+            *@
+                <td>
+                    @Html.DisplayFor(modelItem => item.Timeslot.MaxSignUps)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Difference) Interviewers Needed
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

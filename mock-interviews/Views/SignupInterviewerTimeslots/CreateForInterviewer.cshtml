@@ -1,0 +1,158 @@
+﻿@model MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsViewModel;
+
+@{
+    ViewData["Title"] = "Manual Interviewer Signup";
+    var noOfDays = Model.EventDates.Count();
+    string result = Math.Floor(12.0 / noOfDays).ToString();
+}
+
+<h1>Manual Interviewer Signup</h1>
+<hr />
+<div class="row">
+    <div class="col-md-3"></div>
+    <div class="col-md-6">
+        <form asp-action="CreateForInterviewer">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="InterviewerId" class="control-label"></label>
+                <select asp-for="InterviewerId" class="form-control" asp-items='@Model.Interviewers'>
+                </select>
+                <span asp-validation-for="InterviewerId" class="text-danger"></span>
+            </div>
+            <br />
+
+            <div id="center-everything">
+                <label asp-for="SignupInterviewer.InPerson" class="control-label">Will they be in person or virtual?</label>
+                <br />
+                <div class="form-check form-check-inline">
+                    <input id="InPerson"
+                           class="form-check-input"
+                           type="radio"
+                           name="SignupInterviewer.InPerson"
+                           value="true"
+                           checked="@Model.SignupInterviewer.InPerson"
+                           data-val="true"
+                           data-val-required="Please select at least one">
+                    <label class="form-check-label" for="InPerson">In Person</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input id="InPerson"
+                           class="form-check-input"
+                           type="radio"
+                           name="SignupInterviewer.InPerson"
+                           value="false"
+                           checked="@Model.SignupInterviewer.IsVirtual"
+                           data-val="true"
+                           data-val-required="Please select at least one">
+                    <label id="annoyingLabel" class="form-check-label" for="IsVirtual">Virtual</label>
+                </div>
+                <div>
+                    <span asp-validation-for="SignupInterviewer.InPerson" class="text-danger"></span>
+                </div>
+            </div>
+            <br />
+
+            <div id="center-everything">
+                <div id="lunch-question" style="display: none;">
+                    <label asp-for="SignupInterviewer.Lunch" class="control-label">Do they want lunch?</label>
+                    <br />
+                    <div class="form-check form-check-inline">
+                        <input id="LunchTrue" class="form-check-input" type="radio" name="Lunch" value="true" data-val="false">
+                        <label class="form-check-label" for="LunchTrue">Yes</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input id="LunchFalse" class="form-check-input" type="radio" name="Lunch" value="false" data-val="false">
+                        <label class="form-check-label" for="LunchFalse">No</label>
+                    </div>
+                    <div>
+                        <span asp-validation-for="SignupInterviewer.Lunch" class="text-danger"></span>
+                    </div>
+                    <br /><br />
+                </div>
+            </div>
+
+            <div id="center-everything">
+                <label class="control-label">What types of interviews can they do?</label>
+                <br />
+                <div class="form-check form-check-inline">
+                    <input id="IsTechnical" class="form-check-input" type="checkbox" name="SignupInterviewer.IsTechnical" value="true" data-val="true" data-val-required="Please select at least one">
+                    <label for="IsTechnical" class="form-check-label">Technical Interviews</label>
+                </div>
+                <br />
+                <div class="form-check form-check-inline">
+                    <input id="IsBehavioral" class="form-check-input" type="checkbox" name="SignupInterviewer.IsBehavioral" value="true" data-val="true" data-val-required="Please select at least one">
+                    <label for="IsBehavioral" class="form-check-label">Behavioral Interviews</label>
+                </div>
+                <br />
+                <div class="form-check form-check-inline">
+                    <input id="IsCase" class="form-check-input" type="checkbox" name="SignupInterviewer.IsCase" value="true" data-val="true" data-val-required="Please select at least one">
+                    <label for="IsCase" class="form-check-label">Case Interviews</label>
+                </div>
+                <div>
+                    <span asp-validation-for="SignupInterviewer.IsTechnical" class="text-danger"></span>
+                </div>
+            </div>
+
+            <br /><br />
+            <div class="row" id="center-everything">
+                @for (int i = 0; i < noOfDays; i++)
+                {
+                    <div class="@("col-md-" + result)">
+                        <button type="button"
+                                class="selectAllButton btn btn-primary"
+                                data-target="@("SelectedEventIds" + (i + 1))">
+                            Select Day @(i + 1)
+                        </button>
+                    </div>
+                    <br />
+                }
+            </div>
+            <br />
+
+            <div class="row" id="center-everything">
+                @for (int i = 0; i < noOfDays; i++)
+                {
+                    <div class="@("col-md-"+result)">
+                        <h3>@Model.EventDates[i].Name</h3>
+                        <h4 class="date-column">@Model.EventDates[i].Date</h4>
+                        @foreach (var timeslot in Model.Timeslots)
+                        {
+                            if (timeslot.EventId == Model.EventDates[i].Id)
+                            {
+                                <div>
+                                    <input type="checkbox"
+                                           class="form-check-input"
+                                           id="@timeslot.Id"
+                                           name="@("SelectedEventIds"+(i+1).ToString())"
+                                           value="@timeslot.Id"
+                                           data-val="true"
+                                           data-val-required="Please select at least one timeslot">
+                                    <input type="hidden" name="Timeslots[@timeslot.Id]" value="@timeslot.Id">
+                                    <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+                <br /><br />
+                <div>
+                    <span asp-validation-for="SelectedEventIds" class="text-danger"></span>
+                </div>
+                <br />
+                <div class="form-group" id="center-everything">
+                    <input type="submit" value="Sign Up" class="btn btn-primary" /> | <a class="btn btn-secondary" asp-controller="SignupInterviewers" asp-action="Index">Go Back</a>
+                </div>
+            </div>
+            <br />
+        </form>
+    </div>
+    <div class="col-md-3"></div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        selectAll();
+    </script>
+}

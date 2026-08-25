@@ -1,0 +1,64 @@
+﻿@page
+@using MockInterviews.Data.Constants
+@model IndexModel
+@{
+    ViewData["Title"] = "Profile";
+    ViewData["ActivePage"] = ManageNavPages.Index;
+}
+
+<h3>@Model.Input.FirstName @Model.Input.LastName</h3>
+
+<div class="row">
+    <div class="col-md-6" >
+        <div style="padding-bottom: 15px;">
+            <label>Phone number:</label>
+            @if(Model.Input.PhoneNumber != null)
+            {
+                <span>@Model.Input.PhoneNumber</span>
+            }
+            else
+            {
+                <span>No phone number specified</span>
+            }
+        </div>
+        <div>
+        </div>
+
+        @if (User.IsInRole(RolesConstants.StudentRole))
+        {
+            <div style="padding-bottom: 15px;">
+                <label>Class:</label>
+                @if(Model.Input.Class != 0)
+                {
+                    <span>@ClassConstants.GetClassText(Model.Input.Class)</span>
+                }
+                else
+                {
+                    <span>No class specified</span>
+                }
+            </div>
+        }
+        @if(User.IsInRole(RolesConstants.InterviewerRole))
+        {
+            <div style="padding-bottom: 15px;">
+                <label>Company:</label>
+                @if (Model.Input.Company != null)
+                {
+                    <span>@Model.Input.Company</span>
+                }
+                else
+                {
+                    <span>No company specified</span>
+                }
+            </div>
+        }
+
+        <div style="padding-bottom: 15px;">
+            <label>Profile Picture:</label>
+            <br />
+            <img src="~/images/SabanHeadshot.jpg"
+                 alt="Default profile picture"
+                 style="width: 350px; height: 350px; object-fit: cover" />
+        </div>
+    </div>
+</div>

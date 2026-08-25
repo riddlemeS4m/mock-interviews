@@ -1,0 +1,87 @@
+﻿@model MockInterviews.Models.ViewModels.InterviewEventViewModel
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h1>Delete</h1>
+
+<h3>Are you sure you want to delete @Model.StudentName's interview?</h3>
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.StudentName)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.StudentName)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.InterviewEvent.Timeslot)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.InterviewEvent.Timeslot.Time)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.InterviewEvent.Timeslot.Event.Date)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.InterviewEvent.Timeslot.Event.Date)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.InterviewEvent.Type)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.InterviewEvent.Type)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.InterviewEvent.Status)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.InterviewEvent.Status)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.InterviewerName)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.InterviewerName)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.InterviewEvent.Location.Room)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.InterviewEvent.Location.Room)
+        </dd>
+        
+        @*<dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.InterviewerRating)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.InterviewerRating)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.InterviewerFeedback)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.InterviewerFeedback)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.ProcessFeedback)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.ProcessFeedback)
+        </dd>*@
+        @*<dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.SignupInterviewerTimeslot)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.SignupInterviewerTimeslot.Id)
+        </dd>*@
+    </dl>
+    
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="InterviewEvent.Id" />
+        <input type="submit" value="Delete" class="btn btn-primary" /> |
+        <a asp-action="Index">Back to List</a>
+    </form>
+</div>

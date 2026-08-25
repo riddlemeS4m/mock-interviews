@@ -1,0 +1,213 @@
+﻿@model MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsViewModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Sign Up to Interview</h1>
+<hr />
+<div class="row">
+    <div class="col-md-3"></div>
+    <div class="col-md-6">
+        @if(!Model.SignedUp)
+        {
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+@*                 <div id="center-everything">                  
+ *@
+                <label asp-for="FirstName" class="control-label">What is your first name?</label>
+                <div class="form-group">
+                    <input asp-for="FirstName" class="form-control" />
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
+                <br />
+                <label asp-for="LastName" class="control-label">What is your last name?</label>
+                <br />
+                <div class="form-group">
+                    <input asp-for="LastName" class="form-control" />
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+                <br />
+                <label asp-for="Email" class="control-label">What is your preferred email?</label>
+                <div class="form-group">
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+                <br />
+                <label asp-for="Company" class="control-label">What company are you representing?</label>
+                <br />
+                <div class="form-group">
+                    <input asp-for="Company" class="form-control" />
+                    <span asp-validation-for="Company" class="text-danger"></span>
+                </div>
+                <br />
+                <label asp-for="SignupInterviewer.InPerson" class="control-label">Where would you like to be located for the event?</label>
+                <br />
+                    <div class="form-check form-check-inline">
+                    <input 
+                        id="InPerson" 
+                        class="form-check-input" 
+                        type="radio" 
+                        name="SignupInterviewer.InPerson" 
+                        value="true" 
+                        data-val="true" 
+                        data-val-required="Please select at least one"
+                    >
+                    <label class="form-check-label" for="InPerson">In Person</label>
+                </div> 
+                <div class="form-check form-check-inline">
+                    <input 
+                        id="InPerson" 
+                        class="form-check-input" 
+                        type="radio" 
+                        name="SignupInterviewer.InPerson" 
+                        value="false" 
+                        data-val="true" 
+                        data-val-required="Please select at least one"
+                    >
+                    <label id="annoyingLabel" class="form-check-label" for="IsVirtual">Virtual</label>
+                </div>
+                <div>
+                    <span asp-validation-for="SignupInterviewer.InPerson" class="text-danger"></span>
+                </div>
+                <br />
+                <label class="control-label">What types of interviews would you be comfortable giving?</label>
+                <br />
+                <div class="form-check form-check-inline">
+                    <input 
+                        id="IsTechnical" 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        name="SignupInterviewer.IsTechnical" 
+                        value="true" 
+                        data-val="true" 
+                        data-val-required="Please select at least one">
+                    <label for="IsTechnical" class="form-check-label">Technical Interviews</label>
+                </div>
+                <br />
+                <div class="form-check form-check-inline">
+                    <input 
+                        id="IsBehavioral" 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        name="SignupInterviewer.IsBehavioral" 
+                        value="true" 
+                        data-val="true" 
+                        data-val-required="Please select at least one">
+                    <label for="IsBehavioral" class="form-check-label">Behavioral Interviews</label>
+                </div>
+                <br />
+                <div class="form-check form-check-inline">
+                    <input 
+                        id="IsCase" 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        name="SignupInterviewer.IsCase" 
+                        value="true" 
+                        data-val="true" 
+                        data-val-required="Please select at least one">
+                    <label for="IsCase" class="form-check-label">Case Interviews</label>
+                </div>
+                <div>
+                    <span asp-validation-for="SignupInterviewer.IsTechnical" class="text-danger"></span>
+                </div>
+                <br /><br />
+                <div class="row" id="center-everything">
+                    <div class="col-md-6">
+                        <button 
+                            type="button" 
+                            class="selectAllButton btn btn-primary" 
+                            data-target="SelectedEventIds1"
+                        >Select Day @(Model.EventDates.IndexOf(Model.EventDates[0]) + 1)</button>
+                    </div>
+                    <br />
+                    @if (Model.Timeslots[0].EventId != Model.Timeslots[^1].EventId)
+                    {
+                        <div class="col-md-6">
+                            <button 
+                                type="button" 
+                                class="selectAllButton btn btn-primary" 
+                                data-target="SelectedEventIds2"
+                            >Select Day @(Model.EventDates.IndexOf(Model.EventDates[^1]) + 1)</button>
+                        </div>
+                    }
+                    <br />
+                </div>
+                <br />
+
+                <div class="row" id="center-everything">
+                    <div class="col-md-6">
+                        <h3>@Model.Timeslots[0].Event.Name</h3>
+                        <h4 class="date-column">@Model.Timeslots[0].Event.Date</h4>
+                        @foreach (var timeslot in Model.Timeslots)
+                        {
+                            if (timeslot.EventId == Model.Timeslots[0].EventId)
+                            {
+                                <div>
+                                    <input 
+                                        type="checkbox" 
+                                        id="@timeslot.Id" 
+                                        name="SelectedEventIds1" 
+                                        value="@timeslot.Id" 
+                                        data-val="true" 
+                                        data-val-required="Please select at least one timeslot"
+                                        class="form-check-input">
+                                    <input type="hidden" name="Timeslots[@timeslot.Id]" value="@timeslot.Id">
+                                    <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
+                                </div>
+                            }
+                        }
+                    </div>
+                    @if (Model.Timeslots[0].EventId != Model.Timeslots[^1].EventId)
+                    {
+                        <div class="col-md-6">
+                            <h3>@Model.Timeslots[^1].Event.Name</h3>
+                            <h4 class="date-column">@Model.Timeslots[^1].Event.Date</h4>
+                            @foreach (var timeslot in Model.Timeslots)
+                            {
+                                if (timeslot.EventId == Model.Timeslots[^1].EventId)
+                                {
+                                    <div>
+                                        <input 
+                                            type="checkbox" 
+                                            id="@timeslot.Id" 
+                                            name="SelectedEventIds2" 
+                                            value="@timeslot.Id" 
+                                            data-val="true" 
+                                            data-val-required="Please select at least one timeslot"
+                                            class="form-check-input">
+                                        <input type="hidden" name="Timeslots[@timeslot.Id]" value="@timeslot.Id">
+                                        <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                    <br />
+                    <div>
+                        <span asp-validation-for="SelectedEventIds" class="text-danger"></span>
+                    </div>
+                    <div class="form-group" id="center-everything">
+                        <input type="submit" value="Sign Up" class="btn btn-primary" /> | <a class="btn btn-secondary" asp-controller="Home" asp-action="Index">Go Back</a>
+                    </div>
+                </div>
+                <br />
+            </form>
+        }
+        else
+        {
+            <div class="alert alert-danger" role="alert" id="center-everything">
+                You've either already signed up for all available interview slots, or there are no events available for you to sign up.
+            </div>
+        }
+    </div>
+    <div class="col-md-3"></div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        selectAll();
+    </script>
+}

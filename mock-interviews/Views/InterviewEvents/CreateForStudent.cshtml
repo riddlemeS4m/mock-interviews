@@ -1,0 +1,63 @@
+﻿@using MockInterviews.Data.Constants;
+@model MockInterviews.Models.ViewModels.InterviewsController.InterviewSignupByAdminViewModel;
+
+@{
+    ViewData["Title"] = "Create For Student";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var days = Model.Events.Count;
+    string result = Math.Floor(12.0 / days).ToString();
+}
+
+<h1>Sign up for an Interview!</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8" id="center-everything">
+        <form asp-action="CreateForStudent">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="StudentId" class="control-label"></label>
+                <select asp-for="StudentId" class="form-control" asp-items='@Model.Students'>
+                </select>
+                <span asp-validation-for="StudentId" class="text-danger"></span>
+            </div>
+            <br />
+            <div class="row" id="center-everything">
+                @for (int i = 0; i < days; i++)
+                {
+                    <div class="@("col-md-"+result)">
+                        <h3>@Model.Events[i].Name</h3>
+                        <h4 class="date-column">@Model.Events[i].Date</h4>
+                        @foreach (var timeslot in Model.Timeslots)
+                        {
+                            if (timeslot.EventId == Model.Events[i].Id)
+                            {
+                                <div>
+                                    <input type="radio" id="@timeslot.Id" name="SelectedEventIds" value="@timeslot.Id">
+                                    <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+                <br /><br />
+                <div>
+                    <span asp-validation-for="SelectedEventIds" class="text-danger"></span>
+                </div>
+            </div>
+            <br />
+            <div class="form-group" id="center-everything">
+                <input type="hidden" name="SelectedEventIds" id="SelectedEventIds">
+                <input type="submit" value="Sign Up!" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+    <div class="col-md-2"></div>
+</div>
+
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

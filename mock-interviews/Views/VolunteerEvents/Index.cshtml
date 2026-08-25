@@ -1,0 +1,51 @@
+﻿@model IEnumerable<MockInterviews.Models.ViewModels.TimeRangeViewModel>
+
+@{
+    ViewData["Title"] = "Volunteers";
+}
+
+<h1>Volunteers</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Student Name
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Date)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.StartTime)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Date)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.StartTime) - @Html.DisplayFor(modelItem => item.EndTime)
+            </td>
+            <td>
+@*                <a asp-action="Details" asp-route-id="@item.VolunteerEvent.Id">Details</a> |
+*@                @Html.ActionLink("Delete",
+                "DeleteRange",   // <-- ActionMethod
+                "VolunteerEvents",  // <-- Controller Name.
+                new { timeslots = item.TimeslotIds.ToArray() }, // <-- Route arguments.
+                null
+                )
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

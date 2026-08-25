@@ -1,0 +1,82 @@
+﻿@model MockInterviews.Models.ViewModels.TimeslotsController.TimeslotViewModel
+
+@{
+    ViewData["Title"] = "Manage Timeslots";
+}
+
+<h1>Manage Timeslots</h1>
+
+<div id="center-everything" class="row">
+    <div class="col-md-1"></div>
+    <div class="col-md-10">
+    <div>
+        <hr />
+        <br />
+        <h3>Administrative Actions</h3>
+        
+        <div>
+            <a asp-action="Create" class="btn btn-secondary">Create New</a> &nbsp;
+            <a asp-action="UpdateMaxTimeslots" class="btn btn-primary">Update Max Timeslot Signups</a>
+        </div>
+        <br />
+    </div>
+    <div>
+        <div>
+            <hr />
+            <br />
+            <h3>Timeslot List</h3>
+        </div>
+        <div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>
+                            @Html.DisplayNameFor(model => model.Timeslots[0].Timeslot.Time)
+                        </th>
+                        <th>
+                            @Html.DisplayNameFor(model => model.Timeslots[0].Timeslot.Event.Date)
+                        </th>
+                        <th>
+                            @Html.DisplayNameFor(model => model.Timeslots[0].Timeslot.MaxSignUps)
+                        </th>
+                        <th>Details</th>
+                        <th>Edit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Timeslots) 
+                {
+                    <tr>
+                        <td style="color:white;">
+                            @Html.DisplayFor(modelItem => item.Timeslot.Id)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Timeslot.Time)
+                        </td>
+                        <td class="date-column">
+                            @Html.DisplayFor(modelItem => item.Timeslot.Event.Date)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Timeslot.MaxSignUps)
+                        </td>
+                        <td>
+                        
+                            <a asp-action="Details" asp-route-id="@item.Timeslot.Id">Details</a> @*|
+                            <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>*@
+                        </td>
+                        <td>
+                            @if (item.Timeslot.Time.Minute == 0)
+                            {
+                                <a asp-action="Edit" asp-route-id="@item.Timeslot.Id">Edit</a>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+    <div class="col-md-1"></div>
+</div>

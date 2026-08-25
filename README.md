@@ -3,7 +3,7 @@
 ## Setup (MacOS)
 1. Install .NET 8: `brew install --cask dotnet-sdk@8`
 2. Copy the template with `cp .env.example .env`
-3. Run `dotnet restore && dotnet build`, then start the app with either `dotnet run --project sp2023-mis421-mockinterviews` from the repository root or `dotnet run` from `sp2023-mis421-mockinterviews`.
+3. Run `dotnet restore && dotnet build`, then start the app with either `dotnet run --project mock-interviews` from the repository root or `dotnet run` from `mock-interviews`.
 
 ## Resource Links
 

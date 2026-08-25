@@ -1,0 +1,61 @@
+﻿@using MockInterviews.Models.ViewModels
+@using MockInterviews.Data.Constants
+@model IndexViewModel
+
+@{
+    ViewBag.Title = "Welcome to UA MIS Mock Interviews!";
+}
+
+<div style="text-align:center" onload="document.forms['micrologin'].submit()">
+    <h2>@ViewBag.Title</h2>
+</div>
+@if (User.Identity.IsAuthenticated)
+{
+    <p style="font-size:20px; text-align:center; padding-top: 10px">
+        Our mission is to help students prepare for their upcoming job interviews by <br /> providing a realistic simulation of the interview experience.
+    </p>
+    <p style="font-size:20px; text-align:center; border-bottom: 2px solid black">
+        You have successfully signed in. Important information and your current bookings will be shown below.
+    </p>
+    <br />
+}
+else
+{
+    <p style="font-size:20px; text-align:center; padding-top: 10px;" id="homePageText">
+        Our mission is to help you prepare for your upcoming job interviews by providing a realistic simulation of the interview experience. To get started, please create an account or sign in if you already have one.
+    </p>
+    <div>
+        <img src="~/images/HewsonHallCROPPED.png" alt="Hewson Hall" style="width: 200%">
+    </div>
+}
+
+@if (User.Identity.IsAuthenticated && User.IsInRole(RolesConstants.AdminRole))
+{
+    <a asp-area="" asp-controller="Home" asp-action="EmailStudents">Email Reminder for Students</a>
+}
+<br />
+@if (User.Identity.IsAuthenticated && User.IsInRole(RolesConstants.AdminRole))
+{
+    <a asp-area="" asp-controller="Home" asp-action="EmailInterviewers">Email Reminder for Interviewers</a>
+}
+
+@if (User.Identity.IsAuthenticated && User.IsInRole(RolesConstants.StudentRole))
+{
+    @await Html.PartialAsync("_VolunteerEventsHomePartial", Model.TimeRangeViewModels)
+    <br />
+    @await Html.PartialAsync("_InterviewEventsPartial", Model.StudentScheduledInterviews)
+}
+
+@if (User.Identity.IsAuthenticated && User.IsInRole(RolesConstants.InterviewerRole))
+{
+    @await Html.PartialAsync("_SignupInterviewerTimeslotsPartial", Model)
+}
+
+
+<script>
+    window.onload = function () {
+        document.forms['micrologin'].submit();
+        console.log("Made it to script");
+    }
+</script>
+

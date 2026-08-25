@@ -1,0 +1,89 @@
+﻿@model MockInterviews.Models.ViewModels.InterviewEventViewModel
+
+@{
+    ViewData["Title"] = "ProvideFeedback";
+}
+
+<h1>Provide Feedback</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <dl>
+            <dt>Date</dt>
+            <dd>@Model.InterviewEvent.InterviewerTimeslot.Timeslot.Event.Date</dd>
+            <dt>Time</dt>
+            <dd>@Model.InterviewEvent.InterviewerTimeslot.Timeslot.Time</dd>
+            <dt>Interviewer</dt>
+            <dd>@Model.InterviewerName</dd>
+            <dt>Focus</dt>
+            <dd>@Model.InterviewEvent.Type</dd>
+        </dl>
+        
+        <form asp-action="ProvideFeedback">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="InterviewEvent.Id" />
+            <input type="hidden" asp-for="InterviewEvent.StudentId" />
+            <input type="hidden" asp-for="InterviewEvent.TimeslotId" />
+            <input type="hidden" asp-for="InterviewEvent.LocationId" />
+            <input type="hidden" asp-for="InterviewEvent.Status" />
+            <input type="hidden" asp-for="InterviewEvent.Type" />
+            <input type="hidden" asp-for="InterviewEvent.InterviewerTimeslotId" />
+@*            <input type="hidden" asp-for="InterviewEvent.SignupInterviewerTimeslot.SignupInterviewer.InterviewerId" />
+*@
+            @*<div class="form-group">
+                <label asp-for="InterviewEvent.InterviewType" class="control-label"></label>
+                <select asp-for="InterviewEvent.InterviewType" class="form-control" asp-items='@InterviewTypesConstants.GetInterviewTypesOptions()'>
+                    <option value="">-- Select One --</option>
+                </select>
+                <span asp-validation-for="InterviewEvent.InterviewType" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="InterviewEvent.Status" class="control-label"></label>
+                <select asp-for="InterviewEvent.Status" class="form-control" asp-items='@StatusConstants.GetStatusOptions()'>
+                    <option value="">-- Select One --</option>
+                </select>
+                <span asp-validation-for="InterviewEvent.Status" class="text-danger"></span>
+            </div>*@
+            <div class="form-group">
+            <label asp-for="InterviewEvent.InterviewerRating" class="control-label"></label>
+            <input asp-for="InterviewEvent.InterviewerRating" class="form-control" />
+                <span asp-validation-for="InterviewEvent.InterviewerRating" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="InterviewEvent.InterviewerFeedback" class="control-label"></label>
+                <input asp-for="InterviewEvent.InterviewerFeedback" class="form-control" />
+                <span asp-validation-for="InterviewEvent.InterviewerFeedback" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="InterviewEvent.ProcessFeedback" class="control-label"></label>
+                <input asp-for="InterviewEvent.ProcessFeedback" class="form-control" />
+                <span asp-validation-for="InterviewEvent.ProcessFeedback" class="text-danger"></span>
+            </div>
+            @*<div class="form-group">
+                <label asp-for="InterviewEvent.SignupInterviewerTimeslot.SignupInterviewer.InterviewerId" class="control-label"></label>
+                <select asp-for="InterviewEvent.SignupInterviewerTimeslot.SignupInterviewer.InterviewerId" class="form-control" asp-items="@Model.InterviewerNames"></select>
+                <span asp-validation-for="InterviewEvent.SignupInterviewerTimeslot.SignupInterviewer.InterviewerId" class="text-danger"></span>
+            </div>*@
+            @*<div class="form-group">
+                <label asp-for="InterviewerId" class="control-label"></label>
+                <select asp-for="InterviewerId" class="form-control" asp-items="@Model.InterviewerNames"></select>
+                <span asp-validation-for="InterviewerId" class="text-danger"></span>
+            </div>*@
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-controller="InterviewEvents" asp-action="FeedbackIndex">Return to Feedback Portal</a>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+

@@ -1,0 +1,231 @@
+﻿@using MockInterviews.Data.Constants
+@model MockInterviews.Models.ViewModels.InterviewEventIndexViewModel
+
+@{
+    ViewData["Title"] = "Assign Interviews";
+}
+
+<h1>Assign Interviews</h1>
+<hr />
+<h4>Available Interviewers</h4>
+@if (Model.AvailableInterviewers.Count > 0)
+{
+    <div id="availableInterviewers" class="interviewer-container">
+        @foreach (var interviewer in Model.AvailableInterviewers)
+        {
+            <div id=@interviewer.InterviewerId class="interviewer-card">
+                <div class="card-inner">
+                    <div class="card-front">
+                        <div class="interviewer-name">@interviewer.Name</div>
+                        <div class="interview-type">@interviewer.InterviewType</div>
+                    </div>
+                    <div class="card-back">
+                        <div class="room-location">@interviewer.Room</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div>
+        <p class="empty-state">No interviewers are available.</p>
+    </div>
+}
+
+<div id="edit-form-div" style="display:none;">
+    <hr />
+    <h4 id="student-name">Edit Students</h4>
+    <div class="row">
+        <div class="col-md-4">
+            <form id="editForm" action="/InterviewEvents/EditInline" method="post">
+                <input type="hidden" id="Id" name="Id">
+                <div class="form-group">
+                    <label for="Status">Status:</label>
+                    <select id="Status" class="form-control" name="Status"
+                        asp-items="@StatusConstants.GetCompleteStatusOptions()"></select>
+                </div>
+                <div class="form-group">
+                    <label for="Type">Interview Type:</label>
+                    <select id="Type" class="form-control" name="Type"
+                        asp-items="@InterviewTypeConstants.GetInterviewTypesOptions()"></select>
+                </div>
+                <div class="form-group">
+                    <label for="InterviewerId">Interviewer:</label>
+                    <select id="InterviewerId" class="form-control" name="InterviewerId"
+                        asp-items="@Model.BehavioralInterviewers"></select>
+                </div>
+                <div class="form-group">
+                    <input type="submit" value="Save" class="btn btn-primary"> <button id="hide-button"
+                        class="btn btn-secondary" type="button">Hide</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="exampleModalLongTitle">Interview Scheduled!</h3>
+            </div>
+            <div class="modal-body" style="color:black;">
+                <p id="successText"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="hideModalButton" type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr />
+<h4 id="testing">Ongoing Interviews</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Student</th>
+            <th>Status</th>
+            <th>Interviewer</th>
+            <th>Room</th>
+            <th>Scheduled Start</th>
+            <th>Timer</th>
+            <th>Type</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody id="ongoing">
+        @foreach (var item in Model.Interviews)
+        {
+            if (item.InterviewEvent.Status == StatusConstants.Ongoing)
+            {
+                <tr id="@item.InterviewEvent.Id">
+                    <td style="color:white;">@Html.DisplayFor(modelItem => item.InterviewEvent.TimeslotId)</td>
+                    <td>@Html.DisplayFor(modelItem => item.StudentName)</td>
+                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Status)</td>
+                    <td>@Html.DisplayFor(modelItem => item.InterviewerName)</td>
+                    @if (item.InterviewEvent.Location == null)
+                    {
+                        <td>Not Assigned</td>
+                    }
+                    else
+                    {
+                        <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Location.Room)</td>
+                    }
+                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Timeslot.Time)</td>
+                    <td id="timer-@item.InterviewEvent.Id">@Html.DisplayFor(modelItem => item.InterviewEvent.StartedAt)</td>
+                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Type)</td>
+                    <td>
+                        <a asp-action="Override" asp-route-id="@item.InterviewEvent.Id">Override</a> |
+                        <a asp-action="StudentComplete" asp-route-id="@item.InterviewEvent.Id">Complete</a>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+<hr />
+<h4 id="testing">Students Checked In</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Student</th>
+            <th>Class</th>
+            <th>Status</th>
+            <th>Scheduled Start</th>
+            <th>Wait Time</th>
+            <th>Type</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody id="checkin">
+        @foreach (var item in Model.Interviews)
+        {
+            if (item.InterviewEvent.Status == StatusConstants.CheckedIn)
+            {
+                <tr id="@item.InterviewEvent.Id" data-student-name="@item.StudentName" data-status="@item.InterviewEvent.Status"
+                    data-type="@item.InterviewEvent.Type" data-interviewer-name="@item.InterviewerName" 
+                    data-interviewer-id="@item.InterviewEvent.InterviewerTimeslot?.InterviewerSignup.InterviewerId">
+                    <td style="color:white;">@Html.DisplayFor(modelItem => item.InterviewEvent.TimeslotId)</td>
+                    <td>@Html.DisplayFor(modelItem => item.StudentName)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Class)</td>
+                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Status)</td>
+                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Timeslot.Time)</td>
+                    <td id="timer-@item.InterviewEvent.Id">@Html.DisplayFor(modelItem => item.InterviewEvent.CheckedInAt)</td>
+                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Type)</td>
+                    <td>
+                        <a class="capture-data">Assign</a> |
+                        <a asp-action="Override" asp-route-id="@item.InterviewEvent.Id">Override</a> |
+                        <a asp-action="StudentComplete" asp-route-id="@item.InterviewEvent.Id">Complete</a>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+<hr />
+<h4 id="testing">Upcoming Students</h4>
+<div>
+    <p>
+        <a class="btn btn-primary" asp-controller="InterviewEvents" asp-action="CreateForStudent">Manually Signup
+            Student</a>
+    </p>
+</div>
+<table class="table">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Student</th>
+            <th>Class</th>
+            <th>Status</th>
+            <th>Scheduled Start</th>
+            <th>Date</th>
+            <th>Type</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody id="upcoming">
+        @foreach (var item in Model.Interviews)
+        {
+            if (item.InterviewEvent.Status != StatusConstants.Ongoing && item.InterviewEvent.Status !=
+            StatusConstants.CheckedIn)
+            {
+                <tr id="@item.InterviewEvent.Id" data-interviewer-name="@item.InterviewerName" 
+                    data-interviewer-id="@item.InterviewEvent.InterviewerTimeslot?.InterviewerSignup.InterviewerId">
+                    <td style="color:white;">@Html.DisplayFor(modelItem => item.InterviewEvent.TimeslotId)</td>
+                    <td>@Html.DisplayFor(modelItem => item.StudentName)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Class)</td>
+                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Status)</td>
+                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Timeslot.Time)</td>
+                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Timeslot.Event.Date)</td>
+                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Type)</td>
+                    <td>
+                        <a asp-action="StudentCheckIn" asp-route-id="@item.InterviewEvent.Id">Check In</a> |
+                        <a asp-action="Override" asp-route-id="@item.InterviewEvent.Id">Override</a> |
+                        <a asp-action="StudentNoShow" asp-route-id="@item.InterviewEvent.Id">No Show</a>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <!-- Signal R - Interview Event Hub -->
+    <script src="~/js/signal-r-interviews.js" asp-append-version="true"></script>
+
+    <!-- Signal R - Available Interviewers Hub -->
+    <script src="~/js/signal-r-available-interviewers.js" asp-append-version="true"></script>
+
+    <!-- Handle Edit Form -->
+    <script src="~/js/dynamic-interview-assignment-form.js" asp-append-version="true"></script>
+}

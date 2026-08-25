@@ -1,0 +1,105 @@
+﻿@model MockInterviews.Models.ViewModels.LocationInterviewerViewModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Assign Rooms</h1>
+
+<p>
+    <a asp-action="Create">Reassign Location (Create New Location Assignment)</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Interviewer
+            </th>
+            <th>
+                For Date
+            </th>
+            <th>
+                In Person/Virtual
+            </th>
+            <th>
+                Room Location
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.LocationInterviewerWithNames) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.InterviewerName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.LocationInterviewer.Event.Date)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.InterviewerPreference)
+            </td>
+            @if(item.LocationInterviewer.Location == null)
+            {
+                <td>Not Assigned</td>
+            }
+            else
+            {
+                <td>@Html.DisplayFor(modelItem => item.LocationInterviewer.Location.Room)</td>
+            }
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.LocationInterviewer.Id">Edit</a> | 
+@*                <a asp-action="Details" asp-route-id="@item.LocationInterviewer.Id">Details</a> |
+*@                <a asp-action="Delete" asp-route-id="@item.LocationInterviewer.Id">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+@*<div>
+    <h1>Room Locations</h1>
+
+    <p>
+        <a asp-controller="Locations" asp-action="Create">Create New</a>
+    </p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.Locations[0].Room)
+                </th>
+                <th>
+                    Virtual?
+                </th>
+                <th>
+                    In Person?
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Locations)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Room)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.IsVirtual)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.InPerson)
+                    </td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                        <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                        <a asp-controller="Locations" asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+</div>*@
+

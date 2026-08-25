@@ -1,0 +1,207 @@
+@using MockInterviews.Data.Constants
+@using MockInterviews.Data.Seeds
+@model IEnumerable<MockInterviews.Models.ViewModels.InterviewEventManageViewModel>
+
+@{
+    ViewData["Title"] = "Pre-Assign Interviews";
+    var noOfTables = TimeslotSeed.Interviewer.Where(x => x == true).Count() * 2;
+    var uniqueDates = Model.Select(m => m.InterviewEvent.Timeslot.Event.Date).Distinct().OrderBy(d => d).ToList();
+}
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11; border-radius: 10px;">
+  <div id="liveToast" class="toast d-none" role="alert" aria-live="assertive" aria-atomic="true" style="padding: 15px; border-radius: 10px;">
+    <div class="toast-header">
+      <img src="~/favicon.png" style="width: 2rem; height: 2rem;" class="rounded me-2" alt="...">
+      <strong class="me-auto">UA MIS</strong>
+      <small style="margin-right: 5px; margin-left: 10px;">Just now</small>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body" style="text-align: center;">
+    </div>
+  </div>
+</div>
+
+<h1>Pre-Assign Interviews <span id="date-filter-active"></span></h1>
+<div class="row">
+@if (Model.Any() && Model.Count() != 0)
+{
+    <div class="col-md-1"></div>
+    <div class="col-md-10">
+    <!-- Filter Buttons -->
+    <div id="dateFilters" style="margin-bottom: 20px; text-align: center;">
+        <hr />
+        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+        <button class="filter-btn btn btn-primary mt-2 mb-2 active" style="min-width: 200px;" data-date="all">All</button>
+        @foreach (var date in uniqueDates)
+        {
+            <button class="filter-btn btn btn-secondary mt-2 mb-2" style="min-wdith: 200px;" data-date="@date.ToString("MM/dd/yy")">@date.ToString("MMMM dd, yyyy")</button>
+        }
+        </div>
+        <hr />
+    </div>
+
+    @{var index = 0;}
+
+    @for (int i = 0; i < noOfTables; i++)
+    {
+        var currTime = Model.ElementAt(index).InterviewEvent.Timeslot.Time;
+        var nextTime = Model.ElementAt(index).InterviewEvent.Timeslot.Time;
+        var tableId = $"table-{i}"; 
+
+        <div class="interview-table" id="@tableId">
+            <h3 class="time-column" style="text-align: center;">@nextTime</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Class</th>
+                        <th>Scheduled Start</th>
+                        <th>Date</th>
+                        <th>Interviewer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @while (nextTime == currTime)
+                    {
+                        var item = Model.ElementAt(index);
+
+                        <tr id="@item.InterviewEvent.Id" data-date="@Model.ElementAt(index).InterviewEvent.Timeslot.Event.Date.ToString("MM/dd/yy")">
+                            <td>@item.StudentName</td>
+                            <td>@item.StudentClass</td>
+                            <td class="time-column">@item.InterviewEvent.Timeslot.Time</td>
+                            <td class="date-column">@item.InterviewEvent.Timeslot.Event.Date</td>
+                            <td>
+                                <select class="form-select form-select-sm" style="color: black;" asp-items='@item.RequestedInterviewers' style="width: 172px;"></select>
+                            </td>
+                        </tr>
+
+                        index++;
+
+                        if (index >= Model.Count())
+                        {
+                            break;
+                        }
+
+                        nextTime = Model.ElementAt(index).InterviewEvent.Timeslot.Time;
+                    }
+                </tbody>
+            </table>
+
+            <!-- Submit Button for Each Table -->
+            <div style="margin: auto; text-align: center;">
+                <button class="submit-btn btn btn-primary mt-2" style="text-align: center;" data-table-id="@tableId">Submit <span class="time-column">@currTime</span></button>
+            </div>
+        </div>
+        <br /><br />
+    }
+    </div>
+    <div class="col-md-1"></div>
+}
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $(".filter-btn").click(function () {
+                let selectedDate = $(this).data("date");
+
+                $(".filter-btn").removeClass("active");
+                $(this).addClass("active");
+
+                if(selectedDate !== "all") {
+                    $("#date-filter-active").text(`for ${selectedDate}`);
+                } else {
+                    $("#date-filter-active").text("");
+                }
+                
+
+                $("tr[data-date]").each(function () {
+                    let rowDate = $(this).data("date");
+
+                    if (selectedDate === "all" || rowDate === selectedDate) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+        });
+
+        $("table").on("change", "select", function () {
+            let selectedValue = $(this).val();
+            let $currentTable = $(this).closest("table");
+
+            if (selectedValue !== "0") {
+                $currentTable.find("select").not(this).each(function () {
+                    if ($(this).val() === selectedValue) {
+                        $(this).val("0").trigger("change");
+                    }
+                });
+            }
+        });
+
+        $(document).ready(function () {
+            $("select[aria-controls^='DataTables_Table_']").each(function () {
+                $(this).val("50").trigger("change");
+            });
+        });
+
+        $(document).ready(function () {
+            let $dateButtons = $(".filter-btn").not("[data-date='all']");
+
+            if ($dateButtons.length > 0) {
+                $dateButtons.first().trigger("click");
+            }
+        });
+
+        $(document).ready(function () {
+            $(".submit-btn").click(function () {
+                let tableId = $(this).data("table-id");
+                let $table = $("#" + tableId);
+
+                let dataToSend = [];
+
+                $table.find("tbody tr").each(function () {
+                    let interviewEventId = $(this).attr("id");
+                    let selectedValue = $(this).find("select").val();
+
+                    if (interviewEventId && selectedValue) {
+                        dataToSend.push({
+                            interviewEventId: interviewEventId,
+                            selectedValue: selectedValue
+                        });
+                    }
+                });
+
+                if (dataToSend.length > 0) {
+                    $.ajax({
+                        url: "/InterviewEvents/PreAssignInterviews",
+                        type: "POST",
+                        contentType: "application/json",
+                        data: JSON.stringify(dataToSend),
+                        success: function () {
+                            showToast("Success!");
+                        },
+                        error: function () {
+                            showToast("There was an error.");
+                        }
+                    });
+                }
+            });
+
+            const showToast = (message) => {
+                let $toast = $("#liveToast");
+
+                $toast.removeClass("d-none").addClass("bg-light");
+
+                $toast.find(".toast-body").text(message);
+
+                let toastInstance = new bootstrap.Toast($toast[0]);
+                toastInstance.show();
+            }
+
+            $("#liveToast").addClass("d-none");
+        });
+
+    </script>
+}
