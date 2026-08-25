@@ -58,22 +58,23 @@ public sealed class ConfigurationExtensionsTests
     public void LoadDevelopmentEnvironment_DoesNotOverrideProcessVariables_AndMapsEscapedNewlines()
     {
         var overrideVariable = $"CONFIG_TEST_{Guid.NewGuid():N}";
+        var multilineVariable = $"CONFIG_TEST_MULTILINE_{Guid.NewGuid():N}";
         var root = CreateTemporaryDirectory();
         File.WriteAllText(
             Path.Combine(root, ".env"),
-            $"{overrideVariable}=file-value{Environment.NewLine}GoogleCredential__private_key=\"first\\nsecond\\n\"");
+            $"{overrideVariable}=file-value{Environment.NewLine}{multilineVariable}=\"first\\nsecond\\n\"");
 
         using var environment = new EnvironmentVariablesScope(
             ("DOTNET_ENVIRONMENT", "Development"),
             (overrideVariable, "process-value"),
-            ("GoogleCredential__private_key", null));
+            (multilineVariable, null));
         try
         {
             ApplicationConfigurationExtensions.LoadDevelopmentEnvironment(root);
             var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
             Assert.Equal("process-value", Environment.GetEnvironmentVariable(overrideVariable));
-            Assert.Equal("first\nsecond\n", configuration["GoogleCredential:private_key"]);
+            Assert.Equal("first\nsecond\n", configuration[multilineVariable]);
         }
         finally
         {
@@ -91,6 +92,21 @@ public sealed class ConfigurationExtensionsTests
     }
 
     [Fact]
+    public void RequiredConfiguration_ContainsOnlyActiveIntegrations()
+    {
+        Assert.Equal(
+            [
+                "ConnectionStrings:Users",
+                "ConnectionStrings:Signups",
+                "Authentication:Microsoft:ClientId",
+                "Authentication:Microsoft:ClientSecret",
+                "SendGrid:ApiKey",
+                "SeededAdminPwd"
+            ],
+            ApplicationConfigurationExtensions.RequiredConfigurationKeys);
+    }
+
+    [Fact]
     public void ValidateRequiredConfiguration_ReportsAllMissingAndWhitespaceKeysWithoutValues()
     {
         var configuration = BuildConfiguration(new Dictionary<string, string?>
@@ -103,7 +119,7 @@ public sealed class ConfigurationExtensionsTests
 
         Assert.Contains("ConnectionStrings:Users", exception.Message);
         Assert.Contains("ConnectionStrings:Signups", exception.Message);
-        Assert.Contains("GoogleCredential:private_key", exception.Message);
+        Assert.Contains("SendGrid:ApiKey", exception.Message);
         Assert.DoesNotContain("secret-value-that-must-not-appear", exception.Message);
         Assert.DoesNotContain("Postgres:development", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
