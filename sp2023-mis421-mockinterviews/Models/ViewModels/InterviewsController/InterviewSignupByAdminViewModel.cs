@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
-using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
+using sp2023_mis421_mockinterviews.Models.Entities;
 
 namespace sp2023_mis421_mockinterviews.Models.ViewModels.InterviewsController
 {

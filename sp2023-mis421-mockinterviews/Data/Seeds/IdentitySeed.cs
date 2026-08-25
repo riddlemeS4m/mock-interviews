@@ -1,11 +1,10 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using sp2023_mis421_mockinterviews.Data.Constants;
-using sp2023_mis421_mockinterviews.Models.UserDb;
-using System;
+using sp2023_mis421_mockinterviews.Models.Identity;
 
 namespace sp2023_mis421_mockinterviews.Data.Seeds
 {
-    public static class UserDbContextSeed
+    public static class IdentitySeed
     {
         public static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
         {

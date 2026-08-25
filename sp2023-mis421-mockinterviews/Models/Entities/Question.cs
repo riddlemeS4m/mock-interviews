@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace sp2023_mis421_mockinterviews.Models.MockInterviewDb
+namespace sp2023_mis421_mockinterviews.Models.Entities
 {
     [Table("Questions")]
     public class Question

@@ -2,20 +2,16 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace sp2023_mis421_mockinterviews.Models.MockInterviewDb
+namespace sp2023_mis421_mockinterviews.Models.Entities
 {
-    [Table("InterviewerTimeslots")]
-    public class InterviewerTimeslot
+    [Table("VolunteerTimeslots")]
+    public class VolunteerTimeslot
     {
         [Key]
         public int Id { get; set; }
 
         [Required]
-        [ForeignKey("InterviewerSignups")]
-        public int InterviewerSignupId { get; set; }
-
-        [ValidateNever]
-        public InterviewerSignup InterviewerSignup { get; set; }
+        public string StudentId { get; set; }
 
         [Required]
         [ForeignKey("Timeslots")]
@@ -23,10 +19,9 @@ namespace sp2023_mis421_mockinterviews.Models.MockInterviewDb
 
         [ValidateNever]
         public Timeslot Timeslot { get; set; }
-
         public override string ToString()
         {
-            return $"[Interviewer Timeslots] Id: {Id}, Interviewer Signup Id: {InterviewerSignupId}, Timeslots Id: {TimeslotId}";
+            return $"{Timeslot.Time:h\\:mm tt} on {Timeslot.Event.Date:M/dd/yyyy} <br>";
         }
     }
 }

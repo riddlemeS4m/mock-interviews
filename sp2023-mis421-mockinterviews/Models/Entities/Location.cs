@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel;
 
-namespace sp2023_mis421_mockinterviews.Models.MockInterviewDb
+namespace sp2023_mis421_mockinterviews.Models.Entities
 {
     [Table("Locations")]
     public class Location

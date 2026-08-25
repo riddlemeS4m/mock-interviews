@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Data.Constants;
-using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
-using sp2023_mis421_mockinterviews.Services.SignupDb;
+using sp2023_mis421_mockinterviews.Models.Entities;
+using sp2023_mis421_mockinterviews.Services;
 
 namespace sp2023_mis421_mockinterviews.Data.Seeds
 {

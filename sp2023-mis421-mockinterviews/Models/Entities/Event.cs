@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace sp2023_mis421_mockinterviews.Models.MockInterviewDb
+namespace sp2023_mis421_mockinterviews.Models.Entities
 {
     [Table("Events")]
     public class Event

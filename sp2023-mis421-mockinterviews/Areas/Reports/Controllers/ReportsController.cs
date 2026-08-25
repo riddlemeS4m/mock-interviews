@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using sp2023_mis421_mockinterviews.Data.Contexts;
-using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
+using sp2023_mis421_mockinterviews.Models.Entities;
 using sp2023_mis421_mockinterviews.Models.ViewModels.ReportsController;
 using sp2023_mis421_mockinterviews.Models.ViewModels.TimeslotsController;
-using sp2023_mis421_mockinterviews.Services.SignupDb;
+using sp2023_mis421_mockinterviews.Services;
 
 namespace sp2023_mis421_mockinterviews.Areas.Reports.Controllers
 {

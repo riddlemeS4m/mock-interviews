@@ -2,22 +2,17 @@ using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
 
-namespace sp2023_mis421_mockinterviews.Services.SignupDb
+namespace sp2023_mis421_mockinterviews.Services
 {
-    public class GenericSignupDbService<T> : IAccessData<T> where T : class
+    public abstract class EntityService<T> : IAccessData<T> where T : class
     {
         protected readonly MockInterviewsDbContext _context;
         protected readonly DbSet<T> _dbSet;
 
-        public GenericSignupDbService(MockInterviewsDbContext context)
+        public EntityService(MockInterviewsDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context), "Database context cannot be null.");
             _dbSet = context.Set<T>();
-
-            if (_dbSet == null)
-            {
-                throw new InvalidOperationException($"Database set '{typeof(T).Name}' has not been initialized.");
-            }
         }   
 
         public async Task<IEnumerable<T>> GetAllAsync()

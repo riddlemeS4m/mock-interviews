@@ -1,36 +1,34 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.SignalR;
 using SendGrid;
-using sp2023_mis421_mockinterviews.Data.Constants;
-using sp2023_mis421_mockinterviews.Data.Contexts;
 using sp2023_mis421_mockinterviews.Interfaces.IServices;
-using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
-using sp2023_mis421_mockinterviews.Models.UserDb;
+using sp2023_mis421_mockinterviews.Models.Entities;
 using sp2023_mis421_mockinterviews.Models.ViewModels;
 using sp2023_mis421_mockinterviews.Services.SignalR;
-using sp2023_mis421_mockinterviews.Services.SignupDb;
-using sp2023_mis421_mockinterviews.Services.UserDb;
 
-namespace sp2023_mis421_mockinterviews.Services.Controllers
+namespace sp2023_mis421_mockinterviews.Services
 {
     public class ManageInterviewsService : IManageInterviews
     {
-        private readonly ISignupDbServiceFactory _signupDb;
+        private readonly InterviewService _interviewService;
+        private readonly InterviewerTimeslotService _interviewerTimeslotService;
         private readonly UserService _userService;
         private readonly ISendGridClient _sendGridClient;
         private readonly IHubContext<AssignInterviewsHub> _interviewsHub;
         private readonly IHubContext<AvailableInterviewersHub> _interviewersHub;
         private readonly ILogger<ManageInterviewsService> _logger;
 
-        public ManageInterviewsService(ISignupDbServiceFactory dbServiceFactory,
+        public ManageInterviewsService(
+            InterviewService interviewService,
+            InterviewerTimeslotService interviewerTimeslotService,
             UserService userService,
             ISendGridClient sendGridClient,
             IHubContext<AssignInterviewsHub> interviewsHub,
             IHubContext<AvailableInterviewersHub> interviewersHub,
             ILogger<ManageInterviewsService> logger)
         {
-            _signupDb = dbServiceFactory;
+            _interviewService = interviewService;
+            _interviewerTimeslotService = interviewerTimeslotService;
             _userService = userService;
             _sendGridClient = sendGridClient;
             _interviewsHub = interviewsHub;
@@ -42,8 +40,8 @@ namespace sp2023_mis421_mockinterviews.Services.Controllers
         { 
             var filteredDict = keyValuePairs.Where(x => x.Value != "0").ToDictionary(x => x.Key, x => x.Value);
 
-            var interviews = await _signupDb.Interviews.GetAllActiveInterviewsByIds(keyValuePairs.Keys.ToList());
-            var interviewers = await _signupDb.InterviewerTimeslots.GetAllActiveInterviewersByIds(filteredDict.Values.ToList());
+            var interviews = await _interviewService.GetAllActiveInterviewsByIds(keyValuePairs.Keys.ToList());
+            var interviewers = await _interviewerTimeslotService.GetAllActiveInterviewersByIds(filteredDict.Values.ToList());
 
             var interviewsToUpdate = new List<Interview>();
 
@@ -70,7 +68,7 @@ namespace sp2023_mis421_mockinterviews.Services.Controllers
 
             if(interviewsToUpdate.Count > 0)
             {
-                await _signupDb.Interviews.UpdateRangeAsync(interviewsToUpdate);
+                await _interviewService.UpdateRangeAsync(interviewsToUpdate);
 
                 foreach(var interview in interviewsToUpdate)
                 {
@@ -83,8 +81,8 @@ namespace sp2023_mis421_mockinterviews.Services.Controllers
 
         public async Task<List<InterviewEventManageViewModel>> ListOfAssignedStudents()
         {
-            var allInterviewers = (await _signupDb.InterviewerTimeslots.GetAllActiveInterviewers()).ToList();
-            var allInterviews = (await _signupDb.Interviews.GetAllActiveInterviews()).ToList();
+            var allInterviewers = (await _interviewerTimeslotService.GetAllActiveInterviewers()).ToList();
+            var allInterviews = (await _interviewService.GetAllActiveInterviews()).ToList();
 
             var studentIds = allInterviews.Select(x => x.StudentId).ToList();
             var students = await _userService.GetUsersByIds(studentIds);

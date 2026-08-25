@@ -18,7 +18,7 @@ WORKDIR /src/sp2023-mis421-mockinterviews
 RUN dotnet build sp2023-mis421-mockinterviews.csproj -c Release -o /app/build --no-restore
 
 RUN dotnet tool restore \
-    && dotnet ef migrations bundle --configuration Release --no-build --output /app/efbundle --self-contained false --runtime linux-x64
+    && dotnet ef migrations bundle --configuration Release --no-build --output /app/efbundle
 
 # ---- Publish stage ----
 FROM build AS publish

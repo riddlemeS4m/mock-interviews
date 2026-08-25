@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using sp2023_mis421_mockinterviews.Data.Contexts;
-using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
+using sp2023_mis421_mockinterviews.Models.Entities;
 
 namespace sp2023_mis421_mockinterviews.Controllers
 {
@@ -25,9 +25,7 @@ namespace sp2023_mis421_mockinterviews.Controllers
         // GET: Locations
         public async Task<IActionResult> Index()
         {
-              return _context.Locations != null ? 
-                          View(await _context.Locations.ToListAsync()) :
-                          Problem("Entity set 'ApplicationDbContext.Locations'  is null.");
+            return View(await _context.Locations.ToListAsync());
         }
 
         // GET: Locations/Details/5
@@ -144,10 +142,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int Id)
         {
-            if (_context.Locations == null)
-            {
-                return Problem("Entity set 'ApplicationDbContext.Locations'  is null.");
-            }
             var location = await _context.Locations.FindAsync(Id);
             if (location != null)
             {

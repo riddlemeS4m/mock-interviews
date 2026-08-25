@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using sp2023_mis421_mockinterviews.Data.Contexts;
-using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
+using sp2023_mis421_mockinterviews.Models.Entities;
 
-namespace sp2023_mis421_mockinterviews.Services.SignupDb
+namespace sp2023_mis421_mockinterviews.Services
 {
-    public class InterviewerSignupService : GenericSignupDbService<InterviewerSignup>
+    public class InterviewerSignupService : EntityService<InterviewerSignup>
     {
         private readonly ILogger<InterviewerSignupService> _logger;
         public InterviewerSignupService(MockInterviewsDbContext context, ILogger<InterviewerSignupService> logger) : base(context)

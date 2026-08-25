@@ -1,4 +1,4 @@
-﻿using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
+﻿using sp2023_mis421_mockinterviews.Models.Entities;
 using sp2023_mis421_mockinterviews.Models.ViewModels.ReportsController;
 
 namespace sp2023_mis421_mockinterviews.Models.ViewModels.TimeslotsController

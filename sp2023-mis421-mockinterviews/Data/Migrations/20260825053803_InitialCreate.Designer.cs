@@ -12,7 +12,7 @@ using sp2023_mis421_mockinterviews.Data.Contexts;
 namespace sp2023_mis421_mockinterviews.Data.Migrations
 {
     [DbContext(typeof(MockInterviewsDbContext))]
-    [Migration("20260825050624_InitialCreate")]
+    [Migration("20260825053803_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -157,7 +157,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.EmailTemplate", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.EmailTemplate", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -177,7 +177,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("EmailTemplates");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Event", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.Event", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -203,7 +203,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("Events");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Interview", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.Interview", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -262,7 +262,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("Interviews");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.InterviewerLocation", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.InterviewerLocation", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -295,7 +295,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("InterviewerLocations");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.InterviewerSignup", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.InterviewerSignup", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -346,7 +346,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("InterviewerSignups");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.InterviewerTimeslot", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.InterviewerTimeslot", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -369,7 +369,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("InterviewerTimeslots");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Location", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.Location", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -392,7 +392,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("Locations");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Question", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.Question", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -412,7 +412,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("Questions");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.RosteredStudent", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.RosteredStudent", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -442,7 +442,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("Roster");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Setting", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.Setting", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -463,7 +463,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("Settings");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Timeslot", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.Timeslot", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -499,7 +499,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("Timeslots");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.VolunteerTimeslot", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.VolunteerTimeslot", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -523,7 +523,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.ToTable("VolunteerTimeslots");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.UserDb.ApplicationUser", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Identity.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text");
@@ -616,7 +616,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.UserDb.ApplicationUser", null)
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -625,7 +625,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.UserDb.ApplicationUser", null)
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -640,7 +640,7 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.UserDb.ApplicationUser", null)
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -649,30 +649,30 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.UserDb.ApplicationUser", null)
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Interview", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.Interview", b =>
                 {
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.MockInterviewDb.InterviewerTimeslot", "InterviewerTimeslot")
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Entities.InterviewerTimeslot", "InterviewerTimeslot")
                         .WithMany()
                         .HasForeignKey("InterviewerTimeslotId");
 
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Location", "Location")
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Entities.Location", "Location")
                         .WithMany()
                         .HasForeignKey("LocationId");
 
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.UserDb.ApplicationUser", null)
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Timeslot", "Timeslot")
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Entities.Timeslot", "Timeslot")
                         .WithMany()
                         .HasForeignKey("TimeslotId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -685,19 +685,19 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.Navigation("Timeslot");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.InterviewerLocation", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.InterviewerLocation", b =>
                 {
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Event", "Event")
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Entities.Event", "Event")
                         .WithMany()
                         .HasForeignKey("EventId");
 
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.UserDb.ApplicationUser", null)
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("InterviewerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Location", "Location")
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Entities.Location", "Location")
                         .WithMany()
                         .HasForeignKey("LocationId");
 
@@ -706,24 +706,24 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.Navigation("Location");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.InterviewerSignup", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.InterviewerSignup", b =>
                 {
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.UserDb.ApplicationUser", null)
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("InterviewerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.InterviewerTimeslot", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.InterviewerTimeslot", b =>
                 {
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.MockInterviewDb.InterviewerSignup", "InterviewerSignup")
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Entities.InterviewerSignup", "InterviewerSignup")
                         .WithMany()
                         .HasForeignKey("InterviewerSignupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Timeslot", "Timeslot")
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Entities.Timeslot", "Timeslot")
                         .WithMany()
                         .HasForeignKey("TimeslotId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -734,9 +734,9 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.Navigation("Timeslot");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Timeslot", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.Timeslot", b =>
                 {
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Event", "Event")
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Entities.Event", "Event")
                         .WithMany()
                         .HasForeignKey("EventId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -745,15 +745,15 @@ namespace sp2023_mis421_mockinterviews.Data.Migrations
                     b.Navigation("Event");
                 });
 
-            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.MockInterviewDb.VolunteerTimeslot", b =>
+            modelBuilder.Entity("sp2023_mis421_mockinterviews.Models.Entities.VolunteerTimeslot", b =>
                 {
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.UserDb.ApplicationUser", null)
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("sp2023_mis421_mockinterviews.Models.MockInterviewDb.Timeslot", "Timeslot")
+                    b.HasOne("sp2023_mis421_mockinterviews.Models.Entities.Timeslot", "Timeslot")
                         .WithMany()
                         .HasForeignKey("TimeslotId")
                         .OnDelete(DeleteBehavior.Cascade)

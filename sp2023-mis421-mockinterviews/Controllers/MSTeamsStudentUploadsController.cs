@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic.FileIO;
 using sp2023_mis421_mockinterviews.Data.Constants;
 using sp2023_mis421_mockinterviews.Data.Contexts;
-using sp2023_mis421_mockinterviews.Models.MockInterviewDb;
+using sp2023_mis421_mockinterviews.Models.Entities;
 using sp2023_mis421_mockinterviews.Models.ViewModels;
 
 namespace sp2023_mis421_mockinterviews.Controllers
@@ -29,9 +29,7 @@ namespace sp2023_mis421_mockinterviews.Controllers
 
         public async Task<IActionResult> Index()
         {
-              return _context.RosteredStudents != null ? 
-                          View(await _context.RosteredStudents.ToListAsync()) :
-                          Problem("Entity set 'MockInterviewDataDbContext.RosteredStudent'  is null.");
+            return View(await _context.RosteredStudents.ToListAsync());
         }
 
         // GET: MSTeamsStudentUploads/Details/5
@@ -371,10 +369,6 @@ namespace sp2023_mis421_mockinterviews.Controllers
 
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.RosteredStudents == null)
-            {
-                return Problem("Entity set 'MockInterviewDataDbContext.RosteredStudent'  is null.");
-            }
             var mSTeamsStudentUpload = await _context.RosteredStudents.FindAsync(id);
             if (mSTeamsStudentUpload != null)
             {
