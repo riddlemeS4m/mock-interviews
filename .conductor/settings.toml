@@ -9,3 +9,7 @@ command = ".conductor/run-server.sh"
 available_in = [ "local" ]
 default = true
 icon = "play"
+
+[scripts.run.tailwind-css]
+command = "./scripts/tailwind.sh watch"
+icon = "wind"
