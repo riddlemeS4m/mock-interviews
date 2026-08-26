@@ -8,9 +8,8 @@ using MockInterviews.Models.ViewModels.ReportsController;
 using MockInterviews.Models.ViewModels.TimeslotsController;
 using MockInterviews.Services;
 
-namespace MockInterviews.Areas.Reports.Controllers
+namespace MockInterviews.Controllers
 {
-    [Area("Reports")]
     [Authorize(Roles = RolesConstants.AdminRole)]
     public class ReportsController : Controller
     {
@@ -18,7 +17,7 @@ namespace MockInterviews.Areas.Reports.Controllers
         private readonly MockInterviewsDbContext _context;
         private readonly ILogger<ReportsController> _logger;
 
-        public ReportsController(EventService eventService, 
+        public ReportsController(EventService eventService,
             MockInterviewsDbContext context,
             ILogger<ReportsController> logger)
         {
