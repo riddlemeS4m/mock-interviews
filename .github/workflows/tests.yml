@@ -25,6 +25,9 @@ jobs:
       - name: Restore
         run: dotnet restore mock-interviews.sln
 
+      - name: Build Tailwind CSS
+        run: ./scripts/tailwind.sh build
+
       - name: Build
         run: dotnet build mock-interviews.sln --configuration Release --no-restore
 

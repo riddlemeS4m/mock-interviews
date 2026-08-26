@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +11,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Controllers;
+using MockInterviews.Areas.SystemArea.Controllers;
+using MockInterviews.Data.Constants;
 using MockInterviews.Data;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Extensions;
@@ -21,6 +24,26 @@ namespace MockInterviews.Tests;
 
 public sealed class ConfigurationExtensionsTests
 {
+    [Fact]
+    public void RolesConstants_IncludesAndMapsSystemAdminRole()
+    {
+        var role = Assert.Single(RolesConstants.GetRoleOptions(), option => option.Value == RolesConstants.SystemAdminRole);
+
+        Assert.Equal(RolesConstants.SystemAdminRole, role.Text);
+        Assert.Equal(RolesConstants.SystemAdminRole, RolesConstants.GetRoleText(Roles.systemadmin));
+    }
+
+    [Fact]
+    public void SystemController_IsInSystemAreaAndRequiresSystemAdminRole()
+    {
+        var controllerType = typeof(SystemController);
+        var area = Assert.Single(controllerType.GetCustomAttributes(typeof(AreaAttribute), inherit: true).Cast<AreaAttribute>());
+        var authorization = Assert.Single(controllerType.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: true).Cast<AuthorizeAttribute>());
+
+        Assert.Equal("System", area.RouteValue);
+        Assert.Equal(RolesConstants.SystemAdminRole, authorization.Roles);
+    }
+
     [Fact]
     public void LoadDevelopmentEnvironment_LoadsNearestAncestorFile()
     {

@@ -1,10 +1,21 @@
 # Mock Interviews
 
 ## Setup (MacOS)
-1. Install .NET 8: `brew install --cask dotnet-sdk@8`
+1. Install .NET 10.
 2. Copy the template with `cp .env.example .env`
-3. Run `dotnet restore && dotnet build`, then start the app with either `dotnet run --project mock-interviews` from the repository root or `dotnet run` from `mock-interviews`.
-4. Trust dev cert: `dotnet dev-certs https --trust`
+3. Run `dotnet restore`, `./scripts/tailwind.sh build`, and `dotnet build`.
+4. Start the app with either `dotnet run --project mock-interviews` from the repository root or `dotnet run` from `mock-interviews`.
+5. Trust the development certificate with `dotnet dev-certs https --trust`.
+
+## Tailwind CSS
+
+Tailwind uses its pinned standalone CLI, so Node.js and a JavaScript package manager are not required. The build script downloads the correct macOS or Linux executable and verifies its checksum before use.
+
+- Run `./scripts/tailwind.sh build` for a minified one-time build.
+- Run `./scripts/tailwind.sh watch` while editing Tailwind views.
+- In Conductor, use the `Tailwind CSS` run script alongside `Run Server`.
+
+The generated `mock-interviews/wwwroot/css/tailwind.css` file is gitignored and is rebuilt by workspace setup, CI, and Docker publish. Add migrated view directories as `@source` entries in `mock-interviews/Styles/tailwind.css`.
 
 ## Db setup
 1. `psql postgres`

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en-us" class="h-full">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+    <meta name="description" content="A platform for managing mock interviews.">
+
+    <meta property="og:title" content="@ViewData["Title"] - Mock Interviews">
+    <meta property="og:description" content="A platform for managing mock interviews.">
+
+    <title>@ViewData["Title"] - Mock Interviews</title>
+
+    <link rel="icon" href="~/favicon.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true">
+
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body class="min-h-full">
+    <a href="#main-content"
+       class="fixed left-4 top-4 z-50 -translate-y-24 rounded-md bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-lg transition-transform focus:translate-y-0">
+        Skip to main content
+    </a>
+
+    <div class="flex min-h-screen flex-col">
+        <partial name="_TailwindNavigation" />
+
+        <main id="main-content" class="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8" tabindex="-1">
+            @RenderBody()
+        </main>
+
+        <footer class="border-t border-slate-200 bg-white">
+            <div class="mx-auto flex w-full max-w-7xl justify-center px-4 py-8 sm:px-6 lg:px-8">
+                <nav aria-label="Footer navigation" class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
+                    <a class="transition-colors hover:text-brand-700" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
+                </nav>
+            </div>
+        </footer>
+    </div>
+
+    <script src="~/plugins/jquery/jquery.min.js"></script>
+    <script src="~/js/tailwind-shell.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

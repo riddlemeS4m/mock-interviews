@@ -46,13 +46,14 @@ public static class ApplicationBuilderExtensions
         app.UseAuthorization();
 
         // endpoints
+        app.MapAreaControllerRoute(
+            name: "system",
+            areaName: "System",
+            pattern: "System",
+            defaults: new { controller = "System", action = "Index" });
         app.MapControllerRoute(
             name: "default",
             pattern: "{controller=Home}/{action=Index}/{id?}");
-        app.MapAreaControllerRoute(
-            name: "reports_area",
-            areaName: "Reports",
-            pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
         app.MapRazorPages();
         app.MapHealthChecks("/health");
         app.MapHub<AssignInterviewsHub>("/interviewhub");

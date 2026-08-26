@@ -296,6 +296,9 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# Generated Tailwind CSS (built during setup, CI, and Docker publish)
+/mock-interviews/wwwroot/css/tailwind.css
+
 # Visual Studio 6 build log
 *.plg
 

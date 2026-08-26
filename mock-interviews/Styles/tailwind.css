@@ -1,0 +1,38 @@
+@import "tailwindcss" source(none);
+
+/* Add each migrated view directory here so legacy Bootstrap classes are not scanned. */
+@source "../Views/Shared/_TailwindLayout.cshtml";
+@source "../Views/Shared/_TailwindNavigation.cshtml";
+@source "../Views/Shared/_TailwindLoginPartial.cshtml";
+@source "../Areas/System/Views/**/*.cshtml";
+
+@theme {
+  --color-brand-50: #fff1f3;
+  --color-brand-100: #ffe4e8;
+  --color-brand-200: #fecdd6;
+  --color-brand-300: #fda4b4;
+  --color-brand-400: #fb718b;
+  --color-brand-500: #e83f5f;
+  --color-brand-600: #9e1b32;
+  --color-brand-700: #82172b;
+  --color-brand-800: #6d1728;
+  --color-brand-900: #5e1726;
+  --color-brand-950: #340912;
+
+  --font-sans: "Rubik", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    @apply bg-slate-50;
+  }
+
+  body {
+    @apply min-h-screen bg-slate-50 font-sans text-slate-900 antialiased;
+  }
+
+  button,
+  a {
+    @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600;
+  }
+}
