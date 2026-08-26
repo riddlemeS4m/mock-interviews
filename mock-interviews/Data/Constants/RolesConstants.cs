@@ -8,6 +8,7 @@ namespace MockInterviews.Data.Constants
     public class RolesConstants
     {
         public const string AdminRole = "admin";
+        public const string SystemAdminRole = "systemadmin";
         public const string StudentRole = "student";
         public const string InterviewerRole = "interviewer";
         //public const string DesignateStudent = "crimson.ua.edu"; //this DOES need to be update-able
@@ -17,6 +18,7 @@ namespace MockInterviews.Data.Constants
             return new List<SelectListItem>
             {
                 new() { Text = AdminRole, Value = AdminRole },
+                new() { Text = SystemAdminRole, Value = SystemAdminRole },
                 new() { Text = StudentRole, Value = StudentRole },
                 new() { Text = InterviewerRole, Value = InterviewerRole }
             };
@@ -27,6 +29,7 @@ namespace MockInterviews.Data.Constants
             return role switch
             {
                 Roles.admin => AdminRole,
+                Roles.systemadmin => SystemAdminRole,
                 Roles.student => StudentRole,
                 Roles.interviewer => InterviewerRole,
                 _ => string.Empty
@@ -39,6 +42,7 @@ namespace MockInterviews.Data.Constants
     public enum Roles
     {
         admin,
+        systemadmin,
         student,
         interviewer
     }
