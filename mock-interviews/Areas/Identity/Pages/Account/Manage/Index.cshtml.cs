@@ -146,7 +146,7 @@ namespace MockInterviews.Areas.Identity.Pages.Account.Manage
             //Only way these students can change their class is by the admin uploading an updated 221 roster
             var userClass = user.Class;
 
-            if(Input.Class != userClass && (userClass == Classes.FirstSem || userClass == null)) 
+            if (Input.Class != userClass && userClass == Classes.FirstSem)
             {
                 var shouldBeIn221 = await _context.RosteredStudents.FirstOrDefaultAsync(x => x.Email == user.Email);
                 if(shouldBeIn221 == null)

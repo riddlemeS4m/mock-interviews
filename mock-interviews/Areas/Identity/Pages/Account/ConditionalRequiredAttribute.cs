@@ -12,12 +12,12 @@ namespace MockInterviews.Areas.Identity.Pages.Account
             _comparisonValue = comparisonValue;
         }
 
-        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
             var emailProperty = validationContext.ObjectType.GetProperty("Email");
             if (emailProperty != null)
             {
-                var emailValue = (string)emailProperty.GetValue(validationContext.ObjectInstance);
+                var emailValue = emailProperty.GetValue(validationContext.ObjectInstance) as string;
 
                 if (!string.IsNullOrEmpty(emailValue) && !emailValue.EndsWith(_comparisonValue, StringComparison.OrdinalIgnoreCase))
                 {
@@ -34,7 +34,7 @@ namespace MockInterviews.Areas.Identity.Pages.Account
         public void AddValidation(ClientModelValidationContext context)
         {
             MergeAttribute(context.Attributes, "data-val", "true");
-            MergeAttribute(context.Attributes, "data-val-conditionalrequired", ErrorMessage);
+            MergeAttribute(context.Attributes, "data-val-conditionalrequired", ErrorMessage ?? "The Company field is required.");
 
             var comparisonValue = _comparisonValue.ToLower() == "true" ? "true" : "false";
             MergeAttribute(context.Attributes, "data-val-conditionalrequired-value", comparisonValue);
