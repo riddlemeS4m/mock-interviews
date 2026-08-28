@@ -84,7 +84,9 @@ namespace MockInterviews.Controllers
                 return View(vm);
             }
 
-            EventDate.For221 = (For221)For221Constants.GetFor221Int(value);
+            var for221 = For221Constants.GetFor221Int(value)
+                ?? throw new InvalidOperationException("A valid MIS 221 selection is required.");
+            EventDate.For221 = (For221)for221;
 
             var attempt = await _eventService.AddAsync(EventDate);
 
@@ -145,7 +147,9 @@ namespace MockInterviews.Controllers
                 return View(@event);
             }
 
-            @event.For221 = (For221)For221Constants.GetFor221Int(value);
+            var for221 = For221Constants.GetFor221Int(value)
+                ?? throw new InvalidOperationException("A valid MIS 221 selection is required.");
+            @event.For221 = (For221)for221;
 
             try
             {

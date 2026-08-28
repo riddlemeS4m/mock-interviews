@@ -155,101 +155,63 @@ namespace MockInterviews.Controllers
         public async Task<bool> GetBanner()
         {
             var banner = await _context.Settings.FirstOrDefaultAsync(m => m.Name == "disruption_banner");
-
-            try
-            {
-                if (int.Parse(banner.Value) == 0)
-                {
-                    return false;
-                }
-                return true;
-            } catch
-            {
-                throw new Exception("Setting 'disruption_banner' does not exist, or it is not an integer.");
-            }
+            var value = banner?.Value ?? throw new InvalidOperationException("Setting 'disruption_banner' does not exist, or it is not an integer.");
+            return int.Parse(value) != 0;
         }
 
         public async Task<bool> GetZoomLinkVisible()
         {
             var banner = await _context.Settings.FirstOrDefaultAsync(m => m.Name == "zoom_link_visible");
-
-            try
-            {
-                if (int.Parse(banner.Value) == 0)
-                {
-                    return false;
-                }
-                return true;
-            }
-            catch
-            {
-                throw new Exception("Setting 'zoom_link_visible' does not exist, or it is not an integer.");
-            }
+            var value = banner?.Value ?? throw new InvalidOperationException("Setting 'zoom_link_visible' does not exist, or it is not an integer.");
+            return int.Parse(value) != 0;
         }
 
         public async Task<string> GetZoomLink()
         {
             var banner = await _context.Settings.FirstOrDefaultAsync(m => m.Name == "zoom_link");
-
-            try
-            {
-                return banner.Value;
-            }
-            catch
-            {
-                throw new Exception("Setting 'zoom_link' does not exist.");
-            }
+            return banner?.Value ?? throw new InvalidOperationException("Setting 'zoom_link' does not exist.");
         }
 
         public async Task<IActionResult> SetZoomLink(string link)
         {
             var banner = await _context.Settings.FirstOrDefaultAsync(m => m.Name == "zoom_link");
+            if (banner is null)
+            {
+                throw new InvalidOperationException("Setting 'zoom_link' does not exist.");
+            }
 
-            try
-            {
-                banner.Value = link;
-                _context.Update(banner);
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Index","Home");
-            }
-            catch
-            {
-                throw new Exception("Setting 'zoom_link' does not exist.");
-            }
+            banner.Value = link;
+            _context.Update(banner);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Index","Home");
         }
 
         public async Task<IActionResult> SetZoomLinkVisible(int display)
         {
             var banner = await _context.Settings.FirstOrDefaultAsync(m => m.Name == "zoom_link_visible");
+            if (banner is null)
+            {
+                throw new InvalidOperationException("Setting 'zoom_link_visible' does not exist.");
+            }
 
-            try
-            {
-                banner.Value = display.ToString();
-                _context.Update(banner);
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Index", "Home");
-            }
-            catch
-            {
-                throw new Exception("Setting 'zoom_link_visible' does not exist.");
-            }
+            banner.Value = display.ToString();
+            _context.Update(banner);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Index", "Home");
         }
 
         public async Task<IActionResult> SetDisruptionBanner(int display)
         {
             var banner = await _context.Settings.FirstOrDefaultAsync(m => m.Name == "disruption_banner");
+            if (banner is null)
+            {
+                throw new InvalidOperationException("Setting 'disruption_banner' does not exist.");
+            }
 
-            try
-            {
-                banner.Value = display.ToString();
-                _context.Update(banner);
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Index", "Home");
-            }
-            catch
-            {
-                throw new Exception("Setting 'disruption_banner' does not exist.");
-            }
+            banner.Value = display.ToString();
+            _context.Update(banner);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Index", "Home");
         }
 
         private bool GlobalConfigVarExists(int id)

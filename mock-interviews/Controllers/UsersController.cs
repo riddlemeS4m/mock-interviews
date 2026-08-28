@@ -11,9 +11,9 @@ namespace MockInterviews.Controllers
 {
     public class CreateUserModel
     {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Email { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
     }
     public class UsersController : Controller
     {
@@ -38,11 +38,15 @@ namespace MockInterviews.Controllers
         public async Task<IActionResult> ExternalUserProfileView(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return NotFound();
+            }
 
             var viewModel = new ExternalUserProfileViewModel
             {
-                FirstName = user.FirstName,
-                LastName = user.LastName,
+                FirstName = user.FirstName ?? "Deleted user",
+                LastName = user.LastName ?? string.Empty,
                 Class = ClassConstants.GetClassText((Classes)user.Class)
             };
 

@@ -89,8 +89,8 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.AdminRole + "," + RolesConstants.StudentRole + "," + RolesConstants.InterviewerRole)]
         public async Task<IActionResult> Create([Bind("Id, Question, A")] Question faq)
         {
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByIdAsync(userId);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = userId is null ? null : await _userManager.FindByIdAsync(userId);
 
             if (ModelState.IsValid)
             {
@@ -104,7 +104,7 @@ namespace MockInterviews.Controllers
                 else
                 {
                     ASendAnEmail emailer = new NewFAQSubmitted();
-                    await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "A Required: Student Submitted New Question", _superUserEmail, user.FirstName + " " + user.LastName, faq.Q, null);
+                    await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "A Required: Student Submitted New Question", _superUserEmail, user is null ? "Deleted user" : user.FirstName + " " + user.LastName, faq.Q, null);
 
                     return RedirectToAction("Resources", "Question");
                 }
