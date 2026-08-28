@@ -49,6 +49,22 @@ jobs:
 
   specs:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: mock_interviews_test_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mock_interviews_test_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      IntegrationTests__ConnectionString: Host=localhost;Port=5432;Database=mock_interviews_test_db;Username=postgres;Password=postgres;SSL Mode=Disable
     steps:
       - name: Checkout
         uses: actions/checkout@v7
