@@ -11,7 +11,7 @@ namespace MockInterviews.Models.Entities
         public int Id { get; set; }
 
         [Required]
-        public string Room { get; set; }
+        public string Room { get; set; } = null!; // Required field is populated by validation or EF Core materialization.
 
         [Required]
         [DefaultValue(false)]

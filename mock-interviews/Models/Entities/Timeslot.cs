@@ -22,7 +22,7 @@ namespace MockInterviews.Models.Entities
         public int EventId { get; set; }
 
         [ValidateNever]
-        public Event Event { get; set; }
+        public Event Event { get; set; } = null!; // Populated by EF Core when the required relationship is materialized.
 
         [Required]
         [DefaultValue(true)]

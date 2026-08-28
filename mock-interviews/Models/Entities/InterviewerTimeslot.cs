@@ -15,14 +15,14 @@ namespace MockInterviews.Models.Entities
         public int InterviewerSignupId { get; set; }
 
         [ValidateNever]
-        public InterviewerSignup InterviewerSignup { get; set; }
+        public InterviewerSignup InterviewerSignup { get; set; } = null!; // Populated by EF Core when the required relationship is materialized.
 
         [Required]
         [ForeignKey("Timeslots")]
         public int TimeslotId { get; set; }
 
         [ValidateNever]
-        public Timeslot Timeslot { get; set; }
+        public Timeslot Timeslot { get; set; } = null!; // Populated by EF Core when the required relationship is materialized.
 
         public override string ToString()
         {

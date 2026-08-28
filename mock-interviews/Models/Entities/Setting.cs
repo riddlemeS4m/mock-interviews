@@ -10,10 +10,10 @@ namespace MockInterviews.Models.Entities
         public int Id { get; set; }
 
         [Required]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!; // Required field is populated by validation or EF Core materialization.
 
         [Required]
-        public string Value { get; set; }
+        public string Value { get; set; } = null!; // Required field is populated by validation or EF Core materialization.
 
         public override string ToString()
         {

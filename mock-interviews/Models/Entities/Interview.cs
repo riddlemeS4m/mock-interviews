@@ -14,7 +14,7 @@ namespace MockInterviews.Models.Entities
         public int Id { get; set; }
 
         [Required]
-        public string StudentId { get; set; }
+        public string StudentId { get; set; } = null!; // Required field is populated by validation or EF Core materialization.
 
         [ForeignKey("Locations")]
         public int? LocationId { get; set; }
@@ -27,13 +27,13 @@ namespace MockInterviews.Models.Entities
         public int TimeslotId { get; set; }
 
         [ValidateNever]
-        public Timeslot Timeslot { get; set; }
+        public Timeslot Timeslot { get; set; } = null!; // Populated by EF Core when the required relationship is materialized.
 
         [Display(Name = "Interview Type")]
         public string? Type { get; set; }
 
         [Required]
-        public string Status { get; set; }
+        public string Status { get; set; } = null!; // Required field is populated by validation or EF Core materialization.
 
         [Display(Name = "Rating")]
         public string? InterviewerRating { get; set; }

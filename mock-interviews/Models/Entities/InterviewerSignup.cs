@@ -15,11 +15,11 @@ namespace MockInterviews.Models.Entities
 
         [ValidateNever]
         [Display(Name = "First Name")]
-        public string FirstName { get; set; }
+        public string FirstName { get; set; } = null!; // Populated by the signup workflow or EF Core materialization.
 
         [ValidateNever]
         [Display(Name = "Last Name")]
-        public string LastName { get; set; }
+        public string LastName { get; set; } = null!; // Populated by the signup workflow or EF Core materialization.
 
         [Display(Name = InterviewLocationConstants.IsVirtual)]
         public bool IsVirtual { get; set; }
@@ -38,7 +38,7 @@ namespace MockInterviews.Models.Entities
 
         [ValidateNever]
         [Display(Name = "Interviewer Id")]
-        public string InterviewerId { get; set; }
+        public string InterviewerId { get; set; } = null!; // Populated by the signup workflow or EF Core materialization.
 
         [Display(Name = "Lunch Required")]
         public bool? Lunch { get; set; }
