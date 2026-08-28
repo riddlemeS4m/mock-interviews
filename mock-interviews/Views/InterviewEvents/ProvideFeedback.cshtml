@@ -11,9 +11,9 @@
     <div class="col-md-4">
         <dl>
             <dt>Date</dt>
-            <dd>@Model.InterviewEvent.InterviewerTimeslot.Timeslot.Event.Date</dd>
+            <dd>@Model.InterviewEvent.InterviewerTimeslot?.Timeslot.Event.Date</dd>
             <dt>Time</dt>
-            <dd>@Model.InterviewEvent.InterviewerTimeslot.Timeslot.Time</dd>
+            <dd>@Model.InterviewEvent.InterviewerTimeslot?.Timeslot.Time</dd>
             <dt>Interviewer</dt>
             <dd>@Model.InterviewerName</dd>
             <dt>Focus</dt>
@@ -86,4 +86,3 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 }
-

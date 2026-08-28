@@ -17,10 +17,10 @@
             @Html.DisplayFor(model => model.InterviewerName)
         </dd>
         <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.LocationInterviewer.Location.Room)
+            Room
         </dt>
         <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.LocationInterviewer.Location.Room)
+            @(Model.LocationInterviewer.Location?.Room ?? "Not assigned")
         </dd>
     </dl>
     
