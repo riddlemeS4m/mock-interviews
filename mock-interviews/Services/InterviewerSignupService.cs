@@ -12,7 +12,7 @@ namespace MockInterviews.Services
             _logger = logger;
         }
 
-        public async Task<Dictionary<string,string>> GetCheckedInAndAvailableInterviewerIdsWithTypes(IEnumerable<string> busyInterviewers)
+        public async Task<Dictionary<string, string?>> GetCheckedInAndAvailableInterviewerIdsWithTypes(IEnumerable<string> busyInterviewers)
         {
             return await _dbSet.Where(x => x.CheckedIn && !busyInterviewers.Contains(x.InterviewerId))
                 .Select(x => new {Id = x.InterviewerId, x.Type})

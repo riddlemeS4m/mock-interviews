@@ -49,6 +49,10 @@ namespace MockInterviews.Services
             foreach(var item in keyValuePairs)
             {
                 var interview = interviews.Where(x => x.Id == item.Key).FirstOrDefault();
+                if (interview is null)
+                {
+                    continue;
+                }
                 
                 if(item.Value != "0")
                 {
@@ -72,9 +76,15 @@ namespace MockInterviews.Services
 
                 foreach(var interview in interviewsToUpdate)
                 {
-                    var studentName = students.Where(x => x.Key == interview.StudentId).FirstOrDefault().Value.GetFullName();
-                    var studentClass = students.Where(x => x.Key == interview.StudentId).FirstOrDefault().Value.GetClass();
-                    await _interviewsHub.Clients.All.SendAsync("ReceiveInterviewEventUpdate", interview, studentName, studentClass, interview.InterviewerTimeslot.InterviewerSignup.InterviewerId, interview.InterviewerTimeslot.InterviewerSignup.GetInterviewerName(), interview.Timeslot.Time, interview.Timeslot.Event.Date);
+                    if (interview.InterviewerTimeslot is not { } interviewerTimeslot)
+                    {
+                        continue;
+                    }
+
+                    students.TryGetValue(interview.StudentId, out var student);
+                    var studentName = student?.GetFullName() ?? "Deleted user";
+                    var studentClass = student?.GetClass() ?? string.Empty;
+                    await _interviewsHub.Clients.All.SendAsync("ReceiveInterviewEventUpdate", interview, studentName, studentClass, interviewerTimeslot.InterviewerSignup.InterviewerId, interviewerTimeslot.InterviewerSignup.GetInterviewerName(), interview.Timeslot.Time, interview.Timeslot.Event.Date);
                 }
             }
         }
@@ -100,8 +110,11 @@ namespace MockInterviews.Services
 
                 if(interview.InterviewerTimeslotId != null && interview.InterviewerTimeslotId != 0)
                 {
-                    firstItem.Text = interview.InterviewerTimeslot.InterviewerSignup.GetInterviewerName();
-                    firstItem.Value = interview.InterviewerTimeslot.InterviewerSignup.InterviewerId.ToString();
+                    if (interview.InterviewerTimeslot is { } interviewerTimeslot)
+                    {
+                        firstItem.Text = interviewerTimeslot.InterviewerSignup.GetInterviewerName();
+                        firstItem.Value = interviewerTimeslot.InterviewerSignup.InterviewerId;
+                    }
                 }
 
                 var availableInterviewers = allInterviewers

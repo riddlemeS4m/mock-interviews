@@ -44,7 +44,7 @@ namespace MockInterviews.Data.Access.Reports
                             Date = currentStart.Event.Date,
                             EndTime = currentEnd.Time.AddMinutes(30).ToString(@"h\:mm tt"),
                             StartTime = currentStart.Time.ToString(@"h\:mm tt"),
-                            Name = name.FirstName + " " + name.LastName,
+                            Name = name is null ? "Deleted user" : $"{name.FirstName} {name.LastName}",
                             TimeslotIds = ints
                         });
 
@@ -64,7 +64,7 @@ namespace MockInterviews.Data.Access.Reports
                     Date = currentStart.Event.Date,
                     EndTime = currentEnd.Time.AddMinutes(30).ToString(@"h\:mm tt"),
                     StartTime = currentStart.Time.ToString(@"h\:mm tt"),
-                    Name = user.FirstName + " " + user.LastName,
+                    Name = user is null ? "Deleted user" : $"{user.FirstName} {user.LastName}",
                     TimeslotIds = ints
                 });
             }

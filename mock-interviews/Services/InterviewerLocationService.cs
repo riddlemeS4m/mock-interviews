@@ -14,8 +14,10 @@ namespace MockInterviews.Services
 
         public async Task<Dictionary<string, string>> GetInterviewersRoomsByIds(IEnumerable<string> userIds)
         {
-            var dict = await _dbSet.Where(x => userIds.Contains(x.InterviewerId) && x.Event.Date.Date == DateTime.UtcNow.Date)
-                .Select(x => new {Id = x.InterviewerId, x.Location.Room})
+            var dict = await _dbSet.Where(x => userIds.Contains(x.InterviewerId)
+                    && x.Event != null && x.Location != null && x.Event.Date.Date == DateTime.UtcNow.Date)
+                // The preceding predicate establishes that Location is present for this projection.
+                .Select(x => new { Id = x.InterviewerId, Room = x.Location!.Room })
                 .ToDictionaryAsync(x => x.Id, x => x.Room);
 
             return dict;
