@@ -4,7 +4,7 @@ namespace MockInterviews.Models.ViewModels
 {
     public class VolunteerEventViewModel
     {
-        public VolunteerTimeslot VolunteerEvent { get; set; }
-        public  string StudentName { get; set; }
+        public VolunteerTimeslot VolunteerEvent { get; set; } = null!; // Assigned when the controller composes an event row.
+        public string StudentName { get; set; } = string.Empty;
     }
 }

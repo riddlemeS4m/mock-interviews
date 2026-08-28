@@ -5,7 +5,7 @@ namespace MockInterviews.Models.ViewModels.TimeslotsController
 {
     public class TimeslotViewModel
     {
-        public List<ParticipantCountViewModel> Timeslots { get; set; }
-        public List<Event> EventDates { get; set; }
+        public List<ParticipantCountViewModel> Timeslots { get; set; } = [];
+        public List<Event> EventDates { get; set; } = [];
     }
 }

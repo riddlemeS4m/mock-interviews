@@ -4,7 +4,7 @@ namespace MockInterviews.Models.ViewModels.EventsController
 {
     public class EventDateCreationViewModel
     {
-        public Event EventDate { get; set; }
+        public Event EventDate { get; set; } = null!; // Assigned when the controller composes the creation form.
         public int MaxSignUps { get; set; }
     }
 }

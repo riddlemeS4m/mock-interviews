@@ -5,13 +5,13 @@ namespace MockInterviews.Models.ViewModels
     public class ResetPasswordViewModel
     {
         [Required]
-        public string UserId { get; set; }
+        public string UserId { get; set; } = string.Empty;
 
         [DataType(DataType.Password)]
-        public string NewPassword { get; set; }
+        public string NewPassword { get; set; } = string.Empty;
 
         [DataType(DataType.Password)]
         [Compare("NewPassword", ErrorMessage = "Passwords do not match.")]
-        public string ConfirmPassword { get; set; }
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 }

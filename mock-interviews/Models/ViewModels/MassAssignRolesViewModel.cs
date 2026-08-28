@@ -5,10 +5,10 @@ namespace MockInterviews.Models.ViewModels
     public class MassAssignRolesViewModel
     {
         [Display(Name = "Name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [Display(Name = "Email")]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [Display(Name = "Is Already in Role")]
         public bool IsAlreadyInRole { get; set; }

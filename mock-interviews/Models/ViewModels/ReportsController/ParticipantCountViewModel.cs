@@ -5,7 +5,7 @@ namespace MockInterviews.Models.ViewModels.ReportsController
 {
 	public class ParticipantCountViewModel
 	{
-		public Timeslot Timeslot { get; set; }
+        public Timeslot Timeslot { get; set; } = null!; // Assigned while the report row is projected.
 		[Display(Name ="Number of Students")]
 		public int StudentCount { get; set; }
 		[Display(Name = "Number of Interviewers")]

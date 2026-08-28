@@ -5,14 +5,14 @@ namespace MockInterviews.Models.ViewModels
 {
     public class InterviewEventViewModel
     {
-        public Interview InterviewEvent { get; set; }
+        public Interview InterviewEvent { get; set; } = null!; // Assigned while a schedule row is projected.
 
         [Display(Name = "Student Name")]
-        public string StudentName { get; set; }
+        public string StudentName { get; set; } = string.Empty;
 
-        public string Class { get; set; }
+        public string Class { get; set; } = string.Empty;
 
         [Display(Name = "Interviewer Name")]
-        public string InterviewerName { get; set; }
+        public string InterviewerName { get; set; } = string.Empty;
     }
 }

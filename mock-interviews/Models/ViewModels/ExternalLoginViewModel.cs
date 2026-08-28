@@ -2,7 +2,7 @@
 {
     public class ExternalLoginViewModel
     {
-        public string ReturnUrl { get; set; }
-        public string Provider { get; set; }
+        public string ReturnUrl { get; set; } = string.Empty;
+        public string Provider { get; set; } = string.Empty;
     }
 }

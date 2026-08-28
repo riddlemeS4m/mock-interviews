@@ -2,7 +2,7 @@
 {
     public class AttendanceReportViewModel
     {
-        public List<ClassReport> ClassReports { get; set; }
-        public List<ClassReport> SummaryStats { get; set; }
+        public List<ClassReport> ClassReports { get; set; } = [];
+        public List<ClassReport> SummaryStats { get; set; } = [];
     }
 }
