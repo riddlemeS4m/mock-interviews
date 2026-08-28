@@ -163,7 +163,7 @@ namespace MockInterviews.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Create()
         {
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var company = "";
             var email = "";
@@ -192,10 +192,10 @@ namespace MockInterviews.Controllers
                     .ToListAsync();
 
                 var user = await _userManager.FindByIdAsync(userId);
-                company = user.Company;
-                email = user.Email;
-                firstName = user.FirstName;
-                lastName = user.LastName;
+                company = user?.Company ?? string.Empty;
+                email = user?.Email ?? string.Empty;
+                firstName = user?.FirstName ?? string.Empty;
+                lastName = user?.LastName ?? string.Empty;
             }
 
             var dates = await _context.Events
@@ -300,10 +300,28 @@ namespace MockInterviews.Controllers
             if (SelectedEventIds == null || SelectedEventIds.Length == 0)
             {
                 ModelState.AddModelError("SelectedEventIds", "Please select at least one timeslot");
+                return View(vm);
             }
 
             if(ModelState.ErrorCount > 0)
             {
+                return View(vm);
+            }
+
+            var requestedTimeslotIds = SelectedEventIds
+                .SelectMany(id => new[] { id, id + 1 })
+                .Distinct()
+                .ToArray();
+            var selectedTimeslotsById = timeslots
+                .Where(timeslot => requestedTimeslotIds.Contains(timeslot.Id))
+                .ToDictionary(timeslot => timeslot.Id);
+            var invalidSelections = SelectedEventIds
+                .Where(id => !selectedTimeslotsById.ContainsKey(id) || !selectedTimeslotsById.ContainsKey(id + 1))
+                .ToList();
+
+            if (invalidSelections.Count > 0)
+            {
+                ModelState.AddModelError("SelectedEventIds", "One or more selected timeslots are no longer available. Refresh the page and try again.");
                 return View(vm);
             }
 
@@ -379,8 +397,8 @@ namespace MockInterviews.Controllers
                 post = new InterviewerSignup
                 {
                     InterviewerId = userId,
-                    FirstName = userName.FirstName,
-                    LastName = userName.LastName,
+                    FirstName = userName?.FirstName ?? "Deleted user",
+                    LastName = userName?.LastName ?? string.Empty,
                     InPerson = signupInterviewer.InPerson,
                     IsVirtual = !signupInterviewer.InPerson,
                     IsBehavioral = signupInterviewer.IsBehavioral,
@@ -413,20 +431,23 @@ namespace MockInterviews.Controllers
             var emailTimes = new List<InterviewerTimeslot>();
 
             //add sits
-            foreach (int id in SelectedEventIds)
+            foreach (int id in SelectedEventIds ?? [])
             {
                 var bothTimeslots = new List<InterviewerTimeslot>();
 
+                var firstTimeslot = selectedTimeslotsById[id];
+                var secondTimeslot = selectedTimeslotsById[id + 1];
                 var timeslotOne = new InterviewerTimeslot 
                 { 
-                    TimeslotId = id, 
+                    TimeslotId = id,
+                    Timeslot = firstTimeslot,
                     InterviewerSignupId = post.Id 
                 };
 
                 var timeslotTwo = new InterviewerTimeslot
                 {
                     TimeslotId = id + 1,
-                    Timeslot = await _context.Timeslots.FindAsync(id + 1),
+                    Timeslot = secondTimeslot,
                     InterviewerSignupId = post.Id
                 };
 
@@ -445,7 +466,18 @@ namespace MockInterviews.Controllers
                 .OrderBy(ve => ve.TimeslotId)
                 .ToList();
 
-            await ComposeEmail(userName.FirstName, userName.LastName, userName.Email, sortedTimes);
+            if (userName?.Email is { Length: > 0 } emailAddress)
+            {
+                await ComposeEmail(
+                    userName.FirstName ?? "Deleted user",
+                    userName.LastName ?? string.Empty,
+                    emailAddress,
+                    sortedTimes);
+            }
+            else
+            {
+                // The user has chosen the established behavior: skip notifications for deleted or uncontactable users.
+            }
 
             return RedirectToAction("Index", "Home");
         }
@@ -526,10 +558,10 @@ namespace MockInterviews.Controllers
                 return BadRequest(new ForbiddenException());
             }
 
-            int[] SelectedEventIds = SelectedEventIds1
-                .Concat(SelectedEventIds2)
-                .Concat(SelectedEventIds3)
-                .Concat(SelectedEventIds4)
+            int[] SelectedEventIds = (SelectedEventIds1 ?? [])
+                .Concat(SelectedEventIds2 ?? [])
+                .Concat(SelectedEventIds3 ?? [])
+                .Concat(SelectedEventIds4 ?? [])
                 .ToArray();
             var user = await _userManager.FindByIdAsync(signupInterviewer.InterviewerId);
             var theirClass = GetClass(User.IsInRole(RolesConstants.StudentRole));
@@ -566,8 +598,8 @@ namespace MockInterviews.Controllers
                 SignupInterviewer = new InterviewerSignup
                 {
                     InterviewerId = signupInterviewer.InterviewerId,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
+                    FirstName = user?.FirstName ?? "Deleted user",
+                    LastName = user?.LastName ?? string.Empty,
                     IsBehavioral = false,
                     IsTechnical = false,
                     IsCase = false,
@@ -597,14 +629,19 @@ namespace MockInterviews.Controllers
 
             //Get old interviewer signup
             var existingSignupInterviewer = await _context.InterviewerSignups.FirstOrDefaultAsync(x => x.Id == signupInterviewer.Id);
+            if (existingSignupInterviewer is null)
+            {
+                return Conflict("The interviewer signup was changed or deleted. Refresh the page and try again.");
+            }
+
             var interviewtype = GetType(signupInterviewer.IsBehavioral, signupInterviewer.IsTechnical, signupInterviewer.IsCase);
             var interviewerPreference = GetLocation(signupInterviewer.InPerson);
 
             _context.Entry(existingSignupInterviewer).CurrentValues.SetValues(new
             {
                 InterviewerId = signupInterviewer.InterviewerId,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
+                FirstName = user?.FirstName ?? "Deleted user",
+                LastName = user?.LastName ?? string.Empty,
                 InPerson = signupInterviewer.InPerson,
                 IsVirtual = !signupInterviewer.InPerson,
                 IsBehavioral = signupInterviewer.IsBehavioral,
@@ -745,10 +782,10 @@ namespace MockInterviews.Controllers
                 throw new Exception("Interviewer Id was not provided.");
             }
 
-            int[] SelectedEventIds = SelectedEventIds1
-                .Concat(SelectedEventIds2)
-                .Concat(SelectedEventIds3)
-                .Concat(SelectedEventIds4)
+            int[] SelectedEventIds = (SelectedEventIds1 ?? [])
+                .Concat(SelectedEventIds2 ?? [])
+                .Concat(SelectedEventIds3 ?? [])
+                .Concat(SelectedEventIds4 ?? [])
                 .ToArray();
 
             var timeslots = await _context.Timeslots
@@ -870,8 +907,8 @@ namespace MockInterviews.Controllers
                 post = new InterviewerSignup
                 {
                     InterviewerId = InterviewerId,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
+                    FirstName = user?.FirstName ?? "Deleted user",
+                    LastName = user?.LastName ?? string.Empty,
                     InPerson = signupInterviewer.InPerson,
                     IsVirtual = signupInterviewer.IsVirtual,
                     IsBehavioral = signupInterviewer.IsBehavioral,

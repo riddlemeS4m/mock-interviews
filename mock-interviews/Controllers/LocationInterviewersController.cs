@@ -35,7 +35,7 @@ namespace MockInterviews.Controllers
             var locationInterviewers = await _context.InterviewerLocations
                 .Include(v => v.Location)
                 .Include(v => v.Event)
-                .Where(v => v.Event.IsActive == true)
+                .Where(v => v.Event != null && v.Event.IsActive)
                 .ToListAsync();
 
             var interviewerIds = locationInterviewers
@@ -88,6 +88,11 @@ namespace MockInterviews.Controllers
             }
 
             var interviewer = await _userManager.FindByIdAsync(locationInterviewer.InterviewerId);
+            if (interviewer is null)
+            {
+                return NotFound();
+            }
+
             var locationInterviewerWithName = new LocationInterviewerWithName
             {
                 LocationInterviewer = locationInterviewer,
@@ -269,13 +274,6 @@ namespace MockInterviews.Controllers
                 .ToListAsync();
 
             // Get a list of all Locations except those already assigned to LocationInterviewers
-            var inPerson = true;
-            var isVirtual = false;
-            if (locationInterviewer.Preference == InterviewLocationConstants.IsVirtual)
-            {
-                inPerson = false;
-                isVirtual = true;
-            }
            
 
             var availableLocations = await _context.Locations
@@ -299,6 +297,10 @@ namespace MockInterviews.Controllers
             }
 
             var interviewer = await _userManager.FindByIdAsync(locationInterviewer.InterviewerId);
+            if (interviewer is null)
+            {
+                return NotFound();
+            }
 
             // Create the view model
             var viewModel = new LocationInterviewerCreateViewModel
@@ -372,6 +374,11 @@ namespace MockInterviews.Controllers
             }
 
             var interviewer = await _userManager.FindByIdAsync(locationInterviewer.InterviewerId);
+            if (interviewer is null)
+            {
+                return NotFound();
+            }
+
             var locationInterviewerWithName = new LocationInterviewerWithName
             {
                 LocationInterviewer = locationInterviewer,

@@ -91,7 +91,7 @@ namespace MockInterviews.Controllers
                 foreach (var interviewerid in interviewerIds)
                 {
                     var interviewer = await _userManager.FindByIdAsync(interviewerid);
-                    interviewerNamesList.Add(interviewer.FirstName + " " + interviewer.LastName);
+                    interviewerNamesList.Add(interviewer is null ? "Deleted user" : interviewer.FirstName + " " + interviewer.LastName);
                 }
             }
 
@@ -107,7 +107,7 @@ namespace MockInterviews.Controllers
                 foreach (var interviewerid in studentIds)
                 {
                     var student = await _userManager.FindByIdAsync(interviewerid);
-                    studentNamesList.Add(student.FirstName + " " + student.LastName);
+                    studentNamesList.Add(student is null ? "Deleted user" : student.FirstName + " " + student.LastName);
                 }
             }
 
@@ -123,7 +123,7 @@ namespace MockInterviews.Controllers
                 foreach (var interviewerid in volunteerIds)
                 {
                     var volunteer = await _userManager.FindByIdAsync(interviewerid);
-                    volunteerNamesList.Add(volunteer.FirstName + " " + volunteer.LastName);
+                    volunteerNamesList.Add(volunteer is null ? "Deleted user" : volunteer.FirstName + " " + volunteer.LastName);
                 }
             }
 

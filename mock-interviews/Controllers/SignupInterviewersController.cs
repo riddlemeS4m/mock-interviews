@@ -232,9 +232,10 @@ namespace MockInterviews.Controllers
         {
             var busyInterviewers = await _context.Interviews
                 .Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x.InterviewerSignup)
-                .Where(x => x.Status == StatusConstants.Ongoing)
-                .Select(x => x.InterviewerTimeslot.InterviewerSignup.InterviewerId)
+                // EF Core parses Include expressions without dereferencing an optional navigation.
+                .ThenInclude(x => x!.InterviewerSignup)
+                .Where(x => x.Status == StatusConstants.Ongoing && x.InterviewerTimeslot != null)
+                .Select(x => x.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
                 .Distinct()
                 .ToListAsync();
 
@@ -243,7 +244,7 @@ namespace MockInterviews.Controllers
                 .Select(x => new AvailableInterviewer
                 {
                     InterviewerId = x.InterviewerId,
-                    InterviewType = x.Type,
+                    InterviewType = x.Type ?? string.Empty,
                 })
             .ToListAsync();
 
@@ -252,7 +253,7 @@ namespace MockInterviews.Controllers
                 iv.Name = await _userManager.Users
                     .Where(x => x.Id == iv.InterviewerId)
                     .Select(x => x.FirstName + " " + x.LastName)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync() ?? "Deleted user";
 
                 var date = DateTime.UtcNow.Date;
                 //var date = new DateTime(2024, 2, 8);
@@ -261,8 +262,8 @@ namespace MockInterviews.Controllers
                     .Include(x => x.Location)
                     .Include(x => x.Event)
                     .Where(x => x.InterviewerId == iv.InterviewerId &&
-                        x.Event.Date == date)
-                    .Select(x => x.Location.Room)
+                        x.Event != null && x.Event.Date == date && x.Location != null)
+                    .Select(x => x.Location!.Room)
                     .FirstOrDefaultAsync() ?? "Not Assigned";
             }
 
