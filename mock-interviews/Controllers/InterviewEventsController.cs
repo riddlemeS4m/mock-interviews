@@ -406,13 +406,19 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.StudentRole)]
         public async Task<IActionResult> ProvideFeedback(int id)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId is null)
+            {
+                return Challenge();
+            }
+
             var interviewEvent = await _context.Interviews
                 .Include(x => x.InterviewerTimeslot)
                 .ThenInclude(x => x!.InterviewerSignup)
                 .Include(x => x.Location)
                 .Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id && x.StudentId == userId && x.Status == StatusConstants.Completed);
             if (interviewEvent is null)
             {
                 return NotFound();
@@ -432,58 +438,33 @@ namespace MockInterviews.Controllers
 
         [Authorize(Roles = RolesConstants.StudentRole)]
         [HttpPost]
-        public async Task<IActionResult> ProvideFeedback(int id, [Bind("Id,StudentId,TimeslotId,LocationId,Status,Type,InterviewerTimeslotId,InterviewerRating,InterviewerFeedback,ProcessFeedback")] Interview interviewEvent)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProvideFeedback(int id, [Bind("Id,InterviewerRating,InterviewerFeedback,ProcessFeedback")] Interview interviewEvent)
         {
             if (id != interviewEvent.Id)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId is null)
             {
-                try
-                {
-                    _context.Update(interviewEvent);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!InterviewEventExists(interviewEvent.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-
-                return RedirectToAction("FeedbackIndex", "InterviewEvents");
+                return Challenge();
             }
 
-
             var interviewEventActual = await _context.Interviews
-                .Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x!.InterviewerSignup)
-                .Include(x => x.Location)
-                .Include(x => x.Timeslot)
-                .ThenInclude(x => x.Event)
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id && x.StudentId == userId && x.Status == StatusConstants.Completed);
             if (interviewEventActual is null)
             {
                 return NotFound();
             }
 
-            var interviewer = interviewEventActual.InterviewerTimeslot is null
-                ? null
-                : await _userManager.FindByIdAsync(interviewEventActual.InterviewerTimeslot.InterviewerSignup.InterviewerId);
-            var model = new InterviewEventViewModel()
-            {
-                InterviewEvent = interviewEventActual,
-                InterviewerName = interviewer is null ? "Not Assigned" : GetDisplayName(interviewer)
-            };
+            interviewEventActual.InterviewerRating = interviewEvent.InterviewerRating;
+            interviewEventActual.InterviewerFeedback = interviewEvent.InterviewerFeedback;
+            interviewEventActual.ProcessFeedback = interviewEvent.ProcessFeedback;
+            await _context.SaveChangesAsync();
+            return RedirectToAction("FeedbackIndex", "InterviewEvents");
 
-            return View("ProvideFeedback", model);
         }
 
 
