@@ -2,7 +2,7 @@
 using MockInterviews.Interfaces.IReports;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.Shared;
 
 namespace MockInterviews.Data.Access.Reports
 {

@@ -5,16 +5,10 @@ using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.UsersController;
 
 namespace MockInterviews.Controllers
 {
-    public class CreateUserModel
-    {
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-    }
     public class UsersController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -118,7 +112,7 @@ namespace MockInterviews.Controllers
 
         [HttpPost]
         [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> CreateProvisionaryUser(CreateUserModel model)
+        public async Task<IActionResult> CreateProvisionaryUser(CreateUserViewModel model)
         {
             if (ModelState.IsValid)
             {

@@ -5,7 +5,7 @@ using MockInterviews.Data.Constants;
 using MockInterviews.Data.Seeds;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
-using MockInterviews.Models.ViewModels.EventsController;
+using MockInterviews.Models.ViewModels.EventDatesController;
 using MockInterviews.Services;
 
 namespace MockInterviews.Controllers

@@ -11,7 +11,7 @@ using Microsoft.VisualBasic.FileIO;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.MSTeamsStudentUploadsController;
 
 namespace MockInterviews.Controllers
 {

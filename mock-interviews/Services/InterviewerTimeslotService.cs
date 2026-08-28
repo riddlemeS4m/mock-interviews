@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
-using MockInterviews.Models.ViewModels;
 
 namespace MockInterviews.Services
 {

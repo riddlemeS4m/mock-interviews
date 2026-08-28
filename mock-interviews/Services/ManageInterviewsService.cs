@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using SendGrid;
 using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.InterviewEventsController;
 using MockInterviews.Services.SignalR;
 
 namespace MockInterviews.Services

@@ -13,7 +13,7 @@ using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.LocationInterviewersController;
 
 namespace MockInterviews.Controllers
 {

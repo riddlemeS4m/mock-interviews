@@ -17,7 +17,8 @@ using MockInterviews.Data.Access.Emails;
 using MockInterviews.Data.Access.Reports;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.Shared;
+using MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsController;
 using MockInterviews.Options;
 
 

@@ -1,4 +1,4 @@
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.InterviewEventsController;
 
 namespace MockInterviews.Interfaces.IServices
 {

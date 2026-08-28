@@ -11,9 +11,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SendGrid;
 using MockInterviews.Models.Entities;
-using MockInterviews.Models.ViewModels.InterviewsController;
+using MockInterviews.Models.ViewModels.InterviewEventsController;
+using MockInterviews.Models.ViewModels.HomeController;
+using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Access.Emails;
 using MockInterviews.Interfaces.IServices;
@@ -24,70 +25,6 @@ using MockInterviews.Options;
 
 namespace MockInterviews.Controllers
 {
-    public class IVM
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Id { get; set; } = string.Empty;
-        public bool Technical { get; set; }
-        public bool Behavioral { get; set; }
-    }
-
-    public class AVM
-    {
-        public List<SelectListItem> BehavioralInterviewers { get; set; } = [];
-        public List<SelectListItem> TechnicalInterviewers { get; set; } = [];
-    }
-
-    public class PAVM
-    {
-        public List<SelectListItem> AvailableInterviewers { get; set; } = [];
-        public Interview Student { get; set; } = null!; // Assigned when the assignment response is composed.
-        public string StudentName { get; set; } = string.Empty;
-        public string StudentClass { get; set; } = string.Empty;
-    }
-
-    public class PARVM
-
-    {
-        public string InterviewEventId { get; set; } = string.Empty;
-        public string SelectedValue { get; set; } = string.Empty;
-    }
-    
-    public class IVMComparer : IEqualityComparer<IVM>
-    {
-        public bool Equals(IVM? x, IVM? y)
-        {
-            if (x is null || y is null)
-                return false;
-
-            return x.Name == y.Name &&
-                   x.Id == y.Id &&
-                   x.Technical == y.Technical &&
-                   x.Behavioral == y.Behavioral;
-        }
-
-        public int GetHashCode(IVM obj)
-        {
-            unchecked
-            {
-                int hash = 17;
-                hash = hash * 23 + obj.Name.GetHashCode();
-                hash = hash * 23 + obj.Id.GetHashCode();
-                hash = hash * 23 + obj.Technical.GetHashCode();
-                hash = hash * 23 + obj.Behavioral.GetHashCode();
-                return hash;
-            }
-        }
-    }
-
-    public class EditInlineResponse
-    {
-        public string StudentName { get; set; } = string.Empty;
-        public string InterviewType { get; set; } = string.Empty;
-        public string InterviewerName { get; set; } = string.Empty;
-        public string Location { get; set; } = string.Empty;
-    }
-
     public class InterviewEventsController : Controller
     {
         private readonly IManageInterviews _manager;
@@ -1335,7 +1272,7 @@ namespace MockInterviews.Controllers
             return selectedInterviewers;
         }
 
-        private async Task<List<IVM>> OutsourceQuery2024(Interview ie)
+        private async Task<List<InterviewerOptionViewModel>> OutsourceQuery2024(Interview ie)
         {
             var allInterviewers = await _context.InterviewerTimeslots
                 .Include(x => x.InterviewerSignup)
@@ -1349,7 +1286,7 @@ namespace MockInterviews.Controllers
                         .Where(i => i.Status == "Ongoing" && i.InterviewerTimeslot != null)
                         .Select(i => i.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
                         .Contains(x.InterviewerSignup.InterviewerId))
-                .Select(x => new IVM
+                .Select(x => new InterviewerOptionViewModel
                 {
                     Name = x.InterviewerSignup.FirstName + " " + x.InterviewerSignup.LastName,
                     Id = x.InterviewerSignup.InterviewerId.ToString(),
@@ -1361,10 +1298,10 @@ namespace MockInterviews.Controllers
             return allInterviewers;
         }
 
-        private static List<SelectListItem> OutsourceQueryTechnical2024(List<IVM> all)
+        private static List<SelectListItem> OutsourceQueryTechnical2024(List<InterviewerOptionViewModel> all)
         {
             var allInterviewers = all
-                .Distinct(new IVMComparer())
+                .Distinct(new InterviewerOptionViewModelComparer())
                 .OrderBy(x => x.Name)
                 .ToList();
 
@@ -1386,10 +1323,10 @@ namespace MockInterviews.Controllers
             return technicalInterviewers;
         }
 
-        private static List<SelectListItem> OutsourceQueryBehavioral2024(List<IVM> all)
+        private static List<SelectListItem> OutsourceQueryBehavioral2024(List<InterviewerOptionViewModel> all)
         {
             var allInterviewers = all
-                .Distinct(new IVMComparer())
+                .Distinct(new InterviewerOptionViewModelComparer())
                 .OrderBy(x => x.Name)
                 .ToList();
 
@@ -1787,7 +1724,7 @@ namespace MockInterviews.Controllers
                     })
                     .FirstOrDefaultAsync();
 
-                var response = new EditInlineResponse
+                var response = new EditInterviewResponse
                 {
                     StudentName = student?.StudentName ?? "Deleted user",
                     InterviewType = interviewEvent.Type, // Replace with actual values
@@ -1814,7 +1751,7 @@ namespace MockInterviews.Controllers
         }
 
         [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<ActionResult<AVM>> GetAvailableInterviewers(int id)
+        public async Task<ActionResult<AvailableInterviewersViewModel>> GetAvailableInterviewers(int id)
         {
             if (id == 0 || !_context.Interviews.Any(x => x.Id == id))
             {
@@ -1831,7 +1768,7 @@ namespace MockInterviews.Controllers
                 return NotFound("Interview Event not found.");
             }
 
-            var vm = new AVM();
+            var vm = new AvailableInterviewersViewModel();
 
             var all = await OutsourceQuery2024(interviewEvent);
             vm.BehavioralInterviewers = OutsourceQueryBehavioral2024(all);
@@ -2102,7 +2039,7 @@ namespace MockInterviews.Controllers
 
         [HttpPost]
         [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> PreAssignInterviews([FromBody] List<PARVM> requests)
+        public async Task<IActionResult> PreAssignInterviews([FromBody] List<PreAssignInterviewRequestViewModel> requests)
         {
             _logger.LogInformation("Preassignment requested...");
 

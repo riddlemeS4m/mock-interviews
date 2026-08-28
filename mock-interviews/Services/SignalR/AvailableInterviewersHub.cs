@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using MockInterviews.Models.Entities;
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.Shared;
 
 namespace MockInterviews.Services.SignalR
 {
