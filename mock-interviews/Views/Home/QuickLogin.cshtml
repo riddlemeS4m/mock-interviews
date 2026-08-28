@@ -9,7 +9,7 @@
 <div style="text-align:center" onload="document.forms['micrologin'].submit()">
     <h2>@ViewBag.Title</h2>
 </div>
-@if (User.Identity.IsAuthenticated)
+@if (User.Identity?.IsAuthenticated == true)
 {
     <p style="font-size:20px; text-align:center; padding-top: 10px">
         Our mission is to help students prepare for their upcoming job interviews by <br /> providing a realistic simulation of the interview experience.
@@ -29,24 +29,24 @@ else
     </div>
 }
 
-@if (User.Identity.IsAuthenticated && User.IsInRole(RolesConstants.AdminRole))
+@if (User.Identity?.IsAuthenticated == true && User.IsInRole(RolesConstants.AdminRole))
 {
     <a asp-area="" asp-controller="Home" asp-action="EmailStudents">Email Reminder for Students</a>
 }
 <br />
-@if (User.Identity.IsAuthenticated && User.IsInRole(RolesConstants.AdminRole))
+@if (User.Identity?.IsAuthenticated == true && User.IsInRole(RolesConstants.AdminRole))
 {
     <a asp-area="" asp-controller="Home" asp-action="EmailInterviewers">Email Reminder for Interviewers</a>
 }
 
-@if (User.Identity.IsAuthenticated && User.IsInRole(RolesConstants.StudentRole))
+@if (User.Identity?.IsAuthenticated == true && User.IsInRole(RolesConstants.StudentRole))
 {
     @await Html.PartialAsync("_VolunteerEventsHomePartial", Model.TimeRangeViewModels)
     <br />
     @await Html.PartialAsync("_InterviewEventsPartial", Model.StudentScheduledInterviews)
 }
 
-@if (User.Identity.IsAuthenticated && User.IsInRole(RolesConstants.InterviewerRole))
+@if (User.Identity?.IsAuthenticated == true && User.IsInRole(RolesConstants.InterviewerRole))
 {
     @await Html.PartialAsync("_SignupInterviewerTimeslotsPartial", Model)
 }

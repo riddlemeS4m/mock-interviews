@@ -44,17 +44,31 @@ namespace MockInterviews.Controllers
         {
             _logger.LogInformation("Calling {method} method...", nameof(Index));
 
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userFull = await _userManager.FindByIdAsync(userId);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            ApplicationUser? userFull = null;
+
+            if (userId is not null)
+            {
+                userFull = await _userManager.FindByIdAsync(userId);
+            }
+            else if (User.Identity?.IsAuthenticated == true)
+            {
+                return Challenge();
+            }
+
+            if (User.Identity?.IsAuthenticated == true && userFull is null)
+            {
+                return Challenge();
+            }
 
             IndexViewModel model = new()
             {
                 DisruptionBanner = await GetDisruptionBanner()
             };
 
-            if (User.Identity.IsAuthenticated)
+            if (userFull is not null)
             {
-                model.Name = $"{userFull.FirstName} {userFull.LastName}";
+                model.Name = GetDisplayName(userFull);
 
                 model.ZoomLink = await GetZoomLink();
                 model.ZoomLinkVisible = await GetZoomLinkVisible();
@@ -82,11 +96,12 @@ namespace MockInterviews.Controllers
             {
                 var interviewEvents = await _context.Interviews
                     .Include(v => v.InterviewerTimeslot)
-                    .ThenInclude(v => v.InterviewerSignup)
+                    // EF Core parses Include expressions without dereferencing optional navigations.
+                    .ThenInclude(v => v!.InterviewerSignup)
                     .Include(v => v.Location)
                     .Include(v => v.Timeslot)
                     .ThenInclude(v => v.Event)
-                    .Where(v => v.InterviewerTimeslot.InterviewerSignup.InterviewerId == userId 
+                    .Where(v => v.InterviewerTimeslot != null && v.InterviewerTimeslot.InterviewerSignup.InterviewerId == userId
                         && v.Timeslot.Event.IsActive
                         && (v.Status == StatusConstants.Ongoing 
                         || v.Status == StatusConstants.Completed 
@@ -105,9 +120,9 @@ namespace MockInterviews.Controllers
                             model.InterviewerScheduledInterviews.Add(new InterviewEventViewModel()
                             {
                                 InterviewEvent = interviewEvent,
-                                StudentName = $"{student.FirstName} {student.LastName}",
-                                InterviewerName = $"{userFull.FirstName} {userFull.LastName}",
-                                Class = ClassConstants.GetClassText(student.Class)
+                                StudentName = GetDisplayName(student),
+                                InterviewerName = GetDisplayName(userFull),
+                                Class = student is null ? string.Empty : ClassConstants.GetClassText(student.Class)
                             });
                         }
                         else
@@ -116,7 +131,7 @@ namespace MockInterviews.Controllers
                             {
                                 InterviewEvent = interviewEvent,
                                 StudentName = "Not Assigned",
-                                InterviewerName = $"{userFull.FirstName} {userFull.LastName}"
+                                InterviewerName = GetDisplayName(userFull)
                             });
                         }
                     }
@@ -164,7 +179,7 @@ namespace MockInterviews.Controllers
             {
                 var interviewEvents = await _context.Interviews
                     .Include(v => v.InterviewerTimeslot)
-                    .ThenInclude(v => v.InterviewerSignup)
+                    .ThenInclude(v => v!.InterviewerSignup)
                     .Include(v => v.Location)
                     .Include(v => v.Timeslot)
                     .ThenInclude(v => v.Event)
@@ -183,9 +198,9 @@ namespace MockInterviews.Controllers
                             model.StudentScheduledInterviews.Add(new InterviewEventViewModel()
                             {
                                 InterviewEvent = interviewEvent,
-                                StudentName = $"{userFull.FirstName} {userFull.LastName}",
-                                InterviewerName = $"{interviewer.FirstName} {interviewer.LastName}",
-                                Class = ClassConstants.GetClassText(userFull.Class)
+                                StudentName = GetDisplayName(userFull),
+                                InterviewerName = GetDisplayName(interviewer),
+                                Class = ClassConstants.GetClassText(userFull?.Class ?? default)
                             });
                         }
                         else
@@ -193,8 +208,8 @@ namespace MockInterviews.Controllers
                             model.StudentScheduledInterviews.Add(new InterviewEventViewModel()
                             {
                                 InterviewEvent = interviewEvent,
-                                StudentName = $"{userFull.FirstName} {userFull.LastName}",
-                                Class = ClassConstants.GetClassText(userFull.Class),
+                                StudentName = GetDisplayName(userFull),
+                                Class = ClassConstants.GetClassText(userFull?.Class ?? default),
                                 InterviewerName = "Not Assigned"
                             });
                         }
@@ -207,11 +222,11 @@ namespace MockInterviews.Controllers
             {
                 var interviewEvents = await _context.Interviews
                     .Include(v => v.InterviewerTimeslot)
-                    .ThenInclude(v => v.InterviewerSignup)
+                    .ThenInclude(v => v!.InterviewerSignup)
                     .Include(v => v.Location)
                     .Include(v => v.Timeslot)
                     .ThenInclude(v => v.Event)
-                    .Where(v => v.InterviewerTimeslot.InterviewerSignup.InterviewerId == userId
+                    .Where(v => v.InterviewerTimeslot != null && v.InterviewerTimeslot.InterviewerSignup.InterviewerId == userId
                         && v.InterviewerTimeslot.Timeslot.Event.IsActive
                         && v.Status == StatusConstants.Completed)
                     .ToListAsync();
@@ -228,9 +243,9 @@ namespace MockInterviews.Controllers
                             model.CompletedInterviews.Add(new InterviewEventViewModel()
                             {
                                 InterviewEvent = interviewEvent,
-                                StudentName = $"{student.FirstName} {student.LastName}",
-                                InterviewerName = $"{userFull.FirstName} {userFull.LastName}",
-                                Class = ClassConstants.GetClassText(student.Class)
+                                StudentName = GetDisplayName(student),
+                                InterviewerName = GetDisplayName(userFull),
+                                Class = student is null ? string.Empty : ClassConstants.GetClassText(student.Class)
                             });
                         }
                         else
@@ -239,7 +254,7 @@ namespace MockInterviews.Controllers
                             {
                                 InterviewEvent = interviewEvent,
                                 StudentName = "Not Assigned",
-                                InterviewerName = $"{userFull.FirstName} {userFull.LastName}"
+                                InterviewerName = GetDisplayName(userFull)
                             });
                         }
                     }
@@ -253,52 +268,25 @@ namespace MockInterviews.Controllers
         {
             var banner = await _context.Settings.FirstOrDefaultAsync(m => m.Name == "zoom_link");
 
-            try
-            {
-                return banner.Value;
-            }
-            catch
-            {
-                throw new Exception("Setting 'zoom_link' does not exist.");
-            }
+            return banner?.Value ?? throw new InvalidOperationException("Setting 'zoom_link' does not exist.");
         }
 
         private async Task<string> GetDisruptionBanner()
         {
             var banner = await _context.Settings.FirstOrDefaultAsync(m => m.Name == "disruption_banner");
 
-            try
-            {
-                if (int.Parse(banner.Value) == 0)
-                {
-                    return "none";
-                }
-
-                return "block";
-            }
-            catch
-            {
-                throw new Exception("Setting 'disruption_banner' does not exist, or it is not an integer.");
-            }
+            return int.TryParse(banner?.Value, out var value)
+                ? value == 0 ? "none" : "block"
+                : throw new InvalidOperationException("Setting 'disruption_banner' does not exist, or it is not an integer.");
         }
 
         private async Task<string> GetZoomLinkVisible()
         {
             var banner = await _context.Settings.FirstOrDefaultAsync(m => m.Name == "zoom_link_visible");
 
-            try
-            {
-                if (int.Parse(banner.Value) == 0)
-                {
-                    return "none";
-                }
-
-                return "block";
-            }
-            catch
-            {
-                throw new Exception("Setting 'zoom_link_visible' does not exist, or it is not an integer.");
-            }
+            return int.TryParse(banner?.Value, out var value)
+                ? value == 0 ? "none" : "block"
+                : throw new InvalidOperationException("Setting 'zoom_link_visible' does not exist, or it is not an integer.");
         }
 
         public IActionResult Privacy()
@@ -337,6 +325,11 @@ namespace MockInterviews.Controllers
             foreach (var user in uniqueUsers)
             {
                 var userFull = await _userManager.FindByIdAsync(user);
+                if (userFull?.Email is null)
+                {
+                    _logger.LogWarning("Skipping student reminder for deleted or uncontactable user {UserId}.", user);
+                    continue;
+                }
                 var interviews = await _context.Interviews
                     .Include(x => x.Timeslot)
                     .ThenInclude(x => x.Event)
@@ -350,7 +343,7 @@ namespace MockInterviews.Controllers
                 }
 
                 ASendAnEmail emailer = new StudentReminderEmail();
-                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Mock Interviews Reminder", userFull.Email, userFull.FirstName, times, null);
+                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Mock Interviews Reminder", userFull.Email, GetDisplayName(userFull), times, null);
             }
 
             return RedirectToAction("Index", "Home");
@@ -366,6 +359,11 @@ namespace MockInterviews.Controllers
             foreach (var user in uniqueUsers)
             {
                 var userFull = await _userManager.FindByIdAsync(user);
+                if (userFull?.Email is null)
+                {
+                    _logger.LogWarning("Skipping interviewer reminder for deleted or uncontactable user {UserId}.", user);
+                    continue;
+                }
                 var interviews = await _context.InterviewerTimeslots
                     .Include(x => x.Timeslot)
                     .ThenInclude(x => x.Event)
@@ -385,7 +383,7 @@ namespace MockInterviews.Controllers
 				}
 
 				ASendAnEmail emailer = new InterviewerReminderEmail();
-                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "UA MIS Mock Interviews Reminder", userFull.Email, userFull.FirstName, times, null);
+                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "UA MIS Mock Interviews Reminder", userFull.Email, GetDisplayName(userFull), times, null);
             }
 
             return RedirectToAction("Index", "Home");
@@ -393,16 +391,20 @@ namespace MockInterviews.Controllers
 
         public IActionResult AttemptLogin()
         {
-            if (User.Identity.IsAuthenticated)
+            if (User.Identity?.IsAuthenticated == true)
             {
                 return RedirectToAction("Index", "Home");
             }
             return RedirectToPage("/Account/Login", new { area = "Identity" });
         }
 
+        private static string GetDisplayName(ApplicationUser? user) => user is null
+            ? "Deleted user"
+            : $"{user.FirstName} {user.LastName}";
+
         public IActionResult AttemptLogout()
         {
-            if (User.Identity.IsAuthenticated)
+            if (User.Identity?.IsAuthenticated == true)
             {
                 return View("LogoutPage");
             }
