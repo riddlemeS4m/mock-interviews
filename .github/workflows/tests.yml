@@ -11,7 +11,43 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  build:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore mock-interviews.sln
+
+      - name: Build
+        run: dotnet build mock-interviews.sln --configuration Release --no-restore
+
+  lint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore mock-interviews.sln
+
+      - name: Verify formatting
+        run: dotnet format mock-interviews.sln --verify-no-changes --no-restore
+
+  specs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
