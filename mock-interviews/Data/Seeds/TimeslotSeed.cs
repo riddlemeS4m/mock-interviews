@@ -69,9 +69,12 @@ namespace MockInterviews.Data.Seeds
                 {
                     var timeslot = new Timeslot()
                     {
-                        Time = DateTime.ParseExact(Times[i], "h:mm tt", CultureInfo.InvariantCulture),
+                        Time = DateTime.SpecifyKind(
+                            DateTime.ParseExact(Times[i], "h:mm tt", CultureInfo.InvariantCulture),
+                            DateTimeKind.Utc),
                         Event = date,
                         EventId = date.Id,
+                        IsActive = true,
                         IsVolunteer = true,
                         IsInterviewer = Interviewer[i],
                         IsStudent = Student[i],
