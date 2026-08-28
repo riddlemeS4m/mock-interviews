@@ -137,7 +137,7 @@ public sealed class ConfigurationExtensionsTests
     public void ValidateRequiredConfiguration_AcceptsCompleteConfiguration()
     {
         var configuration = BuildConfiguration(ApplicationConfigurationExtensions.RequiredConfigurationKeys
-            .ToDictionary(key => key, _ => "configured"));
+            .ToDictionary(key => key, _ => (string?)"configured"));
 
         configuration.ValidateRequiredConfiguration();
     }
