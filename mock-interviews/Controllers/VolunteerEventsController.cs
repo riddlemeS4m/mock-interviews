@@ -142,7 +142,10 @@ namespace MockInterviews.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(int[] SelectedEventIds1, int[] SelectedEventIds2)
         {
-            int[] SelectedEventIds = SelectedEventIds1.Concat(SelectedEventIds2).ToArray();
+            int[] SelectedEventIds = (SelectedEventIds1 ?? [])
+                .Concat(SelectedEventIds2 ?? [])
+                .Distinct()
+                .ToArray();
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId is null)
@@ -196,34 +199,32 @@ namespace MockInterviews.Controllers
                 return View(volunteerEventsViewModel);
             }
 
-            //handle good input
-            foreach (int id in SelectedEventIds)
+            if (SelectedEventIds.Any(id => timeslots.All(timeslot => timeslot.Id != id)))
             {
-                VolunteerTimeslot volunteerEvent = new()
-                {
-                    TimeslotId = id,
-                    StudentId = userId
-                };
-                if (ModelState.IsValid)
-                {
-
-                    _context.Add(volunteerEvent);
-                    await _context.SaveChangesAsync();
-
-                    var newEvent = await _context.VolunteerTimeslots
-                        .Include(v => v.Timeslot)
-                        .ThenInclude(y => y.Event)
-                        .Where(v => v.Id == volunteerEvent.Id)
-                        .FirstOrDefaultAsync();
-
-                    if (newEvent is null)
-                    {
-                        return Conflict("The volunteer timeslot was changed or deleted. Refresh the page and try again.");
-                    }
-
-                    volEvents.Add(newEvent);
-                }
+                ModelState.AddModelError("SelectedEventIds1", "One or more selected timeslots are no longer available. Refresh the page and try again.");
+                return View(volunteerEventsViewModel);
             }
+
+            _context.VolunteerTimeslots.AddRange(SelectedEventIds.Select(id => new VolunteerTimeslot
+            {
+                TimeslotId = id,
+                StudentId = userId
+            }));
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict("The selected volunteer timeslot is no longer available.");
+            }
+
+            volEvents = await _context.VolunteerTimeslots
+                .Include(volunteerTimeslot => volunteerTimeslot.Timeslot)
+                .ThenInclude(timeslot => timeslot.Event)
+                .Where(volunteerTimeslot => volunteerTimeslot.StudentId == userId &&
+                    SelectedEventIds.Contains(volunteerTimeslot.TimeslotId))
+                .ToListAsync();
 
             var sortedEvents = volEvents
                 .OrderBy(ve => ve.TimeslotId)
