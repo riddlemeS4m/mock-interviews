@@ -626,24 +626,55 @@ namespace MockInterviews.Controllers
                 return Challenge();
             }
 
-            var interviewTypeTwo = InterviewTypeConstants.Technical;
-            if (user.Class == Classes.NotYetMIS || user.Class == Classes.FirstSem)
+            var isFirstSemesterStudent = user.Class == Classes.NotYetMIS || user.Class == Classes.FirstSem;
+            var selectedTimeslot = await _context.Timeslots
+                .Include(timeslot => timeslot.Event)
+                .SingleOrDefaultAsync(timeslot => timeslot.Id == SelectedEventIds);
+            var pairedTimeslot = selectedTimeslot is null
+                ? null
+                : await _context.Timeslots
+                    .Include(timeslot => timeslot.Event)
+                    .SingleOrDefaultAsync(timeslot =>
+                        timeslot.EventId == selectedTimeslot.EventId &&
+                        timeslot.Time == selectedTimeslot.Time.AddMinutes(30));
+
+            var isEligible = selectedTimeslot is not null &&
+                pairedTimeslot is not null &&
+                selectedTimeslot.IsStudent &&
+                selectedTimeslot.IsActive &&
+                pairedTimeslot.IsActive &&
+                selectedTimeslot.Event.IsActive &&
+                (isFirstSemesterStudent
+                    ? selectedTimeslot.Event.For221 != For221.n
+                    : selectedTimeslot.Event.For221 != For221.y) &&
+                await _context.Interviews.CountAsync(interview => interview.TimeslotId == selectedTimeslot.Id) < selectedTimeslot.MaxSignUps &&
+                await _context.Interviews.CountAsync(interview => interview.TimeslotId == pairedTimeslot.Id) < pairedTimeslot.MaxSignUps &&
+                !await _context.Interviews
+                    .Include(interview => interview.Timeslot)
+                    .ThenInclude(timeslot => timeslot.Event)
+                    .AnyAsync(interview => interview.StudentId == userId && interview.Timeslot.Event.IsActive);
+
+            if (!isEligible)
             {
-                interviewTypeTwo = InterviewTypeConstants.Behavioral;
+                return BadRequest("The requested interview timeslot is not available.");
             }
+
+            var interviewTypeTwo = isFirstSemesterStudent
+                ? InterviewTypeConstants.Behavioral
+                : InterviewTypeConstants.Technical;
 
             var interviewEvents = new List<Interview>
             {
                 new Interview
                 {
-                    TimeslotId = SelectedEventIds,
+                    TimeslotId = selectedTimeslot!.Id,
                     StudentId = userId,
                     Status = StatusConstants.Default,
                     Type = InterviewTypeConstants.Behavioral
                 },
                 new Interview
                 {
-                    TimeslotId = SelectedEventIds + 1,
+                    TimeslotId = pairedTimeslot!.Id,
                     StudentId = userId,
                     Status = StatusConstants.Default,
                     Type= interviewTypeTwo
@@ -653,7 +684,14 @@ namespace MockInterviews.Controllers
             if (ModelState.IsValid)
             {
                 _context.AddRange(interviewEvents);
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    return Conflict("The requested interview timeslot is no longer available.");
+                }
 
                 var emailTimes = new List<Interview>();
                 List<string> calendarEvents = new();
@@ -661,7 +699,7 @@ namespace MockInterviews.Controllers
                 var newEvent = await _context.Interviews
                     .Include(v => v.Timeslot)
                     .ThenInclude(y => y.Event)
-                    .Where(v => v.TimeslotId == SelectedEventIds)
+                    .Where(v => v.Id == interviewEvents[0].Id)
                     .FirstOrDefaultAsync();
                 if (newEvent is not null)
                 {
@@ -670,7 +708,7 @@ namespace MockInterviews.Controllers
                 newEvent = await _context.Interviews
                     .Include(v => v.Timeslot)
                     .ThenInclude(y => y.Event)
-                    .Where(v => v.TimeslotId == SelectedEventIds + 1)
+                    .Where(v => v.Id == interviewEvents[1].Id)
                     .FirstOrDefaultAsync();
                 if (newEvent is not null)
                 {
