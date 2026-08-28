@@ -31,7 +31,7 @@ namespace MockInterviews.Services
         /// <summary>
         ///     Returns enumerable list of timeslots for all active events.
         /// </summary>
-        
+
         public async Task<IEnumerable<Timeslot>> GetActiveTimeslots()
         {
             return await _dbSet
@@ -44,12 +44,12 @@ namespace MockInterviews.Services
         ///     Parameters: bool isStudent, bool isInterviewer <br />
         ///     Returns: enumerable list of timeslots for all active events based on role.
         /// </summary>
-        
+
         public async Task<IEnumerable<Timeslot>> GetActiveTimeslotsByRole(bool isStudent, bool isInterviewer)
         {
             _logger.LogInformation("Getting all active timeslots by role...");
 
-            if(isStudent)
+            if (isStudent)
             {
                 _logger.LogInformation("Returning all active student timeslots...");
                 return await _dbSet
@@ -57,7 +57,7 @@ namespace MockInterviews.Services
                     .Where(x => x.Event.IsActive && x.IsStudent)
                     .ToListAsync();
             }
-            else if(isInterviewer)
+            else if (isInterviewer)
             {
                 _logger.LogInformation("Returning all active interviewer timeslots...");
                 return await _dbSet

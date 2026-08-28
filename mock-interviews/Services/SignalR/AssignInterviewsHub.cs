@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using MockInterviews.Models.Entities;
 
 namespace MockInterviews.Services.SignalR

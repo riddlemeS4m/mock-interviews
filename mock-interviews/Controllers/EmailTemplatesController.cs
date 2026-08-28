@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
@@ -20,7 +20,7 @@ namespace MockInterviews.Controllers
         // GET: EmailTemplates
         public async Task<IActionResult> Index()
         {
-              return View(await _context.EmailTemplates.ToListAsync());
+            return View(await _context.EmailTemplates.ToListAsync());
         }
 
         // GET: EmailTemplates/Details/5
@@ -142,14 +142,14 @@ namespace MockInterviews.Controllers
             {
                 _context.EmailTemplates.Remove(emailTemplate);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool EmailTemplateExists(int id)
         {
-          return _context.EmailTemplates.Any(e => e.Id == id);
+            return _context.EmailTemplates.Any(e => e.Id == id);
         }
     }
 }

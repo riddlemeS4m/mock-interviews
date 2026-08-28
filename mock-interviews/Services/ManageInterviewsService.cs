@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.SignalR;
-using SendGrid;
 using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.InterviewEventsController;
 using MockInterviews.Services.SignalR;
+using SendGrid;
 
 namespace MockInterviews.Services
 {
@@ -37,7 +37,7 @@ namespace MockInterviews.Services
         }
 
         public async Task AssignStudentsToInterviewers(Dictionary<int, string> keyValuePairs)
-        { 
+        {
             var filteredDict = keyValuePairs.Where(x => x.Value != "0").ToDictionary(x => x.Key, x => x.Value);
 
             var interviews = await _interviewService.GetAllActiveInterviewsByIds(keyValuePairs.Keys.ToList());
@@ -45,16 +45,20 @@ namespace MockInterviews.Services
 
             var interviewsToUpdate = new List<Interview>();
 
-            
-            foreach(var item in keyValuePairs)
+
+            foreach (var item in keyValuePairs)
             {
                 var interview = interviews.Where(x => x.Id == item.Key).FirstOrDefault();
-                
-                if(item.Value != "0")
+                if (interview is null)
+                {
+                    continue;
+                }
+
+                if (item.Value != "0")
                 {
                     var interviewerTimeslot = interviewers.Where(x => x.InterviewerSignup.InterviewerId == item.Value && interview.TimeslotId == x.TimeslotId).FirstOrDefault();
 
-                    if(interviewerTimeslot != null)
+                    if (interviewerTimeslot != null)
                     {
                         interview.InterviewerTimeslot = interviewerTimeslot;
                         interview.InterviewerTimeslotId = interviewerTimeslot.Id;
@@ -66,15 +70,21 @@ namespace MockInterviews.Services
             var studentIds = interviewsToUpdate.Select(x => x.StudentId).ToList();
             var students = await _userService.GetUsersByIds(studentIds);
 
-            if(interviewsToUpdate.Count > 0)
+            if (interviewsToUpdate.Count > 0)
             {
                 await _interviewService.UpdateRangeAsync(interviewsToUpdate);
 
-                foreach(var interview in interviewsToUpdate)
+                foreach (var interview in interviewsToUpdate)
                 {
-                    var studentName = students.Where(x => x.Key == interview.StudentId).FirstOrDefault().Value.GetFullName();
-                    var studentClass = students.Where(x => x.Key == interview.StudentId).FirstOrDefault().Value.GetClass();
-                    await _interviewsHub.Clients.All.SendAsync("ReceiveInterviewEventUpdate", interview, studentName, studentClass, interview.InterviewerTimeslot.InterviewerSignup.InterviewerId, interview.InterviewerTimeslot.InterviewerSignup.GetInterviewerName(), interview.Timeslot.Time, interview.Timeslot.Event.Date);
+                    if (interview.InterviewerTimeslot is not { } interviewerTimeslot)
+                    {
+                        continue;
+                    }
+
+                    students.TryGetValue(interview.StudentId, out var student);
+                    var studentName = student?.GetFullName() ?? "Deleted user";
+                    var studentClass = student?.GetClass() ?? string.Empty;
+                    await _interviewsHub.Clients.All.SendAsync("ReceiveInterviewEventUpdate", interview, studentName, studentClass, interviewerTimeslot.InterviewerSignup.InterviewerId, interviewerTimeslot.InterviewerSignup.GetInterviewerName(), interview.Timeslot.Time, interview.Timeslot.Event.Date);
                 }
             }
         }
@@ -88,34 +98,40 @@ namespace MockInterviews.Services
             var students = await _userService.GetUsersByIds(studentIds);
 
             var preassignments = new List<InterviewEventManageViewModel>();
-            foreach(var interview in allInterviews)
+            foreach (var interview in allInterviews)
             {
                 var student = students.Where(x => x.Key == interview.StudentId).FirstOrDefault();
-                var defaultItem = new SelectListItem {
+                var defaultItem = new SelectListItem
+                {
                     Value = "0",
                     Text = "--Unassigned--"
                 };
 
                 var firstItem = new SelectListItem();
 
-                if(interview.InterviewerTimeslotId != null && interview.InterviewerTimeslotId != 0)
+                if (interview.InterviewerTimeslotId != null && interview.InterviewerTimeslotId != 0)
                 {
-                    firstItem.Text = interview.InterviewerTimeslot.InterviewerSignup.GetInterviewerName();
-                    firstItem.Value = interview.InterviewerTimeslot.InterviewerSignup.InterviewerId.ToString();
+                    if (interview.InterviewerTimeslot is { } interviewerTimeslot)
+                    {
+                        firstItem.Text = interviewerTimeslot.InterviewerSignup.GetInterviewerName();
+                        firstItem.Value = interviewerTimeslot.InterviewerSignup.InterviewerId;
+                    }
                 }
 
                 var availableInterviewers = allInterviewers
                     .Where(x => x.Timeslot.Event.Date == interview.Timeslot.Event.Date
-                        && x.TimeslotId == interview.TimeslotId) 
-                    .Select(x => new SelectListItem {
+                        && x.TimeslotId == interview.TimeslotId)
+                    .Select(x => new SelectListItem
+                    {
                         Text = x.InterviewerSignup.GetInterviewerName(),
                         Value = x.InterviewerSignup.InterviewerId
                     })
                     .ToList();
-                
-                if(availableInterviewers.Count == 0)
+
+                if (availableInterviewers.Count == 0)
                 {
-                    preassignments.Add(new () {
+                    preassignments.Add(new()
+                    {
                         InterviewEvent = interview,
                         RequestedInterviewers = new List<SelectListItem> {
                             new() {
@@ -127,24 +143,25 @@ namespace MockInterviews.Services
                         StudentClass = student.Value.GetClass()
                     });
                 }
-                else 
+                else
                 {
                     availableInterviewers = availableInterviewers.OrderBy(x => x.Text).ToList();
 
                     availableInterviewers.Insert(0, defaultItem);
 
-                    if(!string.IsNullOrEmpty(firstItem.Value))
+                    if (!string.IsNullOrEmpty(firstItem.Value))
                     {
                         var interviewer = availableInterviewers.Where(x => x.Value == firstItem.Value).FirstOrDefault();
-                        if(interviewer != null)
+                        if (interviewer != null)
                         {
                             availableInterviewers.Remove(interviewer);
                         }
 
                         availableInterviewers.Insert(0, firstItem);
-                    }                    
+                    }
 
-                    preassignments.Add(new () {
+                    preassignments.Add(new()
+                    {
                         InterviewEvent = interview,
                         RequestedInterviewers = availableInterviewers,
                         StudentName = student.Value.GetFullName(),

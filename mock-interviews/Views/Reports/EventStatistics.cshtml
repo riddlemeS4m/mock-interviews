@@ -41,7 +41,7 @@
         {
             <tr>
                 <td>
-                    @Html.DisplayFor(modelItem => item.EventDate.Name)
+                    @(item.EventDate?.Name ?? "Not assigned")
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.StudentCount)

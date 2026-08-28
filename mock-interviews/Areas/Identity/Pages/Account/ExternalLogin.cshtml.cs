@@ -1,27 +1,22 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
-using System;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Logging;
-using MockInterviews.Models.Identity;
-using MockInterviews.Data.Constants;
-using System.Globalization;
 using Microsoft.EntityFrameworkCore;
+using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Models.Identity;
 
 namespace MockInterviews.Areas.Identity.Pages.Account
 {
@@ -104,19 +99,19 @@ namespace MockInterviews.Areas.Identity.Pages.Account
             [Display(Name = "Company")]
             public string Company { get; set; }
         }
-        
+
         public IActionResult OnGet() => RedirectToPage("./Login");
 
         //initial "sign in with microsoft" button click goes here
         public IActionResult OnPost(string provider, string returnUrl = null)
         {
-	
-		    //returnUrl = "https://mockinterviews.uamishub.com/signin-microsoft";
-		    //System.Console.WriteLine("Test");
-		    //System.Console.WriteLine(returnUrl);        
+
+            //returnUrl = "https://mockinterviews.uamishub.com/signin-microsoft";
+            //System.Console.WriteLine("Test");
+            //System.Console.WriteLine(returnUrl);
             // Request a redirect to the external login provider.
-            var redirectUrl = Url.Page("./ExternalLogin", pageHandler: "Callback", values: new {returnUrl});
-		    //System.Console.WriteLine(redirectUrl);
+            var redirectUrl = Url.Page("./ExternalLogin", pageHandler: "Callback", values: new { returnUrl });
+            //System.Console.WriteLine(redirectUrl);
             var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
             return new ChallengeResult(provider, properties);
         }
@@ -202,7 +197,7 @@ namespace MockInterviews.Areas.Identity.Pages.Account
                 var textInfo = new CultureInfo("en-US", false).TextInfo;
                 user.FirstName = textInfo.ToTitleCase(Input.FirstName);
                 user.LastName = textInfo.ToTitleCase(Input.LastName);
-                if(Input.Company != "none" && Input.Company != "" && Input.Company != null)
+                if (Input.Company != "none" && Input.Company != "" && Input.Company != null)
                 {
                     user.Company = textInfo.ToTitleCase(Input.Company);
                 }
@@ -215,10 +210,10 @@ namespace MockInterviews.Areas.Identity.Pages.Account
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
 
                 var exists = await _context.RosteredStudents.FirstOrDefaultAsync(record => record.Email == Input.Email);
-                
-                if(exists != null)
+
+                if (exists != null)
                 {
-                    if(exists.In221)
+                    if (exists.In221)
                     {
                         user.Class = Classes.FirstSem;
                     }
@@ -234,7 +229,7 @@ namespace MockInterviews.Areas.Identity.Pages.Account
 
                         if (exists != null)
                         {
-                            if(exists.InMasters)
+                            if (exists.InMasters)
                             {
                                 await _userManager.AddToRoleAsync(user, RolesConstants.InterviewerRole);
                             }

@@ -1,4 +1,4 @@
-﻿using MockInterviews.Interfaces.IServices;
+using MockInterviews.Interfaces.IServices;
 
 namespace MockInterviews.Data.Access.Emails
 {

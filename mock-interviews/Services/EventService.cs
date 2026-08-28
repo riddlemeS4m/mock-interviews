@@ -12,18 +12,18 @@ namespace MockInterviews.Services
             _logger = logger;
         }
 
-        public async Task<IEnumerable<Event>> GetAllAsync()
+        public override async Task<IEnumerable<Event>> GetAllAsync()
         {
             _logger.LogInformation("Getting all events...");
             return await base.GetAllAsync();
-        } 
+        }
 
-        public async Task<Event> GetByIdAsync(int id)
+        public async Task<Event?> GetByIdAsync(int id)
         {
             _logger.LogInformation("Getting event with id {id}...", id);
             var @event = await base.GetByIdAsync(id);
 
-            if(@event == null)
+            if (@event == null)
             {
                 _logger.LogWarning("Event with id {id} not found", id);
                 return null;
@@ -31,36 +31,24 @@ namespace MockInterviews.Services
 
             _logger.LogInformation("Event with id {id} found", id);
             _logger.LogInformation(@event.ToString());
-            return await base.GetByIdAsync(id);
+            return @event;
         }
 
-        public async Task<Event> AddAsync(Event @event)
+        public override async Task<Event> AddAsync(Event @event)
         {
             _logger.LogInformation("Adding event...");
             var eventAttempt = await base.AddAsync(@event);
 
-            if (eventAttempt == null)
-            {
-                _logger.LogWarning("Event not added");
-                return null;
-            }
-            
             _logger.LogInformation("Event added successfully");
             _logger.LogInformation(eventAttempt.ToString());
             return eventAttempt;
         }
 
-        public async Task<Event> UpdateAsync(Event @event)
+        public override async Task<Event> UpdateAsync(Event @event)
         {
             _logger.LogInformation("Updating event with id {id}...", @event.Id);
             var updatedEvent = await base.UpdateAsync(@event);
 
-            if(updatedEvent == null)
-            {
-                _logger.LogWarning("Event with id {id} not found", @event.Id);
-                return null;
-            }
-            
             _logger.LogInformation("Event with id {id} updated successfully", @event.Id);
             _logger.LogInformation(updatedEvent.ToString());
             return updatedEvent;
@@ -71,12 +59,12 @@ namespace MockInterviews.Services
             _logger.LogInformation("Deleting event with id {id}...", @event.Id);
             var deleted = await base.DeleteAsync(@event.Id);
 
-            if(!deleted)
+            if (!deleted)
             {
                 _logger.LogWarning("Event with id {id} not found", @event.Id);
                 return false;
             }
-            
+
             _logger.LogInformation("Event with id {id} deleted successfully", @event.Id);
             return true;
         }

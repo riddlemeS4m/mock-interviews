@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using System.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels;
-using System.Data;
+using MockInterviews.Models.ViewModels.UserRolesController;
 
 namespace MockInterviews.Controllers
 {
@@ -26,9 +26,9 @@ namespace MockInterviews.Controllers
                 .Select(user => new UserRolesViewModel
                 {
                     UserId = user.Id,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName
+                    Email = user.Email ?? string.Empty,
+                    FirstName = user.FirstName ?? string.Empty,
+                    LastName = user.LastName ?? string.Empty
                     //Roles = await GetUserRoles(user)
                 })
                 .ToListAsync();
@@ -54,6 +54,11 @@ namespace MockInterviews.Controllers
             var roles = await _roleManager.Roles.ToListAsync();
             foreach (var role in roles)
             {
+                if (role.Name is null)
+                {
+                    continue;
+                }
+
                 var userRolesViewModel = new ManageUserRolesViewModel
                 {
                     RoleId = role.Id,
@@ -103,6 +108,11 @@ namespace MockInterviews.Controllers
 
             if (interviewerRole != null)
             {
+                if (interviewerRole.Name is null)
+                {
+                    return BadRequest("The 'Interviewer' role is invalid.");
+                }
+
                 var usersInInterviewerRole = await _userManager.GetUsersInRoleAsync(interviewerRole.Name);
 
                 var filteredVMS = await _userManager.Users
@@ -111,7 +121,7 @@ namespace MockInterviews.Controllers
                     .Select(user => new MassAssignRolesViewModel
                     {
                         Name = user.FirstName + " " + user.LastName,
-                        Email = user.Email,
+                        Email = user.Email ?? string.Empty,
                         IsAlreadyInRole = false, // Assuming you want to set this to false for users not in the role
                         OriginalIsAlreadyInRole = false,
                         UpdatedIsAlreadyInRole = false
@@ -132,7 +142,11 @@ namespace MockInterviews.Controllers
         {
             foreach (string x in SelectedEventIds1)
             {
-                await _userManager.AddToRoleAsync(await _userManager.FindByEmailAsync(x), RolesConstants.InterviewerRole);
+                var user = await _userManager.FindByEmailAsync(x);
+                if (user is not null)
+                {
+                    await _userManager.AddToRoleAsync(user, RolesConstants.InterviewerRole);
+                }
             }
 
             return RedirectToAction("Index", "UserRoles");
@@ -144,6 +158,11 @@ namespace MockInterviews.Controllers
 
             if (interviewerRole != null)
             {
+                if (interviewerRole.Name is null)
+                {
+                    return BadRequest("The 'Admin' role is invalid.");
+                }
+
                 var usersInInterviewerRole = await _userManager.GetUsersInRoleAsync(interviewerRole.Name);
 
                 var filteredVMS = await _userManager.Users
@@ -152,7 +171,7 @@ namespace MockInterviews.Controllers
                     .Select(user => new MassAssignRolesViewModel
                     {
                         Name = user.FirstName + " " + user.LastName,
-                        Email = user.Email,
+                        Email = user.Email ?? string.Empty,
                         IsAlreadyInRole = false, // Assuming you want to set this to false for users not in the role
                         OriginalIsAlreadyInRole = false,
                         UpdatedIsAlreadyInRole = false
@@ -173,7 +192,11 @@ namespace MockInterviews.Controllers
         {
             foreach (string x in SelectedEventIds1)
             {
-                await _userManager.AddToRoleAsync(await _userManager.FindByEmailAsync(x), RolesConstants.AdminRole);
+                var user = await _userManager.FindByEmailAsync(x);
+                if (user is not null)
+                {
+                    await _userManager.AddToRoleAsync(user, RolesConstants.AdminRole);
+                }
             }
 
             return RedirectToAction("Index", "UserRoles");

@@ -1,4 +1,4 @@
-﻿namespace MockInterviews.Interfaces.IUtilities
+namespace MockInterviews.Interfaces.IUtilities
 {
     public interface IConvertFilePathToFormFile
     {

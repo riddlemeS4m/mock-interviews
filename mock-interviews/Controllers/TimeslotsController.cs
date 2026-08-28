@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,8 +6,8 @@ using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels.TimeslotsController;
 using MockInterviews.Models.ViewModels.ReportsController;
+using MockInterviews.Models.ViewModels.TimeslotsController;
 using MockInterviews.Services;
 
 namespace MockInterviews.Controllers
@@ -91,7 +91,7 @@ namespace MockInterviews.Controllers
                 foreach (var interviewerid in interviewerIds)
                 {
                     var interviewer = await _userManager.FindByIdAsync(interviewerid);
-                    interviewerNamesList.Add(interviewer.FirstName + " " + interviewer.LastName);
+                    interviewerNamesList.Add(interviewer is null ? "Deleted user" : interviewer.FirstName + " " + interviewer.LastName);
                 }
             }
 
@@ -107,7 +107,7 @@ namespace MockInterviews.Controllers
                 foreach (var interviewerid in studentIds)
                 {
                     var student = await _userManager.FindByIdAsync(interviewerid);
-                    studentNamesList.Add(student.FirstName + " " + student.LastName);
+                    studentNamesList.Add(student is null ? "Deleted user" : student.FirstName + " " + student.LastName);
                 }
             }
 
@@ -123,7 +123,7 @@ namespace MockInterviews.Controllers
                 foreach (var interviewerid in volunteerIds)
                 {
                     var volunteer = await _userManager.FindByIdAsync(interviewerid);
-                    volunteerNamesList.Add(volunteer.FirstName + " " + volunteer.LastName);
+                    volunteerNamesList.Add(volunteer is null ? "Deleted user" : volunteer.FirstName + " " + volunteer.LastName);
                 }
             }
 
@@ -160,7 +160,7 @@ namespace MockInterviews.Controllers
             return View(timeslot);
         }
 
-        [Authorize(Roles =RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdminRole)]
         // GET: Timeslots/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
@@ -198,7 +198,7 @@ namespace MockInterviews.Controllers
                     await _context.SaveChangesAsync();
 
                     var pairedtimeslot = await _context.Timeslots.FindAsync(id + 1);
-                    if(pairedtimeslot != null)
+                    if (pairedtimeslot != null)
                     {
                         pairedtimeslot.MaxSignUps = timeslot.MaxSignUps;
                         _context.Update(pairedtimeslot);
@@ -216,7 +216,7 @@ namespace MockInterviews.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(TimeslotsController.Index),"Timeslots");
+                return RedirectToAction(nameof(TimeslotsController.Index), "Timeslots");
             }
             return View(timeslot);
         }
@@ -252,7 +252,7 @@ namespace MockInterviews.Controllers
             {
                 _context.Timeslots.Remove(timeslot);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
@@ -277,7 +277,7 @@ namespace MockInterviews.Controllers
 
         private bool TimeslotExists(int id)
         {
-          return (_context.Timeslots?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.Timeslots?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

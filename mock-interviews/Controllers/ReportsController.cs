@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
@@ -109,7 +109,7 @@ namespace MockInterviews.Controllers
                 .ToListAsync();
 
             var countlist = new List<ParticipantCountViewModel>();
-            foreach(Timeslot timeslot in timeslots)
+            foreach (Timeslot timeslot in timeslots)
             {
                 var studentCount = await _context.Interviews.Where(x => x.TimeslotId == timeslot.Id).CountAsync();
                 var volunteerCount = await _context.VolunteerTimeslots.Where(x => x.TimeslotId == timeslot.Id).CountAsync();
@@ -136,8 +136,8 @@ namespace MockInterviews.Controllers
         {
             var timeslots = await _context.Timeslots
                 .Include(t => t.Event)
-                .Where(x => x.Event.For221 == For221.n && 
-                    x.IsInterviewer && 
+                .Where(x => x.Event.For221 == For221.n &&
+                    x.IsInterviewer &&
                     x.Event.IsActive)
                 .ToListAsync();
 

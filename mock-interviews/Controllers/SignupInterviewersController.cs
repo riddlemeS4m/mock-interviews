@@ -1,15 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using SendGrid;
-using MockInterviews.Models.ViewModels;
-using MockInterviews.Models.Identity;
-using MockInterviews.Models.Entities;
-using MockInterviews.Services.SignalR;
-using MockInterviews.Data.Contexts;
 using MockInterviews.Data.Constants;
+using MockInterviews.Data.Contexts;
+using MockInterviews.Models.Entities;
+using MockInterviews.Models.Identity;
+using MockInterviews.Models.ViewModels.Shared;
+using MockInterviews.Models.ViewModels.SignupInterviewersController;
+using MockInterviews.Services.SignalR;
+using SendGrid;
 
 namespace MockInterviews.Controllers
 {
@@ -70,7 +71,8 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            var vm = new SignupInterviewerViewModel {
+            var vm = new SignupInterviewerViewModel
+            {
                 SignupInterviewer = signupInterviewer
             };
 
@@ -187,7 +189,7 @@ namespace MockInterviews.Controllers
             {
                 _context.InterviewerSignups.Remove(signupInterviewer);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
@@ -202,9 +204,9 @@ namespace MockInterviews.Controllers
 
             var si = await _context.InterviewerSignups.FindAsync(id);
 
-            if(si == null)
-            {                 
-                return NotFound();  
+            if (si == null)
+            {
+                return NotFound();
             }
 
             try
@@ -217,7 +219,7 @@ namespace MockInterviews.Controllers
 
                 //return NoContent();
                 return RedirectToAction(nameof(Index));
-            } 
+            }
             catch
             {
                 return BadRequest(new InvalidOperationException("Interviewer was unable to be checked in."));
@@ -225,16 +227,17 @@ namespace MockInterviews.Controllers
         }
         private bool SignupInterviewerExists(int id)
         {
-          return (_context.InterviewerSignups?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.InterviewerSignups?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
         private async Task UpdateHub()
         {
             var busyInterviewers = await _context.Interviews
                 .Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x.InterviewerSignup)
-                .Where(x => x.Status == StatusConstants.Ongoing)
-                .Select(x => x.InterviewerTimeslot.InterviewerSignup.InterviewerId)
+                // EF Core parses Include expressions without dereferencing an optional navigation.
+                .ThenInclude(x => x!.InterviewerSignup)
+                .Where(x => x.Status == StatusConstants.Ongoing && x.InterviewerTimeslot != null)
+                .Select(x => x.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
                 .Distinct()
                 .ToListAsync();
 
@@ -243,7 +246,7 @@ namespace MockInterviews.Controllers
                 .Select(x => new AvailableInterviewer
                 {
                     InterviewerId = x.InterviewerId,
-                    InterviewType = x.Type,
+                    InterviewType = x.Type ?? string.Empty,
                 })
             .ToListAsync();
 
@@ -252,7 +255,7 @@ namespace MockInterviews.Controllers
                 iv.Name = await _userManager.Users
                     .Where(x => x.Id == iv.InterviewerId)
                     .Select(x => x.FirstName + " " + x.LastName)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync() ?? "Deleted user";
 
                 var date = DateTime.UtcNow.Date;
                 //var date = new DateTime(2024, 2, 8);
@@ -261,8 +264,8 @@ namespace MockInterviews.Controllers
                     .Include(x => x.Location)
                     .Include(x => x.Event)
                     .Where(x => x.InterviewerId == iv.InterviewerId &&
-                        x.Event.Date == date)
-                    .Select(x => x.Location.Room)
+                        x.Event != null && x.Event.Date == date && x.Location != null)
+                    .Select(x => x.Location!.Room)
                     .FirstOrDefaultAsync() ?? "Not Assigned";
             }
 

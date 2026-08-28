@@ -1,19 +1,19 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Microsoft.EntityFrameworkCore;
-using MockInterviews.Controllers;
 using MockInterviews.Areas.SystemArea.Controllers;
-using MockInterviews.Data.Constants;
+using MockInterviews.Controllers;
 using MockInterviews.Data;
+using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Extensions;
 using MockInterviews.Models.Entities;
@@ -137,7 +137,7 @@ public sealed class ConfigurationExtensionsTests
     public void ValidateRequiredConfiguration_AcceptsCompleteConfiguration()
     {
         var configuration = BuildConfiguration(ApplicationConfigurationExtensions.RequiredConfigurationKeys
-            .ToDictionary(key => key, _ => "configured"));
+            .ToDictionary(key => key, _ => (string?)"configured"));
 
         configuration.ValidateRequiredConfiguration();
     }

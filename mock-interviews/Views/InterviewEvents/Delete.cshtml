@@ -1,4 +1,4 @@
-﻿@model MockInterviews.Models.ViewModels.InterviewEventViewModel
+﻿@model MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventViewModel
 
 @{
     ViewData["Title"] = "Delete";
@@ -47,10 +47,10 @@
             @Html.DisplayFor(model => model.InterviewerName)
         </dd>
         <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.InterviewEvent.Location.Room)
+            Location
         </dt>
         <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.InterviewEvent.Location.Room)
+            @(Model.InterviewEvent.Location?.Room ?? "Not assigned")
         </dd>
         
         @*<dt class = "col-sm-2">

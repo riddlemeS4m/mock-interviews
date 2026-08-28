@@ -1,21 +1,20 @@
-﻿using SendGrid.Helpers.Mail;
-using SendGrid;
-using MockInterviews.Data.Constants;
 using System.Text;
-using MockInterviews.Data.Seeds;
+using MockInterviews.Data.Constants;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace MockInterviews.Interfaces.IServices
 {
     public abstract class ASendAnEmail
     {
-        public EmailAddress FromEmail { get; set; }
-        public string Subject { get; set; }
-        public string PlainTextContent { get; set; }
-        public EmailAddress ToEmail { get; set; }
-        public string HTMLContent { get; set; }
-        public string ToName { get; set; }
-        public string Times { get; set; }
-        public string FilePath { get; set; }
+        public EmailAddress FromEmail { get; set; } = null!; // Assigned by SendEmailAsync before a message is created.
+        public string Subject { get; set; } = null!; // Assigned by SendEmailAsync before a message is created.
+        public string PlainTextContent { get; set; } = null!; // Assigned by SendEmailAsync before a message is created.
+        public EmailAddress ToEmail { get; set; } = null!; // Assigned by SendEmailAsync before a message is created.
+        public string HTMLContent { get; set; } = null!; // Assigned by SendEmailAsync before derived templates consume it.
+        public string ToName { get; set; } = null!; // Assigned by SendEmailAsync before a message is created.
+        public string Times { get; set; } = null!; // Assigned by SendEmailAsync before derived templates consume it.
+        public string FilePath { get; set; } = string.Empty;
 
         public abstract void InjectHTMLContent();
 

@@ -13,19 +13,19 @@ namespace MockInterviews.Services
         {
             _context = context ?? throw new ArgumentNullException(nameof(context), "Database context cannot be null.");
             _dbSet = context.Set<T>();
-        }   
+        }
 
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public virtual async Task<IEnumerable<T>> GetAllAsync()
         {
             return await _dbSet.ToListAsync();
         }
 
-        public async Task<T> GetByIdAsync(object id)
+        public async Task<T?> GetByIdAsync(object id)
         {
             return await _dbSet.FindAsync(id);
         }
 
-        public async Task<T> AddAsync(T entity)
+        public virtual async Task<T> AddAsync(T entity)
         {
             await _dbSet.AddAsync(entity);
             await _context.SaveChangesAsync();
@@ -38,7 +38,7 @@ namespace MockInterviews.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<T> UpdateAsync(T entity)
+        public virtual async Task<T> UpdateAsync(T entity)
         {
             _dbSet.Attach(entity);
             _context.Entry(entity).State = EntityState.Modified;
@@ -59,11 +59,10 @@ namespace MockInterviews.Services
                 }
                 else
                 {
-                    var key = _context.Model.FindEntityType(typeof(T))
-                                .FindPrimaryKey()
-                                .Properties
-                                .Select(x => x.Name)
-                                .FirstOrDefault();
+                    var entityType = _context.Model.FindEntityType(typeof(T))
+                        ?? throw new InvalidOperationException($"{typeof(T).Name} is not mapped by the current DbContext.");
+                    var key = entityType.FindPrimaryKey()?.Properties.FirstOrDefault()?.Name
+                        ?? throw new InvalidOperationException($"{typeof(T).Name} must have a primary key to be updated.");
 
                     var keyValue = typeof(T).GetProperty(key)?.GetValue(entity);
 

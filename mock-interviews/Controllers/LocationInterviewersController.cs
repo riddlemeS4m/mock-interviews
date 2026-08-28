@@ -1,19 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.LocationInterviewersController;
 
 namespace MockInterviews.Controllers
 {
@@ -35,7 +29,7 @@ namespace MockInterviews.Controllers
             var locationInterviewers = await _context.InterviewerLocations
                 .Include(v => v.Location)
                 .Include(v => v.Event)
-                .Where(v => v.Event.IsActive == true)
+                .Where(v => v.Event != null && v.Event.IsActive)
                 .ToListAsync();
 
             var interviewerIds = locationInterviewers
@@ -45,8 +39,8 @@ namespace MockInterviews.Controllers
 
             var interviewers = await _userManager.Users
                 .Where(u => interviewerIds.Contains(u.Id))
-                .Select(x => new {x.FirstName, x.LastName, x.Id})
-                .ToListAsync();            
+                .Select(x => new { x.FirstName, x.LastName, x.Id })
+                .ToListAsync();
 
             var query = from locationInterviewer in locationInterviewers
                         join interviewer in interviewers on locationInterviewer.InterviewerId equals interviewer.Id
@@ -88,6 +82,11 @@ namespace MockInterviews.Controllers
             }
 
             var interviewer = await _userManager.FindByIdAsync(locationInterviewer.InterviewerId);
+            if (interviewer is null)
+            {
+                return NotFound();
+            }
+
             var locationInterviewerWithName = new LocationInterviewerWithName
             {
                 LocationInterviewer = locationInterviewer,
@@ -127,8 +126,8 @@ namespace MockInterviews.Controllers
                 .Where(i => i.IsActive)
                 .Select(i => new SelectListItem
                 {
-                        Value = i.Id.ToString(),
-                        Text = $"{i.Date:d}"
+                    Value = i.Id.ToString(),
+                    Text = $"{i.Date:d}"
                 })
                 .ToListAsync();
 
@@ -171,12 +170,12 @@ namespace MockInterviews.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,InterviewerId,LocationId,EventId")] InterviewerLocation locationInterviewer, bool InPerson)
         {
-            if(locationInterviewer == null)
+            if (locationInterviewer == null)
             {
                 return NotFound();
             }
-            
-            if(InPerson)
+
+            if (InPerson)
             {
                 locationInterviewer.Preference = InterviewLocationConstants.InPerson;
             }
@@ -269,14 +268,7 @@ namespace MockInterviews.Controllers
                 .ToListAsync();
 
             // Get a list of all Locations except those already assigned to LocationInterviewers
-            var inPerson = true;
-            var isVirtual = false;
-            if (locationInterviewer.Preference == InterviewLocationConstants.IsVirtual)
-            {
-                inPerson = false;
-                isVirtual = true;
-            }
-           
+
 
             var availableLocations = await _context.Locations
                 //.Where(l => (!assignedLocationIds.Contains(l.Id) || l.Id == locationInterviewer.LocationId) && (l.InPerson == inPerson && l.IsVirtual == isVirtual))
@@ -299,6 +291,10 @@ namespace MockInterviews.Controllers
             }
 
             var interviewer = await _userManager.FindByIdAsync(locationInterviewer.InterviewerId);
+            if (interviewer is null)
+            {
+                return NotFound();
+            }
 
             // Create the view model
             var viewModel = new LocationInterviewerCreateViewModel
@@ -372,6 +368,11 @@ namespace MockInterviews.Controllers
             }
 
             var interviewer = await _userManager.FindByIdAsync(locationInterviewer.InterviewerId);
+            if (interviewer is null)
+            {
+                return NotFound();
+            }
+
             var locationInterviewerWithName = new LocationInterviewerWithName
             {
                 LocationInterviewer = locationInterviewer,
@@ -391,14 +392,14 @@ namespace MockInterviews.Controllers
             {
                 _context.InterviewerLocations.Remove(locationInterviewer);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool LocationInterviewerExists(int id)
         {
-          return (_context.InterviewerLocations?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.InterviewerLocations?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

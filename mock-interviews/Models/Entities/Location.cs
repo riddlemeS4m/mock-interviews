@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MockInterviews.Models.Entities
 {
@@ -11,7 +11,7 @@ namespace MockInterviews.Models.Entities
         public int Id { get; set; }
 
         [Required]
-        public string Room { get; set; }
+        public string Room { get; set; } = null!; // Required field is populated by validation or EF Core materialization.
 
         [Required]
         [DefaultValue(false)]

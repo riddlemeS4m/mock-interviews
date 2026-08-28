@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.Extensions.Configuration;
 using MockInterviews.Extensions;
 
 namespace MockInterviews.Data.Contexts
@@ -27,7 +26,7 @@ namespace MockInterviews.Data.Contexts
 
             var optionsBuilder = new DbContextOptionsBuilder<MockInterviewsDbContext>();
             optionsBuilder.UseNpgsql(connectionString);
-            
+
             return new MockInterviewsDbContext(optionsBuilder.Options);
         }
     }

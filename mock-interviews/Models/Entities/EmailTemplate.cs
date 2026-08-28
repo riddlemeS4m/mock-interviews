@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MockInterviews.Models.Entities
 {
@@ -11,7 +11,7 @@ namespace MockInterviews.Models.Entities
 
         [Required]
         [Display(Name = "Subject Line")]
-        public string SubjectLine { get; set; }
+        public string SubjectLine { get; set; } = null!; // Required field is populated by validation or EF Core materialization.
 
         public string? Body { get; set; }
 

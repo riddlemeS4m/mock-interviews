@@ -1,4 +1,3 @@
-using Serilog;
 using MockInterviews.Extensions;
 
 namespace MockInterviews

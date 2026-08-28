@@ -1,20 +1,14 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.UsersController;
 
 namespace MockInterviews.Controllers
 {
-    public class CreateUserModel
-    {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Email { get; set; }
-    }
     public class UsersController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -38,11 +32,15 @@ namespace MockInterviews.Controllers
         public async Task<IActionResult> ExternalUserProfileView(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return NotFound();
+            }
 
             var viewModel = new ExternalUserProfileViewModel
             {
-                FirstName = user.FirstName,
-                LastName = user.LastName,
+                FirstName = user.FirstName ?? "Deleted user",
+                LastName = user.LastName ?? string.Empty,
                 Class = ClassConstants.GetClassText((Classes)user.Class)
             };
 
@@ -63,7 +61,7 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            return View("DeleteUser",user);
+            return View("DeleteUser", user);
         }
 
         [Authorize(Roles = RolesConstants.AdminRole)]
@@ -114,16 +112,16 @@ namespace MockInterviews.Controllers
 
         [HttpPost]
         [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> CreateProvisionaryUser(CreateUserModel model)
+        public async Task<IActionResult> CreateProvisionaryUser(CreateUserViewModel model)
         {
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser 
-                { 
-                    FirstName = model.FirstName, 
-                    LastName = model.LastName, 
-                    Email = model.Email, 
-                    UserName = model.Email 
+                var user = new ApplicationUser
+                {
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    Email = model.Email,
+                    UserName = model.Email
                 };
                 var result = await _userManager.CreateAsync(user, $"{model.FirstName}Spring2024!");
 
@@ -132,7 +130,7 @@ namespace MockInterviews.Controllers
                     var newUser = await _userManager.FindByEmailAsync(model.Email) ?? throw new Exception($"User with email {model.Email} was not successfully created.");
                     var roleResult = await _userManager.AddToRoleAsync(newUser, RolesConstants.InterviewerRole);
 
-                    if(roleResult.Succeeded)
+                    if (roleResult.Succeeded)
                     {
                         return RedirectToAction("Index", "UserRoles");
                     }

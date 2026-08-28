@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -14,10 +14,10 @@ namespace MockInterviews.Models.Entities
         public string? MicrosoftId { get; set; }
 
         [Required]
-        public string Email { get; set; }
+        public string Email { get; set; } = null!; // Required field is populated by validation or EF Core materialization.
 
         [Required]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!; // Required field is populated by validation or EF Core materialization.
 
         [Required]
         [DefaultValue(false)]

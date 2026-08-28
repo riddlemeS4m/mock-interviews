@@ -1,7 +1,7 @@
-﻿using System.Globalization;
-using System.Text;
+using System.Globalization;
 using System.Net.Sockets;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -9,85 +9,22 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using SendGrid;
-using MockInterviews.Models.Entities;
-using MockInterviews.Models.ViewModels.InterviewsController;
-using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels;
-using MockInterviews.Data.Constants;
 using MockInterviews.Data.Access.Emails;
-using MockInterviews.Interfaces.IServices;
+using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Interfaces.IServices;
+using MockInterviews.Models.Entities;
+using MockInterviews.Models.Identity;
+using MockInterviews.Models.ViewModels.HomeController;
+using MockInterviews.Models.ViewModels.InterviewEventsController;
+using MockInterviews.Models.ViewModels.Shared;
+using MockInterviews.Options;
 using MockInterviews.Services;
 using MockInterviews.Services.SignalR;
-using MockInterviews.Options;
+using SendGrid;
 
 namespace MockInterviews.Controllers
 {
-    public class IVM
-    {
-        public string Name { get; set; }
-        public string Id { get; set; }
-        public bool Technical { get; set; }
-        public bool Behavioral { get; set; }
-    }
-
-    public class AVM
-    {
-        public List<SelectListItem> BehavioralInterviewers { get; set; }
-        public List<SelectListItem> TechnicalInterviewers { get; set; }
-    }
-
-    public class PAVM
-    {
-        public List<SelectListItem> AvailableInterviewers { get; set; }
-        public Interview Student { get; set; }
-        public string StudentName { get; set; }
-        public string StudentClass { get; set; }
-    }
-
-    public class PARVM
-
-    {
-        public string InterviewEventId { get; set; }
-        public string SelectedValue { get; set; }
-    }
-    
-    public class IVMComparer : IEqualityComparer<IVM>
-    {
-        public bool Equals(IVM x, IVM y)
-        {
-            if (x == null || y == null)
-                return false;
-
-            return x.Name == y.Name &&
-                   x.Id == y.Id &&
-                   x.Technical == y.Technical &&
-                   x.Behavioral == y.Behavioral;
-        }
-
-        public int GetHashCode(IVM obj)
-        {
-            unchecked
-            {
-                int hash = 17;
-                hash = hash * 23 + obj.Name.GetHashCode();
-                hash = hash * 23 + obj.Id.GetHashCode();
-                hash = hash * 23 + obj.Technical.GetHashCode();
-                hash = hash * 23 + obj.Behavioral.GetHashCode();
-                return hash;
-            }
-        }
-    }
-
-    public class EditInlineResponse
-    {
-        public string StudentName { get; set; }
-        public string InterviewType { get; set; }
-        public string InterviewerName { get; set; }
-        public string Location { get; set; }
-    }
-
     public class InterviewEventsController : Controller
     {
         private readonly IManageInterviews _manager;
@@ -106,7 +43,7 @@ namespace MockInterviews.Controllers
             MockInterviewsDbContext context,
             TimeslotService timeslotService,
             InterviewService interviewService,
-            UserManager<ApplicationUser> userManager, 
+            UserManager<ApplicationUser> userManager,
             UserService userService,
             ISendGridClient sendGridClient,
             IHubContext<AssignInterviewsHub> hubContext,
@@ -126,19 +63,20 @@ namespace MockInterviews.Controllers
             _logger = logger;
             _superUserEmail = superUserOptions.Value.Email;
         }
-	    // adding a dummy comment bc I feel like it
+        // adding a dummy comment bc I feel like it
         //--Dalton Wright, Fall 2023
 
         // GET: InterviewEvents
         [Authorize(Roles = RolesConstants.AdminRole)]
         public async Task<IActionResult> Index()
-        {         
+        {
             //var interviewers = new List<AvailableInterviewer>();
             var busyInterviewers = await _context.Interviews
                 .Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x.InterviewerSignup)
-                .Where(x => x.Status == StatusConstants.Ongoing)
-                .Select(x => x.InterviewerTimeslot.InterviewerSignup.InterviewerId)
+                // EF Core parses Include expressions without dereferencing an optional navigation.
+                .ThenInclude(x => x!.InterviewerSignup)
+                .Where(x => x.Status == StatusConstants.Ongoing && x.InterviewerTimeslot != null)
+                .Select(x => x.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
                 .Distinct()
                 .ToListAsync();
 
@@ -147,7 +85,7 @@ namespace MockInterviews.Controllers
                 .Select(x => new AvailableInterviewer
                 {
                     InterviewerId = x.InterviewerId,
-                    InterviewType = x.Type,
+                    InterviewType = x.Type ?? string.Empty,
                 })
                 .ToListAsync();
 
@@ -156,7 +94,7 @@ namespace MockInterviews.Controllers
                 iv.Name = await _userManager.Users
                     .Where(x => x.Id == iv.InterviewerId)
                     .Select(x => x.FirstName + " " + x.LastName)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync() ?? "Deleted user";
 
                 var date = DateTime.UtcNow.Date;
                 //var date = new DateTime(2024, 2, 8);
@@ -165,39 +103,34 @@ namespace MockInterviews.Controllers
                     .Include(x => x.Location)
                     .Include(x => x.Event)
                     .Where(x => x.InterviewerId == iv.InterviewerId &&
-                        x.Event.Date.Date == date)
-                    .Select(x => x.Location.Room)
-                    .FirstOrDefaultAsync() ?? "Not Assigned";               
+                        x.Event != null && x.Event.Date.Date == date)
+                    .Select(x => x.Location == null ? "Not Assigned" : x.Location.Room)
+                    .FirstOrDefaultAsync() ?? "Not Assigned";
             }
 
             interviewers.Sort((x, y) => string.Compare(x.Name, y.Name));
-            
+
             var hoursInAdvanceStr = _context.Settings
                 .Where(x => x.Name == "interview_index_hours")
                 .Select(x => x.Value)
                 .FirstOrDefault();
 
-            var hoursInAdvance = 3;
-            try
-            {
-                hoursInAdvance = int.Parse(hoursInAdvanceStr);
-            } catch
-            {
-                throw new Exception("Setting 'interview_index_hours' is not an integer.");
-            }
+            var hoursInAdvance = int.TryParse(hoursInAdvanceStr, out var configuredHours)
+                ? configuredHours
+                : throw new InvalidOperationException("Setting 'interview_index_hours' is not an integer.");
 
             var timeslot = await _context.Timeslots
                 .OrderByDescending(x => x.MaxSignUps)
                 .FirstOrDefaultAsync();
-            var maxsignups = timeslot.MaxSignUps * hoursInAdvance * 2; //* 2 because there are two interviews per hour
+            var maxsignups = (timeslot?.MaxSignUps ?? 0) * hoursInAdvance * 2; //* 2 because there are two interviews per hour
             var interviewEvents = await _context.Interviews
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
-                .ThenInclude(i => i.InterviewerSignup)
+                .ThenInclude(i => i!.InterviewerSignup)
                 .Include(i => i.Timeslot)
                 .ThenInclude(j => j.Event)
-                .Where(i => i.Status != StatusConstants.Completed && 
-                    i.Status != StatusConstants.NoShow && 
+                .Where(i => i.Status != StatusConstants.Completed &&
+                    i.Status != StatusConstants.NoShow &&
                     i.Status != StatusConstants.Excused &&
                     i.Timeslot.Event.IsActive)
                 .OrderBy(i => i.TimeslotId)
@@ -240,7 +173,7 @@ namespace MockInterviews.Controllers
             var model = new InterviewEventIndexViewModel();
             var eventslist = new List<InterviewEventViewModel>();
 
-            foreach(Interview interviewEvent in interviewEvents)
+            foreach (Interview interviewEvent in interviewEvents)
             {
                 var interviewEventViewModel = new InterviewEventViewModel();
 
@@ -249,7 +182,7 @@ namespace MockInterviews.Controllers
                     interviewEventViewModel.StudentName = studentName;
                 }
 
-                if(studentClasses.TryGetValue(interviewEvent.StudentId, out var studentClass))
+                if (studentClasses.TryGetValue(interviewEvent.StudentId, out var studentClass))
                 {
                     interviewEventViewModel.Class = studentClass;
                 }
@@ -291,8 +224,8 @@ namespace MockInterviews.Controllers
                 .Select(e => e.StudentId)
                 .Distinct()
                 .ToListAsync();
-            
-            if(uniqueStudentIds.Count == 0 || uniqueStudentIds == null)
+
+            if (uniqueStudentIds.Count == 0 || uniqueStudentIds == null)
             {
                 return BadRequest("There are no students signed up yet.");
             }
@@ -306,7 +239,7 @@ namespace MockInterviews.Controllers
                     u.Class // Replace with the actual property name
                 })
                 .ToListAsync();
-            
+
             var classReports = students
                 .GroupBy(x => x.Class)
                 .Select(g => new ClassReport
@@ -372,7 +305,7 @@ namespace MockInterviews.Controllers
             var interviewEvents = await _context.Interviews
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
-                .ThenInclude(i => i.InterviewerSignup)
+                .ThenInclude(i => i!.InterviewerSignup)
                 .Include(i => i.Timeslot)
                 .ThenInclude(j => j.Event)
                 .ToListAsync();
@@ -390,8 +323,8 @@ namespace MockInterviews.Controllers
                     interviewEventViewModel = new InterviewEventViewModel
                     {
                         InterviewEvent = interviewEvent,
-                        StudentName = student.FirstName + " " + student.LastName,
-                        InterviewerName = interviewer.FirstName + " " + interviewer.LastName
+                        StudentName = GetDisplayName(student),
+                        InterviewerName = GetDisplayName(interviewer)
                     };
 
                     model.Add(interviewEventViewModel);
@@ -401,8 +334,8 @@ namespace MockInterviews.Controllers
                     interviewEventViewModel = new InterviewEventViewModel
                     {
                         InterviewEvent = interviewEvent,
-                        StudentName = student.FirstName + " " + student.LastName,
-                        Class = ClassConstants.GetClassText(student.Class),
+                        StudentName = GetDisplayName(student),
+                        Class = student is null ? string.Empty : ClassConstants.GetClassText(student.Class),
                         InterviewerName = "Not Assigned"
                     };
 
@@ -410,13 +343,18 @@ namespace MockInterviews.Controllers
                 }
             }
 
-            return View("Feedback",model);
+            return View("Feedback", model);
         }
 
         [Authorize(Roles = RolesConstants.StudentRole)]
         public async Task<IActionResult> FeedbackIndex()
         {
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId is null)
+            {
+                return Challenge();
+            }
+
             var userFull = await _userManager.FindByIdAsync(userId);
 
             var model = new IndexViewModel();
@@ -425,7 +363,7 @@ namespace MockInterviews.Controllers
             {
                 var interviewEvents = await _context.Interviews
                     .Include(v => v.InterviewerTimeslot)
-                    .ThenInclude(v => v.InterviewerSignup)
+                    .ThenInclude(v => v!.InterviewerSignup)
                     .Include(v => v.Location)
                     .Include(v => v.Timeslot)
                     .ThenInclude(v => v.Event)
@@ -443,9 +381,9 @@ namespace MockInterviews.Controllers
                             model.StudentScheduledInterviews.Add(new InterviewEventViewModel()
                             {
                                 InterviewEvent = interviewEvent,
-                                StudentName = $"{userFull.FirstName} {userFull.LastName}",
-                                Class = ClassConstants.GetClassText(userFull.Class),
-                                InterviewerName = $"{interviewer.FirstName} {interviewer.LastName}"
+                                StudentName = GetDisplayName(userFull),
+                                Class = userFull is null ? string.Empty : ClassConstants.GetClassText(userFull.Class),
+                                InterviewerName = GetDisplayName(interviewer)
                             });
                         }
                         else
@@ -453,8 +391,8 @@ namespace MockInterviews.Controllers
                             model.StudentScheduledInterviews.Add(new InterviewEventViewModel()
                             {
                                 InterviewEvent = interviewEvent,
-                                StudentName = $"{userFull.FirstName} {userFull.LastName}",
-                                Class = ClassConstants.GetClassText(userFull.Class),
+                                StudentName = GetDisplayName(userFull),
+                                Class = userFull is null ? string.Empty : ClassConstants.GetClassText(userFull.Class),
                                 InterviewerName = "Not Assigned"
                             });
                         }
@@ -469,17 +407,24 @@ namespace MockInterviews.Controllers
         public async Task<IActionResult> ProvideFeedback(int id)
         {
             var interviewEvent = await _context.Interviews
-                .Include(x=>x.InterviewerTimeslot)
-                .ThenInclude(x=>x.InterviewerSignup)
+                .Include(x => x.InterviewerTimeslot)
+                .ThenInclude(x => x!.InterviewerSignup)
                 .Include(x => x.Location)
-                .Include(x=>x.Timeslot)
-                .ThenInclude(x=>x.Event)
+                .Include(x => x.Timeslot)
+                .ThenInclude(x => x.Event)
                 .FirstOrDefaultAsync(x => x.Id == id);
-            var interviewer = await _userManager.FindByIdAsync(interviewEvent.InterviewerTimeslot.InterviewerSignup.InterviewerId);
+            if (interviewEvent is null)
+            {
+                return NotFound();
+            }
+
+            var interviewer = interviewEvent.InterviewerTimeslot is null
+                ? null
+                : await _userManager.FindByIdAsync(interviewEvent.InterviewerTimeslot.InterviewerSignup.InterviewerId);
             var model = new InterviewEventViewModel()
             {
                 InterviewEvent = interviewEvent,
-                InterviewerName = $"{interviewer.FirstName} {interviewer.LastName}"
+                InterviewerName = interviewer is null ? "Not Assigned" : GetDisplayName(interviewer)
             };
 
             return View("ProvideFeedback", model);
@@ -513,22 +458,29 @@ namespace MockInterviews.Controllers
                     }
                 }
 
-                return RedirectToAction("FeedbackIndex","InterviewEvents");
+                return RedirectToAction("FeedbackIndex", "InterviewEvents");
             }
 
 
             var interviewEventActual = await _context.Interviews
                 .Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x.InterviewerSignup)
+                .ThenInclude(x => x!.InterviewerSignup)
                 .Include(x => x.Location)
                 .Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
                 .FirstOrDefaultAsync(x => x.Id == id);
-            var interviewer = await _userManager.FindByIdAsync(interviewEventActual.InterviewerTimeslot.InterviewerSignup.InterviewerId);
+            if (interviewEventActual is null)
+            {
+                return NotFound();
+            }
+
+            var interviewer = interviewEventActual.InterviewerTimeslot is null
+                ? null
+                : await _userManager.FindByIdAsync(interviewEventActual.InterviewerTimeslot.InterviewerSignup.InterviewerId);
             var model = new InterviewEventViewModel()
             {
                 InterviewEvent = interviewEventActual,
-                InterviewerName = $"{interviewer.FirstName} {interviewer.LastName}"
+                InterviewerName = interviewer is null ? "Not Assigned" : GetDisplayName(interviewer)
             };
 
             return View("ProvideFeedback", model);
@@ -539,7 +491,7 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.AdminRole)]
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null || _context.Interviews == null)
+            if (_context.Interviews == null)
             {
                 return NotFound();
             }
@@ -547,7 +499,7 @@ namespace MockInterviews.Controllers
             var interviewEvent = await _context.Interviews
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
-                .ThenInclude(i => i.InterviewerSignup)
+                .ThenInclude(i => i!.InterviewerSignup)
                 .Include(i => i.Timeslot)
                 .ThenInclude(j => j.Event)
                 .FirstOrDefaultAsync(m => m.Id == id);
@@ -558,17 +510,17 @@ namespace MockInterviews.Controllers
 
             var student = await _userManager.Users
                 .Where(x => x.Id == interviewEvent.StudentId)
-                .Select(x => new {x.FirstName, x.LastName, x.Class})
+                .Select(x => new { x.FirstName, x.LastName, x.Class })
                 .FirstOrDefaultAsync();
 
-            if(interviewEvent.InterviewerTimeslot == null)
+            if (interviewEvent.InterviewerTimeslot == null)
             {
                 var viewModel = new InterviewEventViewModel
                 {
                     InterviewEvent = interviewEvent,
                     InterviewerName = "Not Assigned",
-                    Class = ClassConstants.GetClassText(student.Class),
-                    StudentName = student.FirstName + " " + student.LastName
+                    Class = student is null ? string.Empty : ClassConstants.GetClassText(student.Class),
+                    StudentName = student is null ? "Deleted user" : student.FirstName + " " + student.LastName
                 };
 
                 return View(viewModel);
@@ -583,9 +535,9 @@ namespace MockInterviews.Controllers
             var secondViewModel = new InterviewEventViewModel
             {
                 InterviewEvent = interviewEvent,
-                InterviewerName = interviewer.FirstName + " " + interviewer.LastName,
-                StudentName = student.FirstName + " " + student.LastName,
-                Class = ClassConstants.GetClassText(student.Class)
+                InterviewerName = interviewer is null ? "Deleted user" : interviewer.FirstName + " " + interviewer.LastName,
+                StudentName = student is null ? "Deleted user" : student.FirstName + " " + student.LastName,
+                Class = student is null ? string.Empty : ClassConstants.GetClassText(student.Class)
             };
 
             return View(secondViewModel);
@@ -595,11 +547,19 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.StudentRole)]
         public async Task<IActionResult> Create()
         {
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId is null)
+            {
+                return Challenge();
+            }
+
             var user = await _userManager.Users
                 .Where(x => x.Id == userId)
                 .FirstOrDefaultAsync();
+            if (user is null)
+            {
+                return Challenge();
+            }
 
             var timeslots = new List<Timeslot>();
             if (user.Class == Classes.NotYetMIS || user.Class == Classes.FirstSem)
@@ -608,7 +568,7 @@ namespace MockInterviews.Controllers
                     .Where(x => x.IsStudent)
                     .Include(y => y.Event)
                     .Where(x => _context.Interviews.Count(y => y.TimeslotId == x.Id) < x.MaxSignUps)
-                    .Where(x => x.Event.For221 != For221.n 
+                    .Where(x => x.Event.For221 != For221.n
                         && x.Event.IsActive)
                     .ToListAsync();
             }
@@ -618,7 +578,7 @@ namespace MockInterviews.Controllers
                     .Where(x => x.IsStudent)
                     .Include(y => y.Event)
                     .Where(x => _context.Interviews.Count(y => y.TimeslotId == x.Id) < x.MaxSignUps)
-                    .Where(x => x.Event.For221 != For221.y 
+                    .Where(x => x.Event.For221 != For221.y
                         && x.Event.IsActive)
                     .ToListAsync();
             }
@@ -654,25 +614,34 @@ namespace MockInterviews.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(int SelectedEventIds)
         {
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId is null)
+            {
+                return Challenge();
+            }
+
             var user = await _userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return Challenge();
+            }
 
             var interviewTypeTwo = InterviewTypeConstants.Technical;
-            if (user.Class == Classes.NotYetMIS|| user.Class == Classes.FirstSem)
+            if (user.Class == Classes.NotYetMIS || user.Class == Classes.FirstSem)
             {
                 interviewTypeTwo = InterviewTypeConstants.Behavioral;
             }
 
             var interviewEvents = new List<Interview>
             {
-                new Interview 
+                new Interview
                 {
                     TimeslotId = SelectedEventIds,
                     StudentId = userId,
                     Status = StatusConstants.Default,
                     Type = InterviewTypeConstants.Behavioral
                 },
-                new Interview 
+                new Interview
                 {
                     TimeslotId = SelectedEventIds + 1,
                     StudentId = userId,
@@ -681,7 +650,7 @@ namespace MockInterviews.Controllers
                 }
             };
 
-			if (ModelState.IsValid)
+            if (ModelState.IsValid)
             {
                 _context.AddRange(interviewEvents);
                 await _context.SaveChangesAsync();
@@ -694,13 +663,19 @@ namespace MockInterviews.Controllers
                     .ThenInclude(y => y.Event)
                     .Where(v => v.TimeslotId == SelectedEventIds)
                     .FirstOrDefaultAsync();
-                emailTimes.Add(newEvent);
+                if (newEvent is not null)
+                {
+                    emailTimes.Add(newEvent);
+                }
                 newEvent = await _context.Interviews
                     .Include(v => v.Timeslot)
                     .ThenInclude(y => y.Event)
                     .Where(v => v.TimeslotId == SelectedEventIds + 1)
                     .FirstOrDefaultAsync();
-                emailTimes.Add(newEvent);
+                if (newEvent is not null)
+                {
+                    emailTimes.Add(newEvent);
+                }
 
                 string interviewDetails = "";
                 foreach (var interview in emailTimes)
@@ -712,9 +687,12 @@ namespace MockInterviews.Controllers
                 }
 
                 ASendAnEmail emailer = new StudentSignupEmail();
-                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "UA MIS Mock Interview Sign-Up Confirmation", user.Email, user.FirstName, interviewDetails, calendarEvents); ;
+                if (user.Email is { Length: > 0 } emailAddress)
+                {
+                    await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "UA MIS Mock Interview Sign-Up Confirmation", emailAddress, user.FirstName ?? "Deleted user", interviewDetails, calendarEvents);
+                }
 
-				return RedirectToAction("Index", "Home");
+                return RedirectToAction("Index", "Home");
             }
 
             return View();
@@ -724,7 +702,7 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.AdminRole + "," + RolesConstants.InterviewerRole)]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null || _context.Interviews == null)
+            if (_context.Interviews == null)
             {
                 return NotFound();
             }
@@ -765,7 +743,7 @@ namespace MockInterviews.Controllers
                 BehavioralInterviewers = behavioralInterviewers,
                 TechnicalInterviewers = technicalInterviewers,
                 RequestedInterviewers = requestedInterviewers,
-                StudentName = studentname
+                StudentName = studentname ?? "Deleted user"
             };
 
             return View(interviewEventManageViewModel);
@@ -774,7 +752,7 @@ namespace MockInterviews.Controllers
         // POST: InterviewEvents/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [Authorize(Roles = RolesConstants.AdminRole +","+RolesConstants.InterviewerRole)]
+        [Authorize(Roles = RolesConstants.AdminRole + "," + RolesConstants.InterviewerRole)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,StudentId,LocationId,TimeslotId,Type,Status,InterviewerTimeslotId")] Interview interviewEvent, string InterviewerId)
@@ -791,7 +769,7 @@ namespace MockInterviews.Controllers
 
             if (ModelState.IsValid)
             {
-                if(InterviewerId == "0")
+                if (InterviewerId == "0")
                 {
                     interviewEvent.InterviewerTimeslot = null;
                     interviewEvent.InterviewerTimeslotId = null;
@@ -807,48 +785,58 @@ namespace MockInterviews.Controllers
                         .Where(x => x.InterviewerSignup.InterviewerId == InterviewerId)
                         .FirstOrDefaultAsync();
 
-                    if(signupInterviewTimeslot != null && interviewEvent.Status == StatusConstants.CheckedIn)
+                    if (signupInterviewTimeslot is null)
                     {
-                        interviewEvent.Status = StatusConstants.Ongoing;
-                    }
-
-                    var interviewerPreference = "";
-                    if(signupInterviewTimeslot.InterviewerSignup.IsVirtual && signupInterviewTimeslot.InterviewerSignup.InPerson)
-                    {
-                        interviewerPreference = InterviewLocationConstants.InPerson + "/" + InterviewLocationConstants.IsVirtual;
-                    }
-                    else if(signupInterviewTimeslot.InterviewerSignup.IsVirtual)
-                    {
-                        interviewerPreference = InterviewLocationConstants.IsVirtual;
-                    }
-                    else if(signupInterviewTimeslot.InterviewerSignup.InPerson)
-                    {
-                        interviewerPreference = InterviewLocationConstants.InPerson;
-                    }
-
-                    var location = await _context.InterviewerLocations
-                        .Include(x => x.Location)
-                        .Where(x => x.InterviewerId == InterviewerId && 
-                            x.Preference == interviewerPreference && 
-                            x.EventId == signupInterviewTimeslot.Timeslot.EventId && 
-                            x.LocationId != null) 
-                        .FirstOrDefaultAsync();
-
-                    if (location == null)
-                    {
+                        interviewEvent.InterviewerTimeslot = null;
+                        interviewEvent.InterviewerTimeslotId = null;
                         interviewEvent.Location = null;
                         interviewEvent.LocationId = null;
                     }
                     else
                     {
-                        interviewEvent.Location = location.Location;
-                        interviewEvent.LocationId = location.Location.Id;
-                    }
+                        if (interviewEvent.Status == StatusConstants.CheckedIn)
+                        {
+                            interviewEvent.Status = StatusConstants.Ongoing;
+                        }
 
-                    interviewEvent.InterviewerTimeslot = signupInterviewTimeslot;
-                    interviewEvent.InterviewerTimeslotId = signupInterviewTimeslot.Id;
+                        var interviewerPreference = "";
+                        if (signupInterviewTimeslot.InterviewerSignup.IsVirtual && signupInterviewTimeslot.InterviewerSignup.InPerson)
+                        {
+                            interviewerPreference = InterviewLocationConstants.InPerson + "/" + InterviewLocationConstants.IsVirtual;
+                        }
+                        else if (signupInterviewTimeslot.InterviewerSignup.IsVirtual)
+                        {
+                            interviewerPreference = InterviewLocationConstants.IsVirtual;
+                        }
+                        else if (signupInterviewTimeslot.InterviewerSignup.InPerson)
+                        {
+                            interviewerPreference = InterviewLocationConstants.InPerson;
+                        }
+
+                        var location = await _context.InterviewerLocations
+                        .Include(x => x.Location)
+                        .Where(x => x.InterviewerId == InterviewerId &&
+                            x.Preference == interviewerPreference &&
+                            x.EventId == signupInterviewTimeslot.Timeslot.EventId &&
+                            x.LocationId != null)
+                        .FirstOrDefaultAsync();
+
+                        if (location?.Location is null)
+                        {
+                            interviewEvent.Location = null;
+                            interviewEvent.LocationId = null;
+                        }
+                        else
+                        {
+                            interviewEvent.Location = location.Location;
+                            interviewEvent.LocationId = location.Location.Id;
+                        }
+
+                        interviewEvent.InterviewerTimeslot = signupInterviewTimeslot;
+                        interviewEvent.InterviewerTimeslotId = signupInterviewTimeslot.Id;
+                    }
                 }
-                
+
                 try
                 {
                     _context.Update(interviewEvent);
@@ -881,7 +869,7 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.AdminRole)]
         public async Task<IActionResult> Override(int? id)
         {
-            if (id == null || _context.Interviews == null)
+            if (_context.Interviews == null)
             {
                 return NotFound();
             }
@@ -897,6 +885,10 @@ namespace MockInterviews.Controllers
                 .ThenInclude(x => x.Event)
                 .Where(x => x.Id == id)
                 .FirstOrDefaultAsync();
+            if (interviewEvent is null)
+            {
+                return NotFound();
+            }
 
             //var selectedInterviewers = await _userManager.GetUsersInRoleAsync(RolesConstants.InterviewerRole);
             //var interviewers = selectedInterviewers.ToList();
@@ -905,7 +897,7 @@ namespace MockInterviews.Controllers
                 .Include(x => x.InterviewerSignup)
                 .Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
-                .Where(x => x.Timeslot.EventId == interviewEvent.Timeslot.EventId && 
+                .Where(x => x.Timeslot.EventId == interviewEvent.Timeslot.EventId &&
                     x.Timeslot.Event.IsActive)
                 .Select(x => x.InterviewerSignup.InterviewerId)
                 .Distinct()
@@ -947,6 +939,10 @@ namespace MockInterviews.Controllers
                         .Where(u => u.Id == sit)
                         .Select(u => new { u.Id, u.FirstName, u.LastName })
                         .FirstOrDefaultAsync();
+                    if (interviewEvent is null)
+                    {
+                        return NotFound();
+                    }
 
                     if (user != null)
                     {
@@ -1003,7 +999,7 @@ namespace MockInterviews.Controllers
                         .Where(x => x.TimeslotId == interviewEvent.TimeslotId && x.InterviewerSignup.InterviewerId == InterviewerId)
                         .FirstOrDefaultAsync();
 
-                    if(signupInterviewTimeslot != null)
+                    if (signupInterviewTimeslot != null)
                     {
                         var interviewerPreference = "";
                         if (signupInterviewTimeslot.InterviewerSignup.IsVirtual && signupInterviewTimeslot.InterviewerSignup.InPerson)
@@ -1027,19 +1023,21 @@ namespace MockInterviews.Controllers
                         interviewEvent.InterviewerTimeslot = signupInterviewTimeslot;
                         interviewEvent.InterviewerTimeslotId = signupInterviewTimeslot.Id;
 
-                        if(location != null)
+                        if (location != null)
                         {
-                            interviewEvent.LocationId = location.Location.Id;
+                            interviewEvent.LocationId = location.Location?.Id;
                             interviewEvent.Location = location.Location;
-                        } 
+                        }
 
-                        if(interviewEvent.Status == StatusConstants.Ongoing)
+                        if (interviewEvent.Status == StatusConstants.Ongoing)
                         {
                             interviewEvent.StartedAt = DateTime.UtcNow;
-                        } else if (interviewEvent.Status == StatusConstants.CheckedIn)
+                        }
+                        else if (interviewEvent.Status == StatusConstants.CheckedIn)
                         {
                             interviewEvent.CheckedInAt = DateTime.UtcNow;
-                        } else if (interviewEvent.Status == StatusConstants.Completed)
+                        }
+                        else if (interviewEvent.Status == StatusConstants.Completed)
                         {
                             interviewEvent.EndedAt = DateTime.UtcNow;
                         }
@@ -1066,10 +1064,14 @@ namespace MockInterviews.Controllers
                 var newInterviewEvent = await _context.Interviews
                     .Include(x => x.Location)
                     .Include(x => x.InterviewerTimeslot)
-                    .ThenInclude(x => x.InterviewerSignup)
+                    .ThenInclude(x => x!.InterviewerSignup)
                     .Include(x => x.Timeslot)
                     .ThenInclude(x => x.Event)
                     .FirstOrDefaultAsync(x => x.Id == id);
+                if (newInterviewEvent is null)
+                {
+                    return NotFound();
+                }
 
                 var student = await _userManager.Users
                     .Where(x => x.Id == newInterviewEvent.StudentId)
@@ -1084,7 +1086,7 @@ namespace MockInterviews.Controllers
                     interviewername = await _userManager.Users
                         .Where(x => x.Id == interviewerId)
                         .Select(x => x.FirstName + " " + x.LastName)
-                        .FirstOrDefaultAsync();
+                        .FirstOrDefaultAsync() ?? "Deleted user";
                 }
 
                 if (newInterviewEvent.Location == null)
@@ -1098,7 +1100,7 @@ namespace MockInterviews.Controllers
                 var time = $"{newInterviewEvent.Timeslot.Time:hh:mm tt}";
                 var date = $"{newInterviewEvent.Timeslot.Event.Date:M/d/yyyy}";
 
-                await _hubContext.Clients.All.SendAsync("ReceiveInterviewEventUpdate", newInterviewEvent, student.GetFullName(), student.GetClass(), interviewerId, interviewername, time, date);
+                await _hubContext.Clients.All.SendAsync("ReceiveInterviewEventUpdate", newInterviewEvent, GetDisplayName(student), student?.GetClass() ?? string.Empty, interviewerId, interviewername, time, date);
                 await UpdateHub();
 
                 return RedirectToAction(nameof(Index));
@@ -1111,7 +1113,7 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.AdminRole)]
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || _context.Interviews == null)
+            if (_context.Interviews == null)
             {
                 return NotFound();
             }
@@ -1119,7 +1121,7 @@ namespace MockInterviews.Controllers
             var interviewEvent = await _context.Interviews
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
-                .ThenInclude(i => i.InterviewerSignup)
+                .ThenInclude(i => i!.InterviewerSignup)
                 .Include(i => i.Timeslot)
                 .ThenInclude(j => j.Event)
                 .FirstOrDefaultAsync(m => m.Id == id);
@@ -1136,8 +1138,8 @@ namespace MockInterviews.Controllers
                 {
                     InterviewEvent = interviewEvent,
                     InterviewerName = "Not Assigned",
-                    StudentName = student.FirstName + " " + student.LastName,
-                    Class = ClassConstants.GetClassText(student.Class)
+                    StudentName = GetDisplayName(student),
+                    Class = student is null ? string.Empty : ClassConstants.GetClassText(student.Class)
                 };
 
                 return View(viewModel);
@@ -1149,12 +1151,12 @@ namespace MockInterviews.Controllers
             var secondViewModel = new InterviewEventViewModel
             {
                 InterviewEvent = interviewEvent,
-                InterviewerName = interviewer.FirstName + " " + interviewer.LastName,
-                StudentName = student.FirstName + " " + student.LastName,
-                Class = ClassConstants.GetClassText(student.Class)
+                InterviewerName = GetDisplayName(interviewer),
+                StudentName = student is null ? "Deleted user" : student.FirstName + " " + student.LastName,
+                Class = student is null ? string.Empty : ClassConstants.GetClassText(student.Class)
             };
 
-            await _hubContext.Clients.All.SendAsync("ReceiveInterviewEventUpdate", new Interview() { Id = (int)id }, "delete", "0", "", "", "");
+            await _hubContext.Clients.All.SendAsync("ReceiveInterviewEventUpdate", new Interview { Id = id ?? 0 }, "delete", "0", "", "", "");
 
             return View(secondViewModel);
         }
@@ -1170,14 +1172,14 @@ namespace MockInterviews.Controllers
             {
                 _context.Interviews.Remove(interviewEvent);
             }
-            
+
             await _context.SaveChangesAsync();
-            return RedirectToAction("Index","Home");
+            return RedirectToAction("Index", "Home");
         }
 
         private bool InterviewEventExists(int id)
         {
-          return (_context.Interviews?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.Interviews?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
         private async Task<List<string>> OutsourceQuery(Interview interviewEvent)
@@ -1188,12 +1190,16 @@ namespace MockInterviews.Controllers
                 .Where(i => i.StudentId == interviewEvent.StudentId && i.TimeslotId == interviewEvent.TimeslotId)
                 .Select(i => i.Timeslot)
                 .FirstOrDefault();
+            if (timeslot is null)
+            {
+                return [];
+            }
 
             // Get the SignupInterviewerTimeslots for the same timeslot and event date as the user's interview
             var signupInterviewerTimeslots = _context.InterviewerTimeslots
                 .Include(s => s.InterviewerSignup)
-                .Where(s => s.TimeslotId == timeslot.Id && 
-                    s.Timeslot.Event.Date == timeslot.Event.Date && 
+                .Where(s => s.TimeslotId == timeslot.Id &&
+                    s.Timeslot.Event.Date == timeslot.Event.Date &&
                     s.Timeslot.Event.IsActive == true)
                 .ToList();
 
@@ -1219,11 +1225,11 @@ namespace MockInterviews.Controllers
             //get list of all distinct interviewers that are in an interview event with a status of checked in or ongoing
             var selectedStatusNot = _context.Interviews
                 .Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x.Timeslot)
+                .ThenInclude(x => x!.Timeslot)
                 .ThenInclude(x => x.Event)
-                .Include(x => x.InterviewerTimeslot.InterviewerSignup)
-                .Where(x => x.InterviewerTimeslot.Timeslot.Event.IsActive == true)
-                .Select(x => x.InterviewerTimeslot.InterviewerSignup.InterviewerId)
+                .Include(x => x.InterviewerTimeslot!.InterviewerSignup)
+                .Where(x => x.InterviewerTimeslot != null && x.InterviewerTimeslot.Timeslot.Event.IsActive)
+                .Select(x => x.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
                 .Distinct()
                 .ToList();
 
@@ -1233,17 +1239,16 @@ namespace MockInterviews.Controllers
 
             //Get list of all distinct interviewers that are assigned to a location
             var selectedLocation = _context.InterviewerLocations
-                .Where(x => x.LocationId != null &&
-                    x.Event == timeslot.Event &&
-                    x.Event.IsActive == true)
+                .Where(x => x.LocationId != null && x.Event != null &&
+                    x.Event == timeslot.Event && x.Event.IsActive)
                 .Select(x => x.InterviewerId)
                 .Distinct()
                 .ToList();
 
             //Get list of all distinct interviewers that have interviewed this student
             var haveInterviewed = _context.Interviews
-                .Where(x => x.StudentId == interviewEvent.StudentId)
-                .Select(x => x.InterviewerTimeslot.InterviewerSignup.InterviewerId)
+                .Where(x => x.StudentId == interviewEvent.StudentId && x.InterviewerTimeslot != null)
+                .Select(x => x.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
                 .Distinct()
                 .ToList();
 
@@ -1269,7 +1274,7 @@ namespace MockInterviews.Controllers
             return selectedInterviewers;
         }
 
-        private async Task<List<IVM>> OutsourceQuery2024(Interview ie)
+        private async Task<List<InterviewerOptionViewModel>> OutsourceQuery2024(Interview ie)
         {
             var allInterviewers = await _context.InterviewerTimeslots
                 .Include(x => x.InterviewerSignup)
@@ -1280,10 +1285,10 @@ namespace MockInterviews.Controllers
                     x.Timeslot.Event.Date == ie.Timeslot.Event.Date &&
                     x.InterviewerSignup.CheckedIn &&
                     !_context.Interviews
-                        .Where(i => i.Status == "Ongoing")
-                        .Select(i => i.InterviewerTimeslot.InterviewerSignup.InterviewerId)
+                        .Where(i => i.Status == "Ongoing" && i.InterviewerTimeslot != null)
+                        .Select(i => i.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
                         .Contains(x.InterviewerSignup.InterviewerId))
-                .Select(x => new IVM
+                .Select(x => new InterviewerOptionViewModel
                 {
                     Name = x.InterviewerSignup.FirstName + " " + x.InterviewerSignup.LastName,
                     Id = x.InterviewerSignup.InterviewerId.ToString(),
@@ -1295,10 +1300,10 @@ namespace MockInterviews.Controllers
             return allInterviewers;
         }
 
-        private static List<SelectListItem> OutsourceQueryTechnical2024(List<IVM> all)
+        private static List<SelectListItem> OutsourceQueryTechnical2024(List<InterviewerOptionViewModel> all)
         {
             var allInterviewers = all
-                .Distinct(new IVMComparer())
+                .Distinct(new InterviewerOptionViewModelComparer())
                 .OrderBy(x => x.Name)
                 .ToList();
 
@@ -1320,10 +1325,10 @@ namespace MockInterviews.Controllers
             return technicalInterviewers;
         }
 
-        private static List<SelectListItem> OutsourceQueryBehavioral2024(List<IVM> all)
+        private static List<SelectListItem> OutsourceQueryBehavioral2024(List<InterviewerOptionViewModel> all)
         {
             var allInterviewers = all
-                .Distinct(new IVMComparer())
+                .Distinct(new InterviewerOptionViewModelComparer())
                 .OrderBy(x => x.Name)
                 .ToList();
 
@@ -1348,7 +1353,7 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.StudentRole)]
         public async Task<IActionResult> UserDelete(int? id)
         {
-            if (id == null || _context.Interviews == null)
+            if (_context.Interviews == null)
             {
                 return NotFound();
             }
@@ -1356,7 +1361,7 @@ namespace MockInterviews.Controllers
             var interviewEvent = await _context.Interviews.Include(i => i.Location).Include(i => i.InterviewerTimeslot)
                 .Include(i => i.Timeslot)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            
+
             if (interviewEvent == null)
             {
                 return NotFound();
@@ -1444,13 +1449,13 @@ namespace MockInterviews.Controllers
                 Students = studentList
             };
 
-            if(SelectedEventIds == 0)
+            if (SelectedEventIds == 0)
             {
-                ModelState.AddModelError("StudentId","Please select a timeslot");
+                ModelState.AddModelError("StudentId", "Please select a timeslot");
                 return View(vm);
             }
 
-            if(string.IsNullOrEmpty(StudentId))
+            if (string.IsNullOrEmpty(StudentId))
             {
                 ModelState.AddModelError("StudentId", "Please select a student");
                 return View(vm);
@@ -1459,21 +1464,21 @@ namespace MockInterviews.Controllers
             var user = await _userService.GetByIdAsync(StudentId);
 
             var interviewTypeTwo = InterviewTypeConstants.Technical;
-            if (user.Class == Classes.NotYetMIS|| user.Class == Classes.FirstSem)
+            if (user.Class == Classes.NotYetMIS || user.Class == Classes.FirstSem)
             {
                 interviewTypeTwo = InterviewTypeConstants.Behavioral;
             }
 
             var interviewEvents = new List<Interview>
             {
-                new() 
+                new()
                 {
                     TimeslotId = SelectedEventIds,
                     StudentId = StudentId,
                     Status = StatusConstants.Default,
                     Type = InterviewTypeConstants.Behavioral
                 },
-                new() 
+                new()
                 {
                     TimeslotId = SelectedEventIds + 1,
                     StudentId = StudentId,
@@ -1535,7 +1540,7 @@ namespace MockInterviews.Controllers
         {
             _logger.LogInformation($"Interview marked completed. Id: {id}");
 
-            if (id == null || _context.Interviews == null)
+            if (_context.Interviews == null)
             {
                 return BadRequest("Interview not found.");
             }
@@ -1573,12 +1578,12 @@ namespace MockInterviews.Controllers
             return NoContent();
         }
 
-        [Authorize(Roles=RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdminRole)]
         public async Task<IActionResult> StudentNoShow(int id)
         {
             _logger.LogInformation($"Interview marked no-show. Id: {id}");
 
-            if (id == null || _context.Interviews == null)
+            if (_context.Interviews == null)
             {
                 return BadRequest("Interview not found.");
             }
@@ -1657,22 +1662,36 @@ namespace MockInterviews.Controllers
                     .Where(x => x.InterviewerSignup.InterviewerId == InterviewerId)
                     .FirstOrDefaultAsync();
 
-                if (signupInterviewTimeslot != null && interviewEvent.Status == StatusConstants.CheckedIn)
+                if (signupInterviewTimeslot is null)
                 {
-                    interviewEvent.Status = StatusConstants.Ongoing;
-                    interviewEvent.StartedAt = DateTime.UtcNow;
+                    interviewEvent.InterviewerTimeslot = null;
+                    interviewEvent.InterviewerTimeslotId = null;
+                    interviewEvent.Location = null;
+                    interviewEvent.LocationId = null;
                 }
+                else
+                {
+                    if (interviewEvent.Status == StatusConstants.CheckedIn)
+                    {
+                        interviewEvent.Status = StatusConstants.Ongoing;
+                        interviewEvent.StartedAt = DateTime.UtcNow;
+                    }
 
-                var interviewerPreference = "";
-                if (signupInterviewTimeslot.InterviewerSignup.IsVirtual && signupInterviewTimeslot.InterviewerSignup.InPerson){
-                    interviewerPreference = InterviewLocationConstants.InPerson + "/" + InterviewLocationConstants.IsVirtual;
-                } else if (signupInterviewTimeslot.InterviewerSignup.IsVirtual){
-                    interviewerPreference = InterviewLocationConstants.IsVirtual;
-                } else if (signupInterviewTimeslot.InterviewerSignup.InPerson){
-                    interviewerPreference = InterviewLocationConstants.InPerson;
-                }
+                    var interviewerPreference = "";
+                    if (signupInterviewTimeslot.InterviewerSignup.IsVirtual && signupInterviewTimeslot.InterviewerSignup.InPerson)
+                    {
+                        interviewerPreference = InterviewLocationConstants.InPerson + "/" + InterviewLocationConstants.IsVirtual;
+                    }
+                    else if (signupInterviewTimeslot.InterviewerSignup.IsVirtual)
+                    {
+                        interviewerPreference = InterviewLocationConstants.IsVirtual;
+                    }
+                    else if (signupInterviewTimeslot.InterviewerSignup.InPerson)
+                    {
+                        interviewerPreference = InterviewLocationConstants.InPerson;
+                    }
 
-                var location = await _context.InterviewerLocations
+                    var location = await _context.InterviewerLocations
                     .Include(x => x.Location)
                     .Where(x => x.InterviewerId == InterviewerId &&
                         x.Preference == interviewerPreference &&
@@ -1680,21 +1699,22 @@ namespace MockInterviews.Controllers
                         x.LocationId != null)
                     .FirstOrDefaultAsync();
 
-                if(location == null)
-                {
-                    interviewEvent.Location = null;
-                    interviewEvent.LocationId = null;
-                }
-                else
-                {
-                    interviewEvent.Location = location.Location;
-                    interviewEvent.LocationId = location.Location.Id;
-                }
+                    if (location?.Location is null)
+                    {
+                        interviewEvent.Location = null;
+                        interviewEvent.LocationId = null;
+                    }
+                    else
+                    {
+                        interviewEvent.Location = location.Location;
+                        interviewEvent.LocationId = location.Location.Id;
+                    }
 
-                interviewEvent.InterviewerTimeslot = signupInterviewTimeslot;
-                interviewEvent.InterviewerTimeslotId = signupInterviewTimeslot.Id;
+                    interviewEvent.InterviewerTimeslot = signupInterviewTimeslot;
+                    interviewEvent.InterviewerTimeslotId = signupInterviewTimeslot.Id;
+                }
             }
-            
+
             try
             {
                 _context.Update(interviewEvent);
@@ -1703,37 +1723,20 @@ namespace MockInterviews.Controllers
                 await UpdateHub(Id);
                 await UpdateHub();
 
-                var ie = await _context.Interviews
-                    .Include(x => x.InterviewerTimeslot)
-                    .ThenInclude(x => x.InterviewerSignup)
-                    .Where(x => x.Id == Id)
-                    .Select(x => new
-                    {
-                        x.StudentId,
-                        InterviewerName = x.InterviewerTimeslot.InterviewerSignup.FirstName + " " + x.InterviewerTimeslot.InterviewerSignup.LastName,
-                    })
-                    .FirstOrDefaultAsync();
-
-                var locationRoom = interviewEvent.Location.Room;
-                if(locationRoom == null)
-                {
-                    locationRoom = "**Not Assigned**";
-                }
-
                 var student = await _userManager.Users
-                    .Where(x => x.Id == ie.StudentId)
+                    .Where(x => x.Id == interviewEvent.StudentId)
                     .Select(x => new
                     {
                         StudentName = x.FirstName + " " + x.LastName,
                     })
                     .FirstOrDefaultAsync();
 
-                var response = new EditInlineResponse
+                var response = new EditInterviewResponse
                 {
-                    StudentName = student.StudentName, // Replace with actual values
+                    StudentName = student?.StudentName ?? "Deleted user",
                     InterviewType = interviewEvent.Type, // Replace with actual values
-                    InterviewerName = ie.InterviewerName, // Replace with actual values
-                    Location = interviewEvent.Location.Room, // Replace with actual values
+                    InterviewerName = interviewEvent.InterviewerTimeslot?.InterviewerSignup.GetInterviewerName() ?? "Not Assigned",
+                    Location = interviewEvent.Location?.Room ?? "Not Assigned",
                 };
 
                 await UpdateHub(Id);
@@ -1755,7 +1758,7 @@ namespace MockInterviews.Controllers
         }
 
         [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<ActionResult<AVM>> GetAvailableInterviewers(int id)
+        public async Task<ActionResult<AvailableInterviewersViewModel>> GetAvailableInterviewers(int id)
         {
             if (id == 0 || !_context.Interviews.Any(x => x.Id == id))
             {
@@ -1772,7 +1775,7 @@ namespace MockInterviews.Controllers
                 return NotFound("Interview Event not found.");
             }
 
-            var vm = new AVM();
+            var vm = new AvailableInterviewersViewModel();
 
             var all = await OutsourceQuery2024(interviewEvent);
             vm.BehavioralInterviewers = OutsourceQueryBehavioral2024(all);
@@ -1787,7 +1790,8 @@ namespace MockInterviews.Controllers
             var interviewEvents = await _context.Interviews
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
-                .ThenInclude(i => i.InterviewerSignup)
+                // EF Core parses Include expressions without dereferencing an optional navigation.
+                .ThenInclude(i => i!.InterviewerSignup)
                 .Include(i => i.Timeslot)
                 .ThenInclude(j => j.Event)
                 .Where(i => (i.Status == StatusConstants.Completed ||
@@ -1870,9 +1874,13 @@ namespace MockInterviews.Controllers
         [Authorize]
         public async Task<IActionResult> StudentSelfCheckIn()
         {
-            if(User.IsInRole (RolesConstants.StudentRole))
+            if (User.IsInRole(RolesConstants.StudentRole))
             {
-                string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId is null)
+                {
+                    return Challenge();
+                }
                 var ie = await _context.Interviews
                     .Include(x => x.Timeslot)
                     .ThenInclude(x => x.Event)
@@ -1911,7 +1919,7 @@ namespace MockInterviews.Controllers
         [Authorize]
         public async Task<IActionResult> InterviewerSelfCheckIn()
         {
-            if(User.IsInRole(RolesConstants.AdminRole))
+            if (User.IsInRole(RolesConstants.AdminRole))
             {
                 var sits = await _context.InterviewerTimeslots
                                 .Include(x => x.Timeslot)
@@ -1964,7 +1972,7 @@ namespace MockInterviews.Controllers
                 .Where(x => x.Id == newId)
                 .FirstOrDefaultAsync();
 
-            if(interviewer == null)
+            if (interviewer == null)
             {
                 return BadRequest("Interviewer not signed up.");
             }
@@ -2001,12 +2009,12 @@ namespace MockInterviews.Controllers
                     .Include(x => x.Location)
                     .Include(x => x.Event)
                     .Where(x => x.InterviewerId == interviewerId &&
-                        x.Event.Date.Date == date)
+                        x.Event != null && x.Event.Date.Date == date)
                     .FirstOrDefaultAsync();
 
-                if(li != null)
+                if (li != null)
                 {
-                    room = li.Location.Room;
+                    room = li.Location?.Room ?? "Not Assigned";
                 }
                 else
                 {
@@ -2024,21 +2032,21 @@ namespace MockInterviews.Controllers
 
             await UpdateHub();
 
-            return View("InterviewerCheckIn",vm);
+            return View("InterviewerCheckIn", vm);
         }
 
         [HttpGet]
         [Authorize(Roles = RolesConstants.AdminRole)]
         public async Task<IActionResult> PreAssignInterviews()
         {
-            var vm = await _manager.ListOfAssignedStudents();            
+            var vm = await _manager.ListOfAssignedStudents();
 
             return View(vm);
         }
 
         [HttpPost]
         [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> PreAssignInterviews([FromBody] List<PARVM> requests)
+        public async Task<IActionResult> PreAssignInterviews([FromBody] List<PreAssignInterviewRequestViewModel> requests)
         {
             _logger.LogInformation("Preassignment requested...");
 
@@ -2049,13 +2057,16 @@ namespace MockInterviews.Controllers
 
             var dictionary = requests.ToDictionary(x => int.Parse(x.InterviewEventId), x => x.SelectedValue);
 
-            try {
+            try
+            {
                 await _manager.AssignStudentsToInterviewers(dictionary);
-            } catch {
+            }
+            catch
+            {
                 return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to assign students to interviewers" });
             }
 
-            return StatusCode(StatusCodes.Status200OK, new { message = "Success!"});
+            return StatusCode(StatusCodes.Status200OK, new { message = "Success!" });
         }
 
         private static DateTime CombineDateWithTimeString(DateTime date, string timeString)
@@ -2126,10 +2137,16 @@ namespace MockInterviews.Controllers
             var newInterviewEvent = await _context.Interviews
                 .Include(x => x.Location)
                 .Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x.InterviewerSignup)
+                // EF Core parses Include expressions without dereferencing an optional navigation.
+                .ThenInclude(x => x!.InterviewerSignup)
                 .Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
                 .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (newInterviewEvent is null)
+            {
+                return;
+            }
 
             var student = await _userManager.Users
                 .Where(x => x.Id == newInterviewEvent.StudentId)
@@ -2139,8 +2156,10 @@ namespace MockInterviews.Controllers
             if (newInterviewEvent.Status == StatusConstants.Completed || newInterviewEvent.Status == StatusConstants.NoShow || newInterviewEvent.Status == StatusConstants.Excused)
             {
                 studentName = "delete";
-            } else {
-                studentName = student.GetFullName();
+            }
+            else
+            {
+                studentName = student?.GetFullName() ?? "Deleted user";
             }
 
             var interviewername = "Not Assigned";
@@ -2152,7 +2171,7 @@ namespace MockInterviews.Controllers
                 interviewername = await _userManager.Users
                     .Where(x => x.Id == interviewerId)
                     .Select(x => x.FirstName + " " + x.LastName)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync() ?? "Deleted user";
             }
 
             if (newInterviewEvent.Location == null)
@@ -2167,7 +2186,7 @@ namespace MockInterviews.Controllers
             var date = $"{newInterviewEvent.Timeslot.Event.Date:M/d/yyyy}";
 
             _logger.LogInformation("Requesting all connected clients to update.");
-            await _hubContext.Clients.All.SendAsync("ReceiveInterviewEventUpdate", newInterviewEvent, studentName, student.GetClass(), interviewerId, interviewername, time, date);
+            await _hubContext.Clients.All.SendAsync("ReceiveInterviewEventUpdate", newInterviewEvent, studentName, student?.GetClass() ?? string.Empty, interviewerId, interviewername, time, date);
             _logger.LogInformation("Requested.");
         }
 
@@ -2175,9 +2194,9 @@ namespace MockInterviews.Controllers
         {
             var busyInterviewers = await _context.Interviews
                 .Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x.InterviewerSignup)
-                .Where(x => x.Status == StatusConstants.Ongoing)
-                .Select(x => x.InterviewerTimeslot.InterviewerSignup.InterviewerId)
+                .ThenInclude(x => x!.InterviewerSignup)
+                .Where(x => x.Status == StatusConstants.Ongoing && x.InterviewerTimeslot != null)
+                .Select(x => x.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
                 .Distinct()
                 .ToListAsync();
 
@@ -2186,7 +2205,7 @@ namespace MockInterviews.Controllers
                 .Select(x => new AvailableInterviewer
                 {
                     InterviewerId = x.InterviewerId,
-                    InterviewType = x.Type,
+                    InterviewType = x.Type ?? string.Empty,
                 })
             .ToListAsync();
 
@@ -2195,7 +2214,7 @@ namespace MockInterviews.Controllers
                 iv.Name = await _userManager.Users
                     .Where(x => x.Id == iv.InterviewerId)
                     .Select(x => x.FirstName + " " + x.LastName)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync() ?? "Deleted user";
 
                 var date = DateTime.UtcNow.Date;
                 //var date = new DateTime(2024, 2, 8);
@@ -2204,8 +2223,8 @@ namespace MockInterviews.Controllers
                     .Include(x => x.Location)
                     .Include(x => x.Event)
                     .Where(x => x.InterviewerId == iv.InterviewerId &&
-                        x.Event.Date == date)
-                    .Select(x => x.Location.Room)
+                        x.Event != null && x.Event.Date == date && x.Location != null)
+                    .Select(x => x.Location!.Room)
                     .FirstOrDefaultAsync() ?? "Not Assigned";
             }
 
@@ -2215,5 +2234,9 @@ namespace MockInterviews.Controllers
             await _hubContextInterviewer.Clients.All.SendAsync("ReceiveAvailableInterviewersUpdate", interviewers);
             _logger.LogInformation("Requested.");
         }
+
+        private static string GetDisplayName(ApplicationUser? user) => user is null
+            ? "Deleted user"
+            : $"{user.FirstName} {user.LastName}";
     }
 }

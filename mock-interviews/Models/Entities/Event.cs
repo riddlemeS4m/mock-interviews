@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using MockInterviews.Data.Constants;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using MockInterviews.Data.Constants;
 
 namespace MockInterviews.Models.Entities
 {
@@ -18,7 +18,7 @@ namespace MockInterviews.Models.Entities
 
         [Required]
         [Display(Name = "Event Name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!; // Required field is populated by validation or EF Core materialization.
 
         [Display(Name = "For MIS 221?")]
         [DefaultValue(For221.b)]

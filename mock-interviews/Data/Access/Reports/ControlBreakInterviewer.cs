@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using MockInterviews.Data.Constants;
 using MockInterviews.Interfaces.IReports;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels;
+using MockInterviews.Models.ViewModels.Shared;
 
 namespace MockInterviews.Data.Access.Reports
 {
@@ -50,7 +50,7 @@ namespace MockInterviews.Data.Access.Reports
                             EndTime = currentEvent.Time.AddMinutes(30).ToString(@"h\:mm tt"),
                             StartTime = startAt.ToString(@"h\:mm tt"),
                             Location = GetLocation(currentSI.InPerson),
-                            Name = name.FirstName + " " + name.LastName,
+                            Name = name is null ? "Deleted user" : $"{name.FirstName} {name.LastName}",
                             InterviewType = currentSI.Type,
                             TimeslotIds = ints,
                             WantsLunch = currentSI.Lunch,
@@ -75,7 +75,7 @@ namespace MockInterviews.Data.Access.Reports
                     EndTime = currentEvent.Time.AddMinutes(30).ToString(@"h\:mm tt"),
                     StartTime = startAt.ToString(@"h\:mm tt"),
                     Location = GetLocation(currentSI.InPerson),
-                    Name = name.FirstName + " " + name.LastName,
+                    Name = name is null ? "Deleted user" : $"{name.FirstName} {name.LastName}",
                     InterviewType = currentSI.Type,
                     TimeslotIds = ints,
                     WantsLunch = currentSI.Lunch,

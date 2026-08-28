@@ -1,4 +1,4 @@
-﻿@model MockInterviews.Models.ViewModels.LocationInterviewerViewModel
+﻿@model MockInterviews.Models.ViewModels.LocationInterviewersController.LocationInterviewerViewModel
 
 @{
     ViewData["Title"] = "Index";
@@ -34,7 +34,7 @@
                 @Html.DisplayFor(modelItem => item.InterviewerName)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.LocationInterviewer.Event.Date)
+                @(item.LocationInterviewer.Event?.Date.ToString("d") ?? "Not assigned")
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.InterviewerPreference)
@@ -102,4 +102,3 @@
     </table>
 
 </div>*@
-

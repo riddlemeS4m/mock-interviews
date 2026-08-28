@@ -1,12 +1,12 @@
 ﻿@using MockInterviews.Data;
 @using MockInterviews.Data.Constants;
-@model MockInterviews.Models.ViewModels.InterviewEventManageViewModel
+@model MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventManageViewModel
 
 @{
     ViewData["Title"] = "Edit";
 }
 
-@if (User.Identity.IsAuthenticated && User.IsInRole(RolesConstants.AdminRole))
+@if (User.Identity?.IsAuthenticated == true && User.IsInRole(RolesConstants.AdminRole))
 {
     <h1>Assign to @Model.StudentName</h1>
 

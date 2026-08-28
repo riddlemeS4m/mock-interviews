@@ -19,11 +19,11 @@
         the inconvenience.
     </p>
 </div>
-@if (User.Identity.IsAuthenticated)
+@if (User.Identity?.IsAuthenticated == true)
 {
     <div class="home-container max-width-home">
 
-        <h1>Hi @UserManager.GetUserAsync(User).Result.FirstName!</h1>
+        <h1>Hi @(UserManager.GetUserAsync(User).Result?.FirstName ?? "there")!</h1>
         <p style="
         font-size: 20px; 
         text-align: center;">
@@ -71,7 +71,7 @@ else
 }
 
 <div class="home-container max-width-home">
-    @if (User.Identity.IsAuthenticated && User.IsInRole(RolesConstants.StudentRole))
+    @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RolesConstants.StudentRole))
     {
         <div class="section-card section-card-gradient">
             @await Html.PartialAsync("_InterviewEventsPartial", Model.StudentScheduledInterviews)
@@ -81,7 +81,7 @@ else
         </div>
     }
 
-    @if (User.Identity.IsAuthenticated && User.IsInRole(RolesConstants.InterviewerRole))
+    @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RolesConstants.InterviewerRole))
     {
         <div class="section-card section-card-gradient">
             @await Html.PartialAsync("_SignupInterviewerTimeslotsPartial", Model)

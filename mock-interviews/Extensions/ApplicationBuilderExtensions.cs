@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.HttpOverrides;
-using Serilog;
-using MockInterviews.Services.SignalR;
 using MockInterviews.Data;
+using MockInterviews.Services.SignalR;
+using Serilog;
 
 namespace MockInterviews.Extensions;
 

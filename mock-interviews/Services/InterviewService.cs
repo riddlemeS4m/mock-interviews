@@ -14,10 +14,11 @@ namespace MockInterviews.Services
             _logger = logger;
         }
 
-        public async Task<Interview> GetByIdAsync(int id)
+        public async Task<Interview?> GetByIdAsync(int id)
         {
+            // EF Core parses Include expressions; it does not dereference an optional navigation while materializing this query.
             return await _dbSet.Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x.InterviewerSignup)
+                .ThenInclude(x => x!.InterviewerSignup)
                 .Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
                 .Include(x => x.Location)
@@ -27,9 +28,9 @@ namespace MockInterviews.Services
         public async Task<IEnumerable<string>> GetActivelyInterviewingInterviewerIds()
         {
             return await _dbSet.Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x.InterviewerSignup)
-                .Where(x => x.Status == StatusConstants.Ongoing)
-                .Select(x => x.InterviewerTimeslot.InterviewerSignup.InterviewerId)
+                .ThenInclude(x => x!.InterviewerSignup)
+                .Where(x => x.Status == StatusConstants.Ongoing && x.InterviewerTimeslot != null)
+                .Select(x => x.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
                 .Distinct()
                 .ToListAsync();
         }
@@ -38,13 +39,13 @@ namespace MockInterviews.Services
         {
             return await _dbSet.Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
-                .ThenInclude(i => i.InterviewerSignup)
+                .ThenInclude(i => i!.InterviewerSignup)
                 .Include(i => i.Timeslot)
                 .ThenInclude(j => j.Event)
                 .Where(i => i.Status != StatusConstants.Completed &&
                     i.Status != StatusConstants.NoShow &&
                     i.Status != StatusConstants.Excused &&
-                    i.Timeslot.Event.IsActive)
+                    i.Timeslot != null && i.Timeslot.Event != null && i.Timeslot.Event.IsActive)
                 .OrderBy(i => i.TimeslotId)
                 .Take(numberOfInterviews)
                 .ToListAsync();
@@ -60,14 +61,14 @@ namespace MockInterviews.Services
             var interviewEvents = await _dbSet
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
-                .ThenInclude(i => i.InterviewerSignup)
+                .ThenInclude(i => i!.InterviewerSignup)
                 .Include(i => i.Timeslot)
                 .ThenInclude(j => j.Event)
-                .Where(i => i.Timeslot.Event.IsActive
+                .Where(i => i.Timeslot != null && i.Timeslot.Event != null && i.Timeslot.Event.IsActive
                     && i.Status == StatusConstants.Default)
                 .OrderBy(i => i.Timeslot.Time)
                 .ToListAsync();
-            
+
             return interviewEvents;
         }
 
@@ -76,14 +77,14 @@ namespace MockInterviews.Services
             var interviewEvents = await _dbSet
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
-                .ThenInclude(i => i.InterviewerSignup)
+                .ThenInclude(i => i!.InterviewerSignup)
                 .Include(i => i.Timeslot)
                 .ThenInclude(j => j.Event)
-                .Where(i => i.Timeslot.Event.IsActive
+                .Where(i => i.Timeslot != null && i.Timeslot.Event != null && i.Timeslot.Event.IsActive
                     && ids.Contains(i.Id))
                 .OrderBy(i => i.Timeslot.Time)
                 .ToListAsync();
-            
+
             return interviewEvents;
         }
 
@@ -92,21 +93,23 @@ namespace MockInterviews.Services
             return await _dbSet.Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
                 .Where(x => x.StudentId == userId
-                    && x.Timeslot.Event.IsActive)
+                    && x.Timeslot != null && x.Timeslot.Event != null && x.Timeslot.Event.IsActive)
                 .ToListAsync();
         }
 
         public Dictionary<int, string> GetStudentIdsFromInterviews(IEnumerable<Interview> interviews)
         {
             return interviews
-                .Select(x => new {x.Id, x.StudentId})
+                .Select(x => new { x.Id, x.StudentId })
                 .ToDictionary(x => x.Id, x => x.StudentId);
         }
 
         public Dictionary<int, int> GetInterviewSignupIdsFromInterviews(IEnumerable<Interview> interviews)
         {
+            // The preceding filter establishes the relationship before projection.
             return interviews
-                .Select(x => new {x.Id, x.InterviewerTimeslot.InterviewerSignupId})
+                .Where(x => x.InterviewerTimeslot != null)
+                .Select(x => new { x.Id, x.InterviewerTimeslot!.InterviewerSignupId })
                 .ToDictionary(x => x.Id, x => x.InterviewerSignupId);
         }
     }

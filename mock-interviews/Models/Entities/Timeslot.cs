@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Runtime.CompilerServices;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace MockInterviews.Models.Entities
 {
@@ -22,7 +21,7 @@ namespace MockInterviews.Models.Entities
         public int EventId { get; set; }
 
         [ValidateNever]
-        public Event Event { get; set; }
+        public Event Event { get; set; } = null!; // Populated by EF Core when the required relationship is materialized.
 
         [Required]
         [DefaultValue(true)]

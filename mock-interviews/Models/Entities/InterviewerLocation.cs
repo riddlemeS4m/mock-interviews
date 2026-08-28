@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace MockInterviews.Models.Entities
 {
@@ -12,7 +12,7 @@ namespace MockInterviews.Models.Entities
 
         [Required]
         [Display(Name = "Interviewer")]
-        public string InterviewerId { get; set; }
+        public string InterviewerId { get; set; } = null!; // Populated by the request workflow or EF Core materialization.
 
         [ForeignKey("Locations")]
         [Display(Name = "Locations")]
@@ -29,7 +29,7 @@ namespace MockInterviews.Models.Entities
         public Event? Event { get; set; }
 
         [ValidateNever]
-        public string Preference { get; set; }
+        public string Preference { get; set; } = null!; // Populated by the request workflow or EF Core materialization.
 
         public override string ToString()
         {
