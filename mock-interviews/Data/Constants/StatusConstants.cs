@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace MockInterviews.Data.Constants
 {
@@ -58,7 +58,7 @@ namespace MockInterviews.Data.Constants
                 Statuses.Excused => Excused,
                 _ => string.Empty,
             };
-        }  
+        }
 
         public enum Statuses
         {

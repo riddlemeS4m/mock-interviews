@@ -1,16 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -19,7 +14,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Identity;
@@ -128,7 +122,7 @@ namespace MockInterviews.Areas.Identity.Pages.Account
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
             if (ModelState.IsValid)
             {
-                
+
                 var user = CreateUser();
 
                 var textInfo = new CultureInfo("en-US", false).TextInfo;
@@ -146,11 +140,11 @@ namespace MockInterviews.Areas.Identity.Pages.Account
                     var userId = await _userManager.GetUserIdAsync(user);
                     var exists = await _context.RosteredStudents.FirstOrDefaultAsync(record => record.Email == Input.Email);
 
-                    if(exists != null)
+                    if (exists != null)
                     {
                         await _userManager.AddToRoleAsync(user, RolesConstants.StudentRole);
                     }
-                    else if(exists == null)
+                    else if (exists == null)
                     {
                         await _userManager.AddToRoleAsync(user, RolesConstants.InterviewerRole);
                     }

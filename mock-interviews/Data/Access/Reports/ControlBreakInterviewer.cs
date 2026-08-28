@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using MockInterviews.Data.Constants;
 using MockInterviews.Interfaces.IReports;
 using MockInterviews.Models.Entities;

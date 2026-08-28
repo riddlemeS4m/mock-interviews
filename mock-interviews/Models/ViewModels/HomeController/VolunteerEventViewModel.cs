@@ -1,4 +1,4 @@
-﻿using MockInterviews.Models.Entities;
+using MockInterviews.Models.Entities;
 
 namespace MockInterviews.Models.ViewModels.HomeController
 {

@@ -1,16 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using SendGrid;
+using MockInterviews.Data.Constants;
+using MockInterviews.Data.Contexts;
+using MockInterviews.Models.Entities;
+using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Models.ViewModels.SignupInterviewersController;
-using MockInterviews.Models.Identity;
-using MockInterviews.Models.Entities;
 using MockInterviews.Services.SignalR;
-using MockInterviews.Data.Contexts;
-using MockInterviews.Data.Constants;
+using SendGrid;
 
 namespace MockInterviews.Controllers
 {
@@ -71,7 +71,8 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            var vm = new SignupInterviewerViewModel {
+            var vm = new SignupInterviewerViewModel
+            {
                 SignupInterviewer = signupInterviewer
             };
 
@@ -188,7 +189,7 @@ namespace MockInterviews.Controllers
             {
                 _context.InterviewerSignups.Remove(signupInterviewer);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
@@ -203,9 +204,9 @@ namespace MockInterviews.Controllers
 
             var si = await _context.InterviewerSignups.FindAsync(id);
 
-            if(si == null)
-            {                 
-                return NotFound();  
+            if (si == null)
+            {
+                return NotFound();
             }
 
             try
@@ -218,7 +219,7 @@ namespace MockInterviews.Controllers
 
                 //return NoContent();
                 return RedirectToAction(nameof(Index));
-            } 
+            }
             catch
             {
                 return BadRequest(new InvalidOperationException("Interviewer was unable to be checked in."));
@@ -226,7 +227,7 @@ namespace MockInterviews.Controllers
         }
         private bool SignupInterviewerExists(int id)
         {
-          return (_context.InterviewerSignups?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.InterviewerSignups?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
         private async Task UpdateHub()

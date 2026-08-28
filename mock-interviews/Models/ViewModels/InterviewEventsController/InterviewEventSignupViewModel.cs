@@ -1,4 +1,4 @@
-﻿using MockInterviews.Models.Entities;
+using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
 
 namespace MockInterviews.Models.ViewModels.InterviewEventsController

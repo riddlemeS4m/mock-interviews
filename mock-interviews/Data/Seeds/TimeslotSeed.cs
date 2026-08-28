@@ -1,6 +1,6 @@
-﻿using MockInterviews.Models.Entities;
-using MockInterviews.Services;
 using System.Globalization;
+using MockInterviews.Models.Entities;
+using MockInterviews.Services;
 
 namespace MockInterviews.Data.Seeds
 {
@@ -9,7 +9,7 @@ namespace MockInterviews.Data.Seeds
     public class TimeslotSeed
     {
         public static int MaxSignups { get; set; } = 0;
-        public static readonly string[] Times = { 
+        public static readonly string[] Times = {
             "8:00 AM",
             "8:30 AM",
             "9:00 AM",
@@ -36,7 +36,7 @@ namespace MockInterviews.Data.Seeds
         public static async Task SeedTimeslots(EventService eventService, TimeslotService timeslotService)
         {
             var dates = await eventService.GetAllAsync();
-            
+
             if (dates.Any())
             {
                 var times = await timeslotService.GetAllAsync();

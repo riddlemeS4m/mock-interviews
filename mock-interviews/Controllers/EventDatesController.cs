@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
-using MockInterviews.Data.Seeds;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Data.Seeds;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.ViewModels.EventDatesController;
 using MockInterviews.Services;
@@ -71,7 +71,7 @@ namespace MockInterviews.Controllers
 
             var value = GetFor221Value(Request.Form);
 
-            if(value < 0)
+            if (value < 0)
             {
                 ModelState.AddModelError("EventDate.For221", "Please indicate whether the event is for 221.");
                 vm.EventDate = EventDate;
@@ -90,15 +90,15 @@ namespace MockInterviews.Controllers
 
             var attempt = await _eventService.AddAsync(EventDate);
 
-            if(attempt == null)
+            if (attempt == null)
             {
                 return NotFound();
             }
 
             TimeslotSeed.MaxSignups = MaxSignUps;
             await TimeslotSeed.SeedTimeslots(_timeslotService, EventDate);
-        
-            return RedirectToAction("Index","EventDates");
+
+            return RedirectToAction("Index", "EventDates");
         }
 
         // GET: EventDates/Edit/5
@@ -141,7 +141,7 @@ namespace MockInterviews.Controllers
 
             var value = GetFor221Value(Request.Form);
 
-            if(value < 0)
+            if (value < 0)
             {
                 ModelState.AddModelError("", "Please check indicate whether the event is for 221.");
                 return View(@event);
@@ -155,7 +155,7 @@ namespace MockInterviews.Controllers
             {
                 var attempt = await _eventService.UpdateAsync(@event);
 
-                if(attempt == null)
+                if (attempt == null)
                 {
                     return NotFound();
                 }
@@ -168,7 +168,7 @@ namespace MockInterviews.Controllers
                 }
             }
 
-            return RedirectToAction("Index","EventDates");
+            return RedirectToAction("Index", "EventDates");
         }
 
         // GET: EventDates/Delete/5
@@ -199,19 +199,19 @@ namespace MockInterviews.Controllers
             {
                 var deleted = await _eventService.DeleteAsync(@event);
 
-                if(!deleted)
+                if (!deleted)
                 {
                     return NotFound();
                 }
             }
-            
+
             return RedirectToAction("Index", "EventDates");
         }
 
         private async Task<bool> EventDateExists(int id)
         {
             var exists = await _eventService.GetByIdAsync(id);
-            return exists != null;  
+            return exists != null;
             //return (_context.Events?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 

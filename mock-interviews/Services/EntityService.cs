@@ -13,7 +13,7 @@ namespace MockInterviews.Services
         {
             _context = context ?? throw new ArgumentNullException(nameof(context), "Database context cannot be null.");
             _dbSet = context.Set<T>();
-        }   
+        }
 
         public virtual async Task<IEnumerable<T>> GetAllAsync()
         {

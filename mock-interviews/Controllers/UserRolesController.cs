@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using System.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.UserRolesController;
-using System.Data;
 
 namespace MockInterviews.Controllers
 {

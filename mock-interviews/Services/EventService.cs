@@ -16,14 +16,14 @@ namespace MockInterviews.Services
         {
             _logger.LogInformation("Getting all events...");
             return await base.GetAllAsync();
-        } 
+        }
 
         public async Task<Event?> GetByIdAsync(int id)
         {
             _logger.LogInformation("Getting event with id {id}...", id);
             var @event = await base.GetByIdAsync(id);
 
-            if(@event == null)
+            if (@event == null)
             {
                 _logger.LogWarning("Event with id {id} not found", id);
                 return null;
@@ -59,12 +59,12 @@ namespace MockInterviews.Services
             _logger.LogInformation("Deleting event with id {id}...", @event.Id);
             var deleted = await base.DeleteAsync(@event.Id);
 
-            if(!deleted)
+            if (!deleted)
             {
                 _logger.LogWarning("Event with id {id} not found", @event.Id);
                 return false;
             }
-            
+
             _logger.LogInformation("Event with id {id} deleted successfully", @event.Id);
             return true;
         }

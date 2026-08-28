@@ -1,4 +1,4 @@
-﻿namespace MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsController
+namespace MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsController
 {
     public class LunchReportViewModel
     {

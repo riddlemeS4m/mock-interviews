@@ -1,4 +1,4 @@
-﻿using MockInterviews.Models.Entities;
+using MockInterviews.Models.Entities;
 using MockInterviews.Models.ViewModels.ReportsController;
 
 namespace MockInterviews.Models.ViewModels.TimeslotsController

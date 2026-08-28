@@ -1,10 +1,9 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using SendGrid;
 using MockInterviews.Data.Access.Emails;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
@@ -12,6 +11,7 @@ using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
 using MockInterviews.Options;
+using SendGrid;
 
 namespace MockInterviews.Controllers
 {
@@ -23,7 +23,7 @@ namespace MockInterviews.Controllers
         private readonly ILogger<FAQsController> _logger;
         private readonly string _superUserEmail;
         public FAQsController(MockInterviewsDbContext context,
-            UserManager<ApplicationUser> userManager, 
+            UserManager<ApplicationUser> userManager,
             ISendGridClient sendGridClient,
             ILogger<FAQsController> logger,
             IOptions<SuperUserOptions> superUserOptions)
@@ -94,10 +94,10 @@ namespace MockInterviews.Controllers
 
             if (ModelState.IsValid)
             {
-                
+
                 _context.Add(faq);
                 await _context.SaveChangesAsync();
-                if(User.IsInRole(RolesConstants.AdminRole))
+                if (User.IsInRole(RolesConstants.AdminRole))
                 {
                     return RedirectToAction("Index", "Question");
                 }
@@ -108,7 +108,7 @@ namespace MockInterviews.Controllers
 
                     return RedirectToAction("Resources", "Question");
                 }
-                
+
             }
             return View(faq);
         }
@@ -193,7 +193,7 @@ namespace MockInterviews.Controllers
             {
                 _context.Questions.Remove(fAQs);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
@@ -211,7 +211,7 @@ namespace MockInterviews.Controllers
 
         private bool FAQsExists(int id)
         {
-          return (_context.Questions?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.Questions?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

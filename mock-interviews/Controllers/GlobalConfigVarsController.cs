@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
@@ -25,7 +20,7 @@ namespace MockInterviews.Controllers
         // GET: GlobalConfigVars
         public async Task<IActionResult> Index()
         {
-              return View(await _context.Settings.ToListAsync());
+            return View(await _context.Settings.ToListAsync());
         }
 
         // GET: GlobalConfigVars/Details/5
@@ -147,7 +142,7 @@ namespace MockInterviews.Controllers
             {
                 _context.Settings.Remove(globalConfigVar);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
@@ -183,7 +178,7 @@ namespace MockInterviews.Controllers
             banner.Value = link;
             _context.Update(banner);
             await _context.SaveChangesAsync();
-            return RedirectToAction("Index","Home");
+            return RedirectToAction("Index", "Home");
         }
 
         public async Task<IActionResult> SetZoomLinkVisible(int display)
@@ -216,7 +211,7 @@ namespace MockInterviews.Controllers
 
         private bool GlobalConfigVarExists(int id)
         {
-          return _context.Settings.Any(e => e.Id == id);
+            return _context.Settings.Any(e => e.Id == id);
         }
 
     }

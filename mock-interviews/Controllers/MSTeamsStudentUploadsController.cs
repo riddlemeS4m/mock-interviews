@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic.FileIO;
 using MockInterviews.Data.Constants;
@@ -179,23 +173,23 @@ namespace MockInterviews.Controllers
                         }
                     }
 
-                    foreach(var record in records)
+                    foreach (var record in records)
                     {
                         var studentExists = await _context.RosteredStudents.FirstOrDefaultAsync(x => x.Email == record.Email);
                         if (studentExists == null)
                         {
-                            if(record.Email != "Email" && record.Email[(record.Email.IndexOf('@') + 1)..] != "crimson.ua.edu")
+                            if (record.Email != "Email" && record.Email[(record.Email.IndexOf('@') + 1)..] != "crimson.ua.edu")
                             {
                                 await _context.RosteredStudents.AddAsync(record);
                             }
                         }
-                        else if(studentExists != null)
+                        else if (studentExists != null)
                         {
                             studentExists.InMasters = true;
                             _context.RosteredStudents.Update(studentExists);
                         }
                     }
-                    
+
                     await _context.SaveChangesAsync();
 
                     return RedirectToAction("Index", "Home");
@@ -375,14 +369,14 @@ namespace MockInterviews.Controllers
             {
                 _context.RosteredStudents.Remove(mSTeamsStudentUpload);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool MSTeamsStudentUploadExists(int id)
         {
-          return (_context.RosteredStudents?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.RosteredStudents?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
         public async Task<IActionResult> AttendanceReportAll()

@@ -1,4 +1,4 @@
-﻿namespace MockInterviews.Models.ViewModels.InterviewEventsController
+namespace MockInterviews.Models.ViewModels.InterviewEventsController
 {
     public class AttendanceReportViewModel
     {

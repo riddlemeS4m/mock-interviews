@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -61,7 +61,7 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            return View("DeleteUser",user);
+            return View("DeleteUser", user);
         }
 
         [Authorize(Roles = RolesConstants.AdminRole)]
@@ -116,12 +116,12 @@ namespace MockInterviews.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser 
-                { 
-                    FirstName = model.FirstName, 
-                    LastName = model.LastName, 
-                    Email = model.Email, 
-                    UserName = model.Email 
+                var user = new ApplicationUser
+                {
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    Email = model.Email,
+                    UserName = model.Email
                 };
                 var result = await _userManager.CreateAsync(user, $"{model.FirstName}Spring2024!");
 
@@ -130,7 +130,7 @@ namespace MockInterviews.Controllers
                     var newUser = await _userManager.FindByEmailAsync(model.Email) ?? throw new Exception($"User with email {model.Email} was not successfully created.");
                     var roleResult = await _userManager.AddToRoleAsync(newUser, RolesConstants.InterviewerRole);
 
-                    if(roleResult.Succeeded)
+                    if (roleResult.Succeeded)
                     {
                         return RedirectToAction("Index", "UserRoles");
                     }

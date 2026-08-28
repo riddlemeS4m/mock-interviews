@@ -1,21 +1,21 @@
-﻿using Microsoft.AspNetCore.Identity;
+using System.Diagnostics;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using SendGrid;
-using System.Diagnostics;
-using System.Security.Claims;
+using MockInterviews.Data.Access.Emails;
+using MockInterviews.Data.Access.Reports;
+using MockInterviews.Data.Constants;
+using MockInterviews.Data.Contexts;
+using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.HomeController;
 using MockInterviews.Models.ViewModels.InterviewEventsController;
 using MockInterviews.Models.ViewModels.Shared;
-using MockInterviews.Data.Contexts;
-using MockInterviews.Data.Constants;
-using MockInterviews.Data.Access.Reports;
-using MockInterviews.Data.Access.Emails;
-using MockInterviews.Interfaces.IServices;
 using MockInterviews.Options;
+using SendGrid;
 
 namespace MockInterviews.Controllers
 {
@@ -94,7 +94,7 @@ namespace MockInterviews.Controllers
             }
 
             model.InterviewerScheduledInterviews = new List<InterviewEventViewModel>();
-            if(User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.InterviewerRole))
+            if (User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.InterviewerRole))
             {
                 var interviewEvents = await _context.Interviews
                     .Include(v => v.InterviewerTimeslot)
@@ -105,8 +105,8 @@ namespace MockInterviews.Controllers
                     .ThenInclude(v => v.Event)
                     .Where(v => v.InterviewerTimeslot != null && v.InterviewerTimeslot.InterviewerSignup.InterviewerId == userId
                         && v.Timeslot.Event.IsActive
-                        && (v.Status == StatusConstants.Ongoing 
-                        || v.Status == StatusConstants.Completed 
+                        && (v.Status == StatusConstants.Ongoing
+                        || v.Status == StatusConstants.Completed
                         || v.Status == StatusConstants.CheckedIn))
                     .ToListAsync();
 
@@ -145,12 +145,12 @@ namespace MockInterviews.Controllers
             if (User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.InterviewerRole))
             {
                 var signupInterviewTimeslots = await _context.InterviewerTimeslots
-    				.Include(s => s.InterviewerSignup)
-					.Include(v => v.Timeslot)
+                    .Include(s => s.InterviewerSignup)
+                    .Include(v => v.Timeslot)
                     .ThenInclude(v => v.Event)
                     .Include(v => v.InterviewerSignup)
                     .OrderBy(ve => ve.TimeslotId)
-                    .Where(v => v.InterviewerSignup.InterviewerId == userId 
+                    .Where(v => v.InterviewerSignup.InterviewerId == userId
                         && v.Timeslot.Event.IsActive)
                     .ToListAsync();
 
@@ -164,7 +164,7 @@ namespace MockInterviews.Controllers
 
                     model.SignupInterviewerId1 = si[0];
 
-                    if(si.Count == 2)
+                    if (si.Count == 2)
                     {
                         model.SignupInterviewerId2 = si[1];
                     }
@@ -177,7 +177,7 @@ namespace MockInterviews.Controllers
             }
 
             model.StudentScheduledInterviews = new List<InterviewEventViewModel>();
-            if(User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.StudentRole))
+            if (User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.StudentRole))
             {
                 var interviewEvents = await _context.Interviews
                     .Include(v => v.InterviewerTimeslot)
@@ -185,7 +185,7 @@ namespace MockInterviews.Controllers
                     .Include(v => v.Location)
                     .Include(v => v.Timeslot)
                     .ThenInclude(v => v.Event)
-                    .Where(v =>  v.StudentId == userId 
+                    .Where(v => v.StudentId == userId
                         && v.Timeslot.Event.IsActive)
                     .ToListAsync();
 
@@ -193,7 +193,7 @@ namespace MockInterviews.Controllers
                 {
                     foreach (Interview interviewEvent in interviewEvents)
                     {
-                        if(interviewEvent.InterviewerTimeslot != null)
+                        if (interviewEvent.InterviewerTimeslot != null)
                         {
                             var interviewer = await _userManager.FindByIdAsync(interviewEvent.InterviewerTimeslot.InterviewerSignup.InterviewerId);
 
@@ -300,13 +300,13 @@ namespace MockInterviews.Controllers
         public IActionResult Error()
         {
             var requestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
-            
+
             // Log the error with additional context
             var exceptionFeature = HttpContext.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
             if (exceptionFeature != null)
             {
-                _logger.LogError(exceptionFeature.Error, 
-                    "Unhandled exception occurred. RequestId: {RequestId}, Path: {Path}", 
+                _logger.LogError(exceptionFeature.Error,
+                    "Unhandled exception occurred. RequestId: {RequestId}, Path: {Path}",
                     requestId, exceptionFeature.Path);
             }
             else
@@ -337,7 +337,7 @@ namespace MockInterviews.Controllers
                     .ThenInclude(x => x.Event)
                     .Where(x => x.StudentId == user)
                     .ToListAsync();
-                
+
                 var times = "";
                 foreach (var interview in interviews)
                 {
@@ -375,16 +375,16 @@ namespace MockInterviews.Controllers
                     .Where(x => x.InterviewerSignup.InterviewerId == user)
                     .ToListAsync();
 
-				var timeRanges = new ControlBreakInterviewer(_userManager);
-				var groupedEvents = await timeRanges.ToTimeRanges(interviews);
+                var timeRanges = new ControlBreakInterviewer(_userManager);
+                var groupedEvents = await timeRanges.ToTimeRanges(interviews);
 
-				var times = "";
-				foreach (TimeRangeViewModel interview in groupedEvents)
-				{
-					times += interview.StartTime + " - " + interview.EndTime + " on " + interview.Date.ToString(@"M/dd/yyyy") + "<br>";
-				}
+                var times = "";
+                foreach (TimeRangeViewModel interview in groupedEvents)
+                {
+                    times += interview.StartTime + " - " + interview.EndTime + " on " + interview.Date.ToString(@"M/dd/yyyy") + "<br>";
+                }
 
-				ASendAnEmail emailer = new InterviewerReminderEmail();
+                ASendAnEmail emailer = new InterviewerReminderEmail();
                 await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "UA MIS Mock Interviews Reminder", userFull.Email, GetDisplayName(userFull), times, null);
             }
 

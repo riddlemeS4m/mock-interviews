@@ -1,4 +1,4 @@
-﻿namespace MockInterviews.Models.ViewModels.UserRolesController
+namespace MockInterviews.Models.ViewModels.UserRolesController
 {
     public class UserRolesViewModel
     {

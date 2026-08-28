@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
@@ -147,14 +142,14 @@ namespace MockInterviews.Controllers
             {
                 _context.Locations.Remove(location);
             }
-            
+
             await _context.SaveChangesAsync();
-            return RedirectToAction("Index","LocationInterviewers");
+            return RedirectToAction("Index", "LocationInterviewers");
         }
 
         private bool LocationExists(int id)
         {
-          return (_context.Locations?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.Locations?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

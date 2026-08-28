@@ -1,4 +1,4 @@
-﻿using MockInterviews.Models.Entities;
+using MockInterviews.Models.Entities;
 using MockInterviews.Models.ViewModels.Shared;
 
 namespace MockInterviews.Interfaces.IReports

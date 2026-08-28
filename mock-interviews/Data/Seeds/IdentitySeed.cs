@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using MockInterviews.Data.Constants;
 using MockInterviews.Models.Identity;
 
@@ -9,7 +9,7 @@ namespace MockInterviews.Data.Seeds
         public static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
         {
             //Seed Roles
-            foreach(var roleItem in RolesConstants.GetRoleOptions())
+            foreach (var roleItem in RolesConstants.GetRoleOptions())
             {
                 var role = roleItem.Value;
                 await SeedRoleAsync(roleManager, role);
@@ -51,7 +51,7 @@ namespace MockInterviews.Data.Seeds
                     $"creating seeded administrator '{adminEmail}'");
             }
 
-            foreach(var roleItem in RolesConstants.GetRoleOptions())
+            foreach (var roleItem in RolesConstants.GetRoleOptions())
             {
                 var role = roleItem.Value;
                 if (!await userManager.IsInRoleAsync(user, role))

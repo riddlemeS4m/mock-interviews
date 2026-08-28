@@ -1,4 +1,4 @@
-﻿namespace MockInterviews.Models.ViewModels.Shared
+namespace MockInterviews.Models.ViewModels.Shared
 {
     public class AvailableInterviewer
     {

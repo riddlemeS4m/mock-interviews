@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
@@ -45,8 +39,8 @@ namespace MockInterviews.Controllers
 
             var interviewers = await _userManager.Users
                 .Where(u => interviewerIds.Contains(u.Id))
-                .Select(x => new {x.FirstName, x.LastName, x.Id})
-                .ToListAsync();            
+                .Select(x => new { x.FirstName, x.LastName, x.Id })
+                .ToListAsync();
 
             var query = from locationInterviewer in locationInterviewers
                         join interviewer in interviewers on locationInterviewer.InterviewerId equals interviewer.Id
@@ -132,8 +126,8 @@ namespace MockInterviews.Controllers
                 .Where(i => i.IsActive)
                 .Select(i => new SelectListItem
                 {
-                        Value = i.Id.ToString(),
-                        Text = $"{i.Date:d}"
+                    Value = i.Id.ToString(),
+                    Text = $"{i.Date:d}"
                 })
                 .ToListAsync();
 
@@ -176,12 +170,12 @@ namespace MockInterviews.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,InterviewerId,LocationId,EventId")] InterviewerLocation locationInterviewer, bool InPerson)
         {
-            if(locationInterviewer == null)
+            if (locationInterviewer == null)
             {
                 return NotFound();
             }
-            
-            if(InPerson)
+
+            if (InPerson)
             {
                 locationInterviewer.Preference = InterviewLocationConstants.InPerson;
             }
@@ -274,7 +268,7 @@ namespace MockInterviews.Controllers
                 .ToListAsync();
 
             // Get a list of all Locations except those already assigned to LocationInterviewers
-           
+
 
             var availableLocations = await _context.Locations
                 //.Where(l => (!assignedLocationIds.Contains(l.Id) || l.Id == locationInterviewer.LocationId) && (l.InPerson == inPerson && l.IsVirtual == isVirtual))
@@ -398,14 +392,14 @@ namespace MockInterviews.Controllers
             {
                 _context.InterviewerLocations.Remove(locationInterviewer);
             }
-            
+
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool LocationInterviewerExists(int id)
         {
-          return (_context.InterviewerLocations?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.InterviewerLocations?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

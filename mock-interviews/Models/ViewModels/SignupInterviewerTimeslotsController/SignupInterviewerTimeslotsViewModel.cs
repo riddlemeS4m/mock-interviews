@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
-using MockInterviews.Models.Entities;
 using System.ComponentModel;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using MockInterviews.Models.Entities;
 
 namespace MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsController
 {

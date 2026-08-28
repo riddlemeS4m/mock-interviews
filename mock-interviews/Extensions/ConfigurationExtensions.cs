@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Configuration;
-
 namespace MockInterviews.Extensions;
 
 public static class ApplicationConfigurationExtensions

@@ -1,5 +1,5 @@
-﻿using MockInterviews.Models.Entities;
 using System.ComponentModel.DataAnnotations;
+using MockInterviews.Models.Entities;
 
 namespace MockInterviews.Models.ViewModels.LocationInterviewersController
 {

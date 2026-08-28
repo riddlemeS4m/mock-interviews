@@ -19,7 +19,7 @@ namespace MockInterviews.Data.Constants
         {
             return Settings;
         }
-        
+
         public class ZoomLink
         {
             public const string Name = "zoom_link";

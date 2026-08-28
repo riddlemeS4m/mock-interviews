@@ -1,4 +1,4 @@
-﻿namespace MockInterviews.Models.ViewModels.UsersController
+namespace MockInterviews.Models.ViewModels.UsersController
 {
     public class ExternalUserProfileViewModel
     {

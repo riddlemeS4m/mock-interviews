@@ -1,24 +1,23 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using System.Globalization;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using SendGrid;
-using System.Globalization;
-using System.Text;
-using System.Security.Claims;
-using MockInterviews.Interfaces.IServices;
-using MockInterviews.Data.Seeds;
-using MockInterviews.Data.Contexts;
-using MockInterviews.Data.Constants;
 using MockInterviews.Data.Access.Emails;
 using MockInterviews.Data.Access.Reports;
+using MockInterviews.Data.Constants;
+using MockInterviews.Data.Contexts;
+using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Models.ViewModels.VolunteerEventsController;
 using MockInterviews.Options;
+using SendGrid;
 
 
 namespace MockInterviews.Controllers
@@ -30,7 +29,7 @@ namespace MockInterviews.Controllers
         private readonly ISendGridClient _sendGridClient;
         private readonly ILogger<VolunteerEventsController> _logger;
         private readonly string _superUserEmail;
-    
+
         public VolunteerEventsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
             ISendGridClient sendGridClient,
@@ -110,7 +109,7 @@ namespace MockInterviews.Controllers
                 .Where(x => x.Event.For221 == For221.n)
                 .Where(x => x.Event.IsActive)
                 .ToListAsync();
-            
+
             var eventdates = timeslots
                 .Select(x => x.Event)
                 .Distinct()
@@ -123,7 +122,7 @@ namespace MockInterviews.Controllers
                 EventDates = eventdates
             };
 
-            if(timeslots.Count == 0)
+            if (timeslots.Count == 0)
             {
                 volunteerEventsViewModel.SignedUp = true;
             }
@@ -143,7 +142,7 @@ namespace MockInterviews.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(int[] SelectedEventIds1, int[] SelectedEventIds2)
         {
-            int[] SelectedEventIds = SelectedEventIds1.Concat(SelectedEventIds2).ToArray(); 
+            int[] SelectedEventIds = SelectedEventIds1.Concat(SelectedEventIds2).ToArray();
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId is null)
@@ -207,7 +206,7 @@ namespace MockInterviews.Controllers
                 };
                 if (ModelState.IsValid)
                 {
-                    
+
                     _context.Add(volunteerEvent);
                     await _context.SaveChangesAsync();
 
@@ -342,7 +341,7 @@ namespace MockInterviews.Controllers
 
         private bool VolunteerEventExists(int id)
         {
-          return (_context.VolunteerTimeslots?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.VolunteerTimeslots?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
         private async Task<ActionResult> GetUserId()
@@ -436,7 +435,7 @@ namespace MockInterviews.Controllers
 
             // Get the timeslots to delete
             var timeslotsToDelete = await _context.VolunteerTimeslots
-                
+
                 .Where(t => timeslots.Contains(t.Id))
                 .ToListAsync();
 

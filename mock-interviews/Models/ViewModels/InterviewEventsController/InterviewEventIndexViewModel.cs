@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
-using MockInterviews.Models.Entities;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using MockInterviews.Models.ViewModels.Shared;
 
 namespace MockInterviews.Models.ViewModels.InterviewEventsController

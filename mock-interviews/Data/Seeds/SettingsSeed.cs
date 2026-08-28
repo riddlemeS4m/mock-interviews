@@ -1,4 +1,3 @@
-﻿using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Models.Entities;
 using MockInterviews.Services;

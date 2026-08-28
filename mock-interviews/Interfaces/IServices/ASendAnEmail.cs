@@ -1,8 +1,7 @@
-﻿using SendGrid.Helpers.Mail;
-using SendGrid;
-using MockInterviews.Data.Constants;
 using System.Text;
-using MockInterviews.Data.Seeds;
+using MockInterviews.Data.Constants;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace MockInterviews.Interfaces.IServices
 {

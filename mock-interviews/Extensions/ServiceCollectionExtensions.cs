@@ -1,13 +1,13 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
-using SendGrid;
-using MockInterviews.Options;
-using MockInterviews.Models.Identity;
-using MockInterviews.Interfaces.IServices;
-using MockInterviews.Services;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Interfaces.IServices;
+using MockInterviews.Models.Identity;
+using MockInterviews.Options;
+using MockInterviews.Services;
+using SendGrid;
 
 namespace MockInterviews.Extensions;
 

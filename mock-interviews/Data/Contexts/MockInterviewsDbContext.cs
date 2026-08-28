@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Models.Entities;
@@ -13,18 +12,18 @@ namespace MockInterviews.Data.Contexts
         {
         }
 
-        public DbSet<Question> Questions { get; set; }
-        public DbSet<Location> Locations { get; set; }
-        public DbSet<Interview> Interviews { get; set; }
-        public DbSet<InterviewerLocation> InterviewerLocations { get; set; }
-        public DbSet<InterviewerSignup> InterviewerSignups { get; set; }
-        public DbSet<InterviewerTimeslot> InterviewerTimeslots { get; set; }
-        public DbSet<Timeslot> Timeslots { get; set; }
-        public DbSet<VolunteerTimeslot> VolunteerTimeslots { get; set; }
-        public DbSet<Event> Events { get; set; }
-        public DbSet<RosteredStudent> RosteredStudents { get; set; }
-        public DbSet<Setting> Settings { get; set; }
-        public DbSet<EmailTemplate> EmailTemplates { get; set; }
+        public DbSet<Question> Questions { get; set; } = null!;
+        public DbSet<Location> Locations { get; set; } = null!;
+        public DbSet<Interview> Interviews { get; set; } = null!;
+        public DbSet<InterviewerLocation> InterviewerLocations { get; set; } = null!;
+        public DbSet<InterviewerSignup> InterviewerSignups { get; set; } = null!;
+        public DbSet<InterviewerTimeslot> InterviewerTimeslots { get; set; } = null!;
+        public DbSet<Timeslot> Timeslots { get; set; } = null!;
+        public DbSet<VolunteerTimeslot> VolunteerTimeslots { get; set; } = null!;
+        public DbSet<Event> Events { get; set; } = null!;
+        public DbSet<RosteredStudent> RosteredStudents { get; set; } = null!;
+        public DbSet<Setting> Settings { get; set; } = null!;
+        public DbSet<EmailTemplate> EmailTemplates { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

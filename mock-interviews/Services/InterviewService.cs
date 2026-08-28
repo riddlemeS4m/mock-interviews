@@ -68,7 +68,7 @@ namespace MockInterviews.Services
                     && i.Status == StatusConstants.Default)
                 .OrderBy(i => i.Timeslot.Time)
                 .ToListAsync();
-            
+
             return interviewEvents;
         }
 
@@ -84,7 +84,7 @@ namespace MockInterviews.Services
                     && ids.Contains(i.Id))
                 .OrderBy(i => i.Timeslot.Time)
                 .ToListAsync();
-            
+
             return interviewEvents;
         }
 
@@ -100,7 +100,7 @@ namespace MockInterviews.Services
         public Dictionary<int, string> GetStudentIdsFromInterviews(IEnumerable<Interview> interviews)
         {
             return interviews
-                .Select(x => new {x.Id, x.StudentId})
+                .Select(x => new { x.Id, x.StudentId })
                 .ToDictionary(x => x.Id, x => x.StudentId);
         }
 
@@ -109,7 +109,7 @@ namespace MockInterviews.Services
             // The preceding filter establishes the relationship before projection.
             return interviews
                 .Where(x => x.InterviewerTimeslot != null)
-                .Select(x => new {x.Id, x.InterviewerTimeslot!.InterviewerSignupId})
+                .Select(x => new { x.Id, x.InterviewerTimeslot!.InterviewerSignupId })
                 .ToDictionary(x => x.Id, x => x.InterviewerSignupId);
         }
     }

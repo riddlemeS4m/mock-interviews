@@ -1,4 +1,4 @@
-﻿namespace MockInterviews.Models.ViewModels.ReportsController
+namespace MockInterviews.Models.ViewModels.ReportsController
 {
     public class EventStatisticsViewModel
     {

@@ -1,5 +1,4 @@
-﻿using MockInterviews.Data.Constants;
-using MockInterviews.Data.Seeds;
+using MockInterviews.Data.Constants;
 using MockInterviews.Interfaces.IServices;
 
 namespace MockInterviews.Data.Access.Emails
