@@ -1194,33 +1194,44 @@ namespace MockInterviews.Controllers
                 .Where(t => t.InterviewerSignupId == id)
                 .ToListAsync();
 
+            if (timeslotsToDelete.Count == 0)
+            {
+                return NotFound();
+            }
+
             if (timeslotsToDelete.All(e => e.InterviewerSignup.InterviewerId == User.FindFirstValue(ClaimTypes.NameIdentifier)) ||
             User.IsInRole(RolesConstants.AdminRole))
             {
+                var interviewerId = timeslotsToDelete[0].InterviewerSignup.InterviewerId;
+                var eventIds = timeslotsToDelete.Select(timeslot => timeslot.Timeslot.EventId).Distinct().ToList();
                 // Delete the timeslots
                 _context.InterviewerTimeslots.RemoveRange(timeslotsToDelete);
 
                 await _context.SaveChangesAsync();
 
-                if (!_context.InterviewerTimeslots.Any(x => x.InterviewerSignup.InterviewerId == timeslotsToDelete[0].InterviewerSignup.InterviewerId &&
-                    x.Timeslot.EventId == timeslotsToDelete[0].Timeslot.EventId))
+                foreach (var eventId in eventIds)
                 {
-                    var locationInterviewersToDelete = _context.InterviewerLocations
-                        .Where(li => li.InterviewerId == timeslotsToDelete[0].InterviewerSignup.InterviewerId &&
-                            li.EventId == timeslotsToDelete[0].Timeslot.EventId);
-
-                    _context.InterviewerLocations.RemoveRange(locationInterviewersToDelete);
-                    await _context.SaveChangesAsync();
-
-                    if (!_context.InterviewerTimeslots.Any(x => x.InterviewerSignup.InterviewerId == timeslotsToDelete[0].InterviewerSignup.InterviewerId))
+                    if (await _context.InterviewerTimeslots.AnyAsync(timeslot =>
+                        timeslot.InterviewerSignup.InterviewerId == interviewerId && timeslot.Timeslot.EventId == eventId))
                     {
-                        var signupInterviewersToDelete = _context.InterviewerSignups
-                            .Where(li => li.InterviewerId == timeslotsToDelete[0].InterviewerSignup.InterviewerId);
-
-                        _context.InterviewerSignups.RemoveRange(signupInterviewersToDelete);
-                        await _context.SaveChangesAsync();
+                        continue;
                     }
+
+                    var locationInterviewersToDelete = _context.InterviewerLocations
+                        .Where(location => location.InterviewerId == interviewerId && location.EventId == eventId);
+                    _context.InterviewerLocations.RemoveRange(locationInterviewersToDelete);
                 }
+
+                if (!await _context.InterviewerTimeslots.AnyAsync(timeslot =>
+                    timeslot.InterviewerSignup.InterviewerId == interviewerId))
+                {
+                    var signupInterviewersToDelete = _context.InterviewerSignups
+                        .Where(signup => signup.InterviewerId == interviewerId);
+
+                    _context.InterviewerSignups.RemoveRange(signupInterviewersToDelete);
+                }
+
+                await _context.SaveChangesAsync();
 
                 if (User.IsInRole(RolesConstants.AdminRole))
                 {
