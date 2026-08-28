@@ -332,7 +332,20 @@ namespace MockInterviews.Controllers
                 var result = await _userManager.CreateAsync(user, $"{FirstName}Fall2024!");
 
                 user = await _userManager.FindByEmailAsync(Email) ?? throw new Exception($"User with email {Email} was not successfully created.");
-                var roleResult = await _userManager.AddToRoleAsync(user, RolesConstants.InterviewerRole);
+            }
+
+            if (!await _userManager.IsInRoleAsync(user, RolesConstants.InterviewerRole))
+            {
+                await _userManager.AddToRoleAsync(user, RolesConstants.InterviewerRole);
+            }
+
+            var alreadySelected = await _context.InterviewerTimeslots
+                .AnyAsync(timeslot => timeslot.InterviewerSignup.InterviewerId == user.Id &&
+                    requestedTimeslotIds.Contains(timeslot.TimeslotId));
+            if (alreadySelected)
+            {
+                ModelState.AddModelError("SelectedEventIds", "One or more selected timeslots have already been selected.");
+                return View(vm);
             }
 
             if (user.Company == null)
