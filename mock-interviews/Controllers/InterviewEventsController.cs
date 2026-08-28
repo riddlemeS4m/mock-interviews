@@ -1584,6 +1584,8 @@ namespace MockInterviews.Controllers
             }
 
             var interviewEvent = await _context.Interviews
+                .Include(x => x.InterviewerTimeslot)
+                .ThenInclude(x => x!.InterviewerSignup)
                 .Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
                 .Where(x => x.Id == id)
@@ -1592,6 +1594,13 @@ namespace MockInterviews.Controllers
             if (interviewEvent == null)
             {
                 return NotFound("Interview not found.");
+            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!User.IsInRole(RolesConstants.AdminRole) &&
+                (interviewEvent.InterviewerTimeslot?.InterviewerSignup.InterviewerId != userId))
+            {
+                return Forbid();
             }
 
             interviewEvent.Status = StatusConstants.Completed;
@@ -1697,15 +1706,13 @@ namespace MockInterviews.Controllers
                     .Include(x => x.InterviewerSignup)
                     .Include(x => x.Timeslot)
                     .ThenInclude(x => x.Event)
-                    .Where(x => x.InterviewerSignup.InterviewerId == InterviewerId)
+                    .Where(x => x.InterviewerSignup.InterviewerId == InterviewerId &&
+                        x.TimeslotId == interviewEvent.TimeslotId)
                     .FirstOrDefaultAsync();
 
                 if (signupInterviewTimeslot is null)
                 {
-                    interviewEvent.InterviewerTimeslot = null;
-                    interviewEvent.InterviewerTimeslotId = null;
-                    interviewEvent.Location = null;
-                    interviewEvent.LocationId = null;
+                    return BadRequest("The selected interviewer is not available for this timeslot.");
                 }
                 else
                 {
