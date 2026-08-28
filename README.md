@@ -27,6 +27,23 @@ The generated `mock-interviews/wwwroot/css/tailwind.css` file is gitignored and 
 7. `\q`
 8. Apply migrations: `dotnet ef database update`
 
+## Integration specs
+
+Integration specs use a dedicated PostgreSQL database and erase its application data between tests. Create the database once:
+
+```sh
+createdb -U postgres mock_interviews_test_db
+```
+
+Set `IntegrationTests__ConnectionString` in the root `.env` file as shown in `.env.example`, then run:
+
+```sh
+dotnet test mock-interviews.sln
+```
+
+For safety, the test fixture cleans only a database named exactly `mock_interviews_test_db` on a loopback host
+(`localhost`, `127.0.0.1`, or `::1`).
+
 
 ## Resource Links
 

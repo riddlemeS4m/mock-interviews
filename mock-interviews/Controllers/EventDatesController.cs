@@ -87,6 +87,7 @@ namespace MockInterviews.Controllers
             var for221 = For221Constants.GetFor221Int(value)
                 ?? throw new InvalidOperationException("A valid MIS 221 selection is required.");
             EventDate.For221 = (For221)for221;
+            EventDate.Date = DateTime.SpecifyKind(EventDate.Date.Date, DateTimeKind.Utc);
 
             var attempt = await _eventService.AddAsync(EventDate);
 

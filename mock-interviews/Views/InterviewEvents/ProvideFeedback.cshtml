@@ -22,13 +22,8 @@
         
         <form asp-action="ProvideFeedback">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="InterviewEvent.Id" />
-            <input type="hidden" asp-for="InterviewEvent.StudentId" />
-            <input type="hidden" asp-for="InterviewEvent.TimeslotId" />
-            <input type="hidden" asp-for="InterviewEvent.LocationId" />
-            <input type="hidden" asp-for="InterviewEvent.Status" />
-            <input type="hidden" asp-for="InterviewEvent.Type" />
-            <input type="hidden" asp-for="InterviewEvent.InterviewerTimeslotId" />
+            <input type="hidden" name="id" value="@Model.InterviewEvent.Id" />
+            <input type="hidden" name="Id" value="@Model.InterviewEvent.Id" />
 @*            <input type="hidden" asp-for="InterviewEvent.SignupInterviewerTimeslot.SignupInterviewer.InterviewerId" />
 *@
             @*<div class="form-group">
@@ -47,18 +42,15 @@
             </div>*@
             <div class="form-group">
             <label asp-for="InterviewEvent.InterviewerRating" class="control-label"></label>
-            <input asp-for="InterviewEvent.InterviewerRating" class="form-control" />
-                <span asp-validation-for="InterviewEvent.InterviewerRating" class="text-danger"></span>
+            <input name="InterviewerRating" value="@Model.InterviewEvent.InterviewerRating" class="form-control" />
             </div>
             <div class="form-group">
-                <label asp-for="InterviewEvent.InterviewerFeedback" class="control-label"></label>
-                <input asp-for="InterviewEvent.InterviewerFeedback" class="form-control" />
-                <span asp-validation-for="InterviewEvent.InterviewerFeedback" class="text-danger"></span>
+            <label asp-for="InterviewEvent.InterviewerFeedback" class="control-label"></label>
+            <input name="InterviewerFeedback" value="@Model.InterviewEvent.InterviewerFeedback" class="form-control" />
             </div>
             <div class="form-group">
-                <label asp-for="InterviewEvent.ProcessFeedback" class="control-label"></label>
-                <input asp-for="InterviewEvent.ProcessFeedback" class="form-control" />
-                <span asp-validation-for="InterviewEvent.ProcessFeedback" class="text-danger"></span>
+            <label asp-for="InterviewEvent.ProcessFeedback" class="control-label"></label>
+            <input name="ProcessFeedback" value="@Model.InterviewEvent.ProcessFeedback" class="form-control" />
             </div>
             @*<div class="form-group">
                 <label asp-for="InterviewEvent.SignupInterviewerTimeslot.SignupInterviewer.InterviewerId" class="control-label"></label>
