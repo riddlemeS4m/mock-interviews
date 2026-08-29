@@ -1,0 +1,315 @@
+@{
+    ViewData["Title"] = "UI Design System";
+}
+
+<div class="space-y-12">
+    <header class="max-w-3xl space-y-3">
+        <a asp-area="System" asp-controller="System" asp-action="Index" class="inline-flex items-center gap-2 text-sm font-semibold text-ink hover:text-brand-700">
+            <ui-icon name="chevron-right" class="size-4 rotate-180" />
+            System administration
+        </a>
+        <h1 class="text-4xl font-bold tracking-tight text-ink sm:text-5xl">Mock Interviews design system</h1>
+        <p class="text-lg leading-8 text-muted">
+            A living reference for the visual language and reusable interface patterns used throughout the application.
+        </p>
+    </header>
+
+    <section aria-labelledby="direction-heading" class="space-y-5">
+        <div>
+            <h2 id="direction-heading" class="text-2xl font-semibold tracking-tight text-ink">Application shell direction</h2>
+            <p class="mt-1 text-muted">A compact sidebar gives administration tools room without crowding the top navigation.</p>
+        </div>
+
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="grid min-h-[28rem] md:grid-cols-[15rem_1fr]">
+                <aside class="hidden border-r border-line bg-ink p-5 text-white md:block">
+                    <div class="text-lg font-semibold">Mock Interviews</div>
+                    <nav aria-label="Example sidebar navigation" class="mt-8 space-y-1">
+                        <span class="flex items-center gap-3 rounded-md bg-white px-3 py-2.5 text-sm font-semibold text-ink shadow-sm">
+                            <ui-icon name="layout-dashboard" class="size-[1.125rem] text-brand-600" />
+                            Overview
+                        </span>
+                        <span class="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-white/70">
+                            <ui-icon name="clipboard-check" class="size-[1.125rem]" />
+                            Assignments
+                        </span>
+                        <span class="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-white/70">
+                            <ui-icon name="circle-check" class="size-[1.125rem]" />
+                            Check-in
+                        </span>
+                        <div class="my-3 border-t border-white/10"></div>
+                        <span class="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-white/70">
+                            <ui-icon name="building-2" class="size-[1.125rem]" />
+                            Events and rooms
+                        </span>
+                        <span class="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-white/70">
+                            <ui-icon name="users" class="size-[1.125rem]" />
+                            People and roles
+                        </span>
+                        <span class="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-white/70">
+                            <ui-icon name="chart-no-axes-combined" class="size-[1.125rem]" />
+                            Reports
+                        </span>
+                    </nav>
+                </aside>
+
+                <div class="bg-canvas">
+                    <div class="flex min-h-16 items-center justify-between border-b border-line bg-surface px-5 sm:px-7">
+                        <button type="button" class="inline-flex size-10 items-center justify-center rounded-md border border-line text-muted md:hidden">
+                            <span class="sr-only">Open navigation</span>
+                            <ui-icon name="menu" class="size-5" />
+                        </button>
+                        <span class="hidden text-sm font-semibold text-muted md:block">Saturday, September 19</span>
+                        <button type="button" class="inline-flex size-10 items-center justify-center rounded-full bg-soft text-ink" aria-label="Open profile menu">
+                            <ui-icon name="user-round" class="size-5" />
+                        </button>
+                    </div>
+                    <div class="p-5 sm:p-8">
+                        <h3 class="text-3xl font-bold tracking-tight text-ink">Event overview</h3>
+                        <p class="mt-2 text-muted">The information that needs attention is visible before secondary controls.</p>
+
+                        <div class="mt-7 grid gap-4 sm:grid-cols-3">
+                            <div class="rounded-card border border-line bg-surface p-5">
+                                <p class="text-sm font-semibold text-muted">Students</p>
+                                <p class="mt-2 text-3xl font-bold text-ink">84</p>
+                                <p class="mt-1 text-sm text-positive">72 checked in</p>
+                            </div>
+                            <div class="rounded-card border border-line bg-surface p-5">
+                                <p class="text-sm font-semibold text-muted">Interviewers</p>
+                                <p class="mt-2 text-3xl font-bold text-ink">26</p>
+                                <p class="mt-1 text-sm text-warning">3 rooms unassigned</p>
+                            </div>
+                            <div class="rounded-card border border-line bg-surface p-5">
+                                <p class="text-sm font-semibold text-muted">In progress</p>
+                                <p class="mt-2 text-3xl font-bold text-ink">18</p>
+                                <p class="mt-1 text-sm text-muted">Next turnover in 8 min</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section aria-labelledby="foundations-heading" class="space-y-6">
+        <div>
+            <h2 id="foundations-heading" class="text-2xl font-semibold tracking-tight text-ink">Foundations</h2>
+            <p class="mt-1 text-muted">Crimson carries the identity; neutrals carry almost everything else.</p>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-2">
+            <article class="rounded-card border border-line bg-surface p-6 shadow-card">
+                <h3 class="text-lg font-semibold text-ink">Color</h3>
+                <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div>
+                        <div class="h-20 rounded-lg bg-brand-600"></div>
+                        <p class="mt-2 text-sm font-semibold text-ink">Crimson</p>
+                        <p class="text-xs text-muted">#9e1b32</p>
+                    </div>
+                    <div>
+                        <div class="h-20 rounded-lg border border-line bg-canvas"></div>
+                        <p class="mt-2 text-sm font-semibold text-ink">Canvas</p>
+                        <p class="text-xs text-muted">#f5f6f8</p>
+                    </div>
+                    <div>
+                        <div class="h-20 rounded-lg bg-ink"></div>
+                        <p class="mt-2 text-sm font-semibold text-ink">Ink</p>
+                        <p class="text-xs text-muted">#172033</p>
+                    </div>
+                    <div>
+                        <div class="h-20 rounded-lg border border-line bg-surface"></div>
+                        <p class="mt-2 text-sm font-semibold text-ink">Surface</p>
+                        <p class="text-xs text-muted">#ffffff</p>
+                    </div>
+                </div>
+            </article>
+
+            <article class="rounded-card border border-line bg-surface p-6 shadow-card">
+                <h3 class="text-lg font-semibold text-ink">Typography</h3>
+                <div class="mt-5 space-y-4">
+                    <p class="text-4xl font-bold tracking-tight text-ink">Source Sans 3</p>
+                    <p class="text-xl font-semibold text-ink">Clear hierarchy without a lot of visual decoration</p>
+                    <p class="leading-7 text-muted">Body text remains comfortable in forms, schedules, reports, and longer instructions. The typeface is less rounded and less conspicuous than Rubik.</p>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section aria-labelledby="controls-heading" class="space-y-6">
+        <div>
+            <h2 id="controls-heading" class="text-2xl font-semibold tracking-tight text-ink">Controls and forms</h2>
+            <p class="mt-1 text-muted">Controls are reserved rather than oversized, with clear primary and destructive actions.</p>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-2">
+            <article class="rounded-card border border-line bg-surface p-6 shadow-card">
+                <h3 class="text-lg font-semibold text-ink">Actions</h3>
+                <div class="mt-5 flex flex-wrap gap-3">
+                    <button type="button" class="inline-flex min-h-10 items-center justify-center rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-ink/90">Primary action</button>
+                    <button type="button" class="inline-flex min-h-10 items-center justify-center rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink shadow-sm transition-colors hover:bg-canvas">Secondary</button>
+                    <button type="button" class="inline-flex min-h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-soft">Quiet action</button>
+                    <button type="button" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-negative px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-negative/90">
+                        <ui-icon name="trash-2" class="size-4" />
+                        Delete
+                    </button>
+                </div>
+            </article>
+
+            <article class="rounded-card border border-line bg-surface p-6 shadow-card">
+                <h3 class="text-lg font-semibold text-ink">Example field group</h3>
+                <div class="mt-5 space-y-5">
+                    <div>
+                        <label for="preview-room" class="block text-sm font-semibold text-ink">Room name</label>
+                        <p id="preview-room-help" class="mt-1 text-sm text-muted">Use the name shown outside the room.</p>
+                        <input id="preview-room" aria-describedby="preview-room-help" value="Hewson 3021" class="mt-2 block min-h-11 w-full rounded-md border border-line bg-surface px-3 py-2 text-ink shadow-sm outline-none transition focus:border-brand-600 focus:ring-3 focus:ring-brand-100" />
+                    </div>
+                    <div>
+                        <label for="preview-type" class="block text-sm font-semibold text-ink">Interview format</label>
+                        <div class="relative mt-2">
+                            <select id="preview-type" class="block min-h-11 w-full appearance-none rounded-md border border-negative bg-surface py-2 pl-3 pr-11 text-ink shadow-sm outline-none focus:ring-3 focus:ring-negative/15" aria-describedby="preview-type-error">
+                                <option>Select a format</option>
+                                <option>In person</option>
+                                <option>Virtual</option>
+                            </select>
+                            <ui-icon name="chevron-down" class="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                        </div>
+                        <p id="preview-type-error" class="mt-1.5 text-sm font-semibold text-negative">Choose an interview format.</p>
+                    </div>
+                    <label class="flex items-start gap-3">
+                        <input type="checkbox" checked class="mt-0.5 size-5 accent-ink rounded border-line focus:ring-ink" />
+                        <span>
+                            <span class="block text-sm font-semibold text-ink">Room is available</span>
+                            <span class="block text-sm text-muted">Allow this room to receive new assignments.</span>
+                        </span>
+                    </label>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section aria-labelledby="feedback-heading" class="space-y-6">
+        <div>
+            <h2 id="feedback-heading" class="text-2xl font-semibold tracking-tight text-ink">Feedback and status</h2>
+            <p class="mt-1 text-muted">Color reinforces a written message; it never carries meaning alone.</p>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-3">
+            <div class="rounded-card border border-line border-l-4 border-l-positive bg-surface p-5 shadow-sm">
+                <div class="flex gap-3">
+                    <ui-icon name="circle-check" class="mt-0.5 size-5 shrink-0 text-positive" />
+                    <div>
+                        <p class="font-semibold text-ink">Schedule saved</p>
+                        <p class="mt-1 text-sm leading-6 text-muted">The interviewer received a confirmation email.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-card border border-line border-l-4 border-l-warning bg-surface p-5 shadow-sm">
+                <div class="flex gap-3">
+                    <ui-icon name="triangle-alert" class="mt-0.5 size-5 shrink-0 text-warning" />
+                    <div>
+                        <p class="font-semibold text-ink">Assignment needs attention</p>
+                        <p class="mt-1 text-sm leading-6 text-muted">Three interviews do not have rooms yet.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-card border border-line border-l-4 border-l-negative bg-surface p-5 shadow-sm">
+                <div class="flex gap-3">
+                    <ui-icon name="circle-x" class="mt-0.5 size-5 shrink-0 text-negative" />
+                    <div>
+                        <p class="font-semibold text-ink">Unable to save</p>
+                        <p class="mt-1 text-sm leading-6 text-muted">Review the highlighted fields and try again.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section aria-labelledby="data-heading" class="space-y-6">
+        <div>
+            <h2 id="data-heading" class="text-2xl font-semibold tracking-tight text-ink">Data and states</h2>
+            <p class="mt-1 text-muted">Dense operational information remains readable without turning every table into a plugin.</p>
+        </div>
+
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="flex flex-col gap-3 border-b border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="font-semibold text-ink">Upcoming interviews</h3>
+                    <p class="text-sm text-muted">Saturday morning · 3 assignments</p>
+                </div>
+                <div class="relative w-full sm:max-w-64">
+                    <label for="preview-search" class="sr-only">Search interviews</label>
+                    <ui-icon name="search" class="pointer-events-none absolute left-3 top-1/2 size-[1.125rem] -translate-y-1/2 text-muted" />
+                    <input id="preview-search" type="search" placeholder="Search interviews" class="block min-h-10 w-full rounded-md border border-line bg-surface py-2 pl-10 pr-3 text-sm text-ink shadow-sm outline-none placeholder:text-muted focus:border-ink focus:ring-3 focus:ring-ink/10" />
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-line text-left text-sm">
+                    <thead class="bg-canvas text-xs font-semibold uppercase tracking-wider text-muted">
+                        <tr>
+                            <th scope="col" class="px-5 py-3">Time</th>
+                            <th scope="col" class="px-5 py-3">Student</th>
+                            <th scope="col" class="px-5 py-3">Interviewer</th>
+                            <th scope="col" class="px-5 py-3">Status</th>
+                            <th scope="col" class="px-5 py-3"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        <tr>
+                            <td class="whitespace-nowrap px-5 py-4 font-semibold text-ink">9:00 AM</td>
+                            <td class="whitespace-nowrap px-5 py-4 text-ink">Jordan Lee</td>
+                            <td class="whitespace-nowrap px-5 py-4 text-muted">Morgan Evans</td>
+                            <td class="whitespace-nowrap px-5 py-4">
+                                <span class="inline-flex items-center gap-2 font-medium text-ink"><span class="size-2 rounded-full bg-positive"></span>Checked in</span>
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-4 text-right">
+                                <a href="#data-heading" class="inline-flex items-center gap-1 font-semibold text-ink hover:underline">View <ui-icon name="chevron-right" class="size-4" /></a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="whitespace-nowrap px-5 py-4 font-semibold text-ink">9:20 AM</td>
+                            <td class="whitespace-nowrap px-5 py-4 text-ink">Avery Davis</td>
+                            <td class="whitespace-nowrap px-5 py-4 text-muted">Not assigned</td>
+                            <td class="whitespace-nowrap px-5 py-4">
+                                <span class="inline-flex items-center gap-2 font-medium text-ink"><span class="size-2 rounded-full bg-warning"></span>Needs attention</span>
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-4 text-right">
+                                <a href="#data-heading" class="inline-flex items-center gap-1 font-semibold text-ink hover:underline">Assign <ui-icon name="chevron-right" class="size-4" /></a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="whitespace-nowrap px-5 py-4 font-semibold text-ink">9:40 AM</td>
+                            <td class="whitespace-nowrap px-5 py-4 text-ink">Casey Brown</td>
+                            <td class="whitespace-nowrap px-5 py-4 text-muted">Taylor Smith</td>
+                            <td class="whitespace-nowrap px-5 py-4">
+                                <span class="inline-flex items-center gap-2 font-medium text-ink"><span class="size-2 rounded-full bg-muted"></span>Scheduled</span>
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-4 text-right">
+                                <a href="#data-heading" class="inline-flex items-center gap-1 font-semibold text-ink hover:underline">View <ui-icon name="chevron-right" class="size-4" /></a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-2">
+            <article class="px-6 py-10 text-center">
+                <ui-icon name="inbox" class="mx-auto size-10 text-muted" />
+                <h3 class="mt-4 text-lg font-semibold text-ink">Nothing needs attention</h3>
+                <p class="mx-auto mt-1 max-w-sm text-sm leading-6 text-muted">New assignments and exceptions will appear here when they need review.</p>
+            </article>
+
+            <article class="rounded-card border border-line bg-surface p-6 shadow-card">
+                <h3 class="text-xl font-semibold text-ink">Delete Hewson 3021?</h3>
+                <p class="mt-2 leading-6 text-muted">This room will no longer be available for assignments. Existing interview records will remain.</p>
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <button type="button" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-negative px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-negative/90">
+                        <ui-icon name="trash-2" class="size-4" />
+                        Delete room
+                    </button>
+                    <button type="button" class="inline-flex min-h-10 items-center justify-center rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink shadow-sm hover:bg-canvas">Cancel</button>
+                </div>
+            </article>
+        </div>
+    </section>
+</div>

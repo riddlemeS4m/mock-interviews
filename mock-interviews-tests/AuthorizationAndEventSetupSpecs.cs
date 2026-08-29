@@ -18,6 +18,20 @@ public sealed class AuthorizationAndEventSetupSpecs(MockInterviewsWebApplication
     }
 
     [Fact]
+    public async Task System_admin_can_open_the_design_system()
+    {
+        using var anonymous = Factory.CreateAnonymousClient();
+        using var systemAdmin = Factory.CreateAuthenticatedClient("system-admin-1", RolesConstants.SystemAdminRole);
+
+        var anonymousResponse = await anonymous.GetAsync("/System/Design");
+        var systemAdminResponse = await systemAdmin.GetAsync("/System/Design");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymousResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, systemAdminResponse.StatusCode);
+        Assert.Contains("UI Design System", await systemAdminResponse.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task Admin_can_create_an_event_and_full_schedule()
     {
         using var client = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
