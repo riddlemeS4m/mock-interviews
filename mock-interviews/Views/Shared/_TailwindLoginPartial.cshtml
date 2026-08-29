@@ -8,14 +8,14 @@
         <a asp-area="Identity"
            asp-page="/Account/Manage/Index"
            title="Profile"
-           class="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-brand-300 hover:text-brand-700">
+           class="inline-flex min-h-10 items-center justify-center rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-muted shadow-sm transition-colors hover:border-brand-300 hover:text-brand-700">
             Profile
         </a>
         <form asp-area="Identity"
               asp-page="/Account/Logout"
               asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
             <button type="submit"
-                    class="inline-flex min-h-10 w-full items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 sm:w-auto">
+                    class="inline-flex min-h-10 w-full items-center justify-center rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-ink/90 sm:w-auto">
                 Log out
             </button>
         </form>
@@ -25,7 +25,7 @@ else
 {
     <a asp-area="Identity"
        asp-page="/Account/Login"
-       class="inline-flex min-h-10 items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700">
+       class="inline-flex min-h-10 items-center justify-center rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-ink/90">
         Log in
     </a>
 }

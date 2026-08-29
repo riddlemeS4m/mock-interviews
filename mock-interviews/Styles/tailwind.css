@@ -19,20 +19,42 @@
   --color-brand-900: #5e1726;
   --color-brand-950: #340912;
 
-  --font-sans: "Rubik", ui-sans-serif, system-ui, sans-serif;
+  --color-canvas: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-soft: #eceff3;
+  --color-line: #dce1e7;
+  --color-ink: #172033;
+  --color-muted: #5d6675;
+
+  --color-positive: #087443;
+  --color-warning: #8a5700;
+  --color-negative: #b42335;
+
+  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 0.875rem;
+  --shadow-card: 0 1px 2px rgb(23 32 51 / 0.05), 0 12px 32px rgb(23 32 51 / 0.06);
 }
 
 @layer base {
   html {
-    @apply bg-slate-50;
+    @apply bg-canvas;
   }
 
   body {
-    @apply min-h-screen bg-slate-50 font-sans text-slate-900 antialiased;
+    @apply min-h-screen bg-canvas font-sans text-ink antialiased;
   }
 
   button,
   a {
     @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600;
+  }
+
+  ::selection {
+    @apply bg-brand-100 text-brand-950;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--color-ink);
   }
 }
