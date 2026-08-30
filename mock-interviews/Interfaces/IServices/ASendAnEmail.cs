@@ -27,7 +27,7 @@ namespace MockInterviews.Interfaces.IServices
             string times,
             List<string>? base64CalendarContent)
         {
-            FromEmail = new EmailAddress(senderEmail, "UA MIS " + SuperUser.FirstName + " " + SuperUser.LastName);
+            FromEmail = new EmailAddress(senderEmail, SuperUser.FirstName + " " + SuperUser.LastName);
             Subject = subject;
             PlainTextContent = "";
             ToName = emailname;

@@ -385,7 +385,7 @@ namespace MockInterviews.Controllers
                 }
 
                 ASendAnEmail emailer = new InterviewerReminderEmail();
-                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "UA MIS Mock Interviews Reminder", userFull.Email, GetDisplayName(userFull), times, null);
+                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Mock Interviews Reminder", userFull.Email, GetDisplayName(userFull), times, null);
             }
 
             return RedirectToAction("Index", "Home");

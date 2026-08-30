@@ -708,7 +708,7 @@ namespace MockInterviews.Controllers
                 ASendAnEmail emailer = new StudentSignupEmail();
                 if (user.Email is { Length: > 0 } emailAddress)
                 {
-                    await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "UA MIS Mock Interview Sign-Up Confirmation", emailAddress, user.FirstName ?? "Deleted user", interviewDetails, calendarEvents);
+                    await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Mock Interview Sign-Up Confirmation", emailAddress, user.FirstName ?? "Deleted user", interviewDetails, calendarEvents);
                 }
 
                 return RedirectToAction("Index", "Home");
@@ -2133,7 +2133,7 @@ namespace MockInterviews.Controllers
             stringBuilder.AppendLine("SEQUENCE:0"); // Added SEQUENCE for indicating the version of the event
             stringBuilder.AppendFormat("DTSTART;TZID=America/Chicago:{0:yyyyMMddTHHmmss}\r\n", start);
             stringBuilder.AppendFormat("DTEND;TZID=America/Chicago:{0:yyyyMMddTHHmmss}\r\n", end);
-            stringBuilder.AppendLine("SUMMARY:UA MIS Mock Interviews");
+            stringBuilder.AppendLine("SUMMARY:Mock Interviews");
             stringBuilder.AppendLine("BEGIN:VALARM");
             stringBuilder.AppendLine("TRIGGER:-P14D"); // 14 days before
             stringBuilder.AppendLine("ACTION:DISPLAY");

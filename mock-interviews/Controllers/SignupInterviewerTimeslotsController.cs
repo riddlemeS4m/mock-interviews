@@ -1340,7 +1340,7 @@ namespace MockInterviews.Controllers
             stringBuilder.AppendLine("SEQUENCE:0"); // Added SEQUENCE for indicating the version of the event
             stringBuilder.AppendFormat("DTSTART;TZID=America/Chicago:{0:yyyyMMddTHHmmss}\r\n", start);
             stringBuilder.AppendFormat("DTEND;TZID=America/Chicago:{0:yyyyMMddTHHmmss}\r\n", end);
-            stringBuilder.AppendLine("SUMMARY:UA MIS Mock Interviews");
+            stringBuilder.AppendLine("SUMMARY:Mock Interviews");
             stringBuilder.AppendLine("BEGIN:VALARM");
             stringBuilder.AppendLine("TRIGGER:-P14D"); // 14 days before
             stringBuilder.AppendLine("ACTION:DISPLAY");

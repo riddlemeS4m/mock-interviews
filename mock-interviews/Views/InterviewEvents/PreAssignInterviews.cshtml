@@ -12,7 +12,6 @@
   <div id="liveToast" class="toast d-none" role="alert" aria-live="assertive" aria-atomic="true" style="padding: 15px; border-radius: 10px;">
     <div class="toast-header">
       <img src="~/favicon.png" style="width: 2rem; height: 2rem;" class="rounded me-2" alt="...">
-      <strong class="me-auto">UA MIS</strong>
       <small style="margin-right: 5px; margin-left: 10px;">Just now</small>
       <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>
@@ -46,7 +45,7 @@
     {
         var currTime = Model.ElementAt(index).InterviewEvent.Timeslot.Time;
         var nextTime = Model.ElementAt(index).InterviewEvent.Timeslot.Time;
-        var tableId = $"table-{i}"; 
+        var tableId = $"table-{i}";
 
         <div class="interview-table" id="@tableId">
             <h3 class="time-column" style="text-align: center;">@nextTime</h3>
@@ -113,7 +112,7 @@
                 } else {
                     $("#date-filter-active").text("");
                 }
-                
+
 
                 $("tr[data-date]").each(function () {
                     let rowDate = $(this).data("date");
