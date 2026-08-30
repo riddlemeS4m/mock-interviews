@@ -1,0 +1,54 @@
+@model IReadOnlyList<NavigationGroupViewModel>
+
+@{
+    const string directLinkClasses = "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors";
+    const string activeLinkClasses = "bg-surface font-semibold text-ink shadow-sm";
+    const string inactiveLinkClasses = "text-white/70 hover:bg-white/8 hover:text-white";
+}
+
+<nav aria-label="Primary navigation" class="space-y-1">
+    @foreach (var group in Model)
+    {
+        if (group.Items.Count == 1)
+        {
+            var item = group.Items[0];
+            var linkClasses = $"{directLinkClasses} {(item.IsActive ? activeLinkClasses : inactiveLinkClasses)}";
+            <a asp-area="@item.Area"
+               asp-controller="@item.Controller"
+               asp-action="@item.Action"
+               class="@linkClasses"
+               title="@group.Label"
+               data-navigation-direct
+               aria-current="@(item.IsActive ? "page" : null)">
+                <ui-icon name="@group.Icon" class="size-[1.125rem] shrink-0 @(item.IsActive ? "text-brand-600" : string.Empty)" />
+                <span data-navigation-label>@group.Label</span>
+            </a>
+        }
+        else
+        {
+            var openValue = group.IsActive ? "open" : null;
+            <details class="group" open="@openValue" data-navigation-disclosure>
+                <summary class="flex cursor-pointer list-none items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors hover:bg-white/8 hover:text-white [&::-webkit-details-marker]:hidden @(group.IsActive ? "font-semibold text-white" : "text-white/70")"
+                         title="@group.Label"
+                         data-navigation-summary>
+                    <ui-icon name="@group.Icon" class="size-[1.125rem] shrink-0" />
+                    <span class="min-w-0 flex-1" data-navigation-label>@group.Label</span>
+                    <ui-icon name="chevron-down" class="size-4 shrink-0 transition-transform group-open:rotate-180" data-navigation-chevron />
+                </summary>
+                <div class="ml-[1.3rem] mt-1 space-y-1 border-l border-white/10 pl-3" data-navigation-children>
+                    @foreach (var item in group.Items)
+                    {
+                        var childLinkClasses = $"block rounded-md px-3 py-2 text-sm transition-colors {(item.IsActive ? activeLinkClasses : inactiveLinkClasses)}";
+                        <a asp-area="@item.Area"
+                           asp-controller="@item.Controller"
+                           asp-action="@item.Action"
+                           class="@childLinkClasses"
+                           aria-current="@(item.IsActive ? "page" : null)">
+                            @item.Label
+                        </a>
+                    }
+                </div>
+            </details>
+        }
+    }
+</nav>

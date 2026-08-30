@@ -2,8 +2,10 @@
 
 /* Add each migrated view directory here so legacy Bootstrap classes are not scanned. */
 @source "../Views/Shared/_TailwindLayout.cshtml";
+@source "../Views/Shared/_TailwindPublicLayout.cshtml";
 @source "../Views/Shared/_TailwindNavigation.cshtml";
 @source "../Views/Shared/_TailwindLoginPartial.cshtml";
+@source "../Views/Shared/Components/**/*.cshtml";
 @source "../Views/Shared/DesignSystem/**/*.cshtml";
 @source "../TagHelpers/**/*.cs";
 @source "../Areas/System/Views/**/*.cshtml";
@@ -58,5 +60,27 @@
   input[type="checkbox"],
   input[type="radio"] {
     accent-color: var(--color-ink);
+  }
+}
+
+@media (min-width: 64rem) {
+  [data-shell-content] {
+    transition: padding-left 200ms ease-out;
+  }
+
+  html[data-navigation-collapsed="true"] [data-navigation-panel] {
+    width: 4.625rem;
+  }
+
+  html[data-navigation-collapsed="true"] [data-shell-content] {
+    padding-left: 4.625rem;
+  }
+
+  html[data-navigation-collapsed="true"] [data-navigation-brand-label],
+  html[data-navigation-collapsed="true"] [data-navigation-label],
+  html[data-navigation-collapsed="true"] [data-navigation-chevron],
+  html[data-navigation-collapsed="true"] [data-navigation-children],
+  html[data-navigation-collapsed="true"] [data-navigation-footer] {
+    display: none;
   }
 }

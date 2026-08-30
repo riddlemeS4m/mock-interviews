@@ -14,6 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="~/js/tailwind-shell-state.js" asp-append-version="true"></script>
     <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true">
 
     @await RenderSectionAsync("Head", required: false)
@@ -24,20 +25,40 @@
         Skip to main content
     </a>
 
-    <div class="flex min-h-screen flex-col">
+    <div class="min-h-screen" data-shell-navigation>
+        <div class="fixed inset-0 z-40 hidden bg-ink/50 backdrop-blur-[1px] lg:hidden" data-navigation-overlay></div>
         <partial name="_TailwindNavigation" />
 
-        <main id="main-content" class="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8" tabindex="-1">
-            @RenderBody()
-        </main>
+        <div class="flex min-h-screen min-w-0 flex-col lg:pl-72" data-shell-content>
+            <header class="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur">
+                <div class="flex min-h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <button type="button"
+                                class="inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-line text-muted hover:bg-canvas lg:hidden"
+                                aria-controls="tailwind-primary-navigation"
+                                aria-expanded="false"
+                                aria-label="Open navigation"
+                                data-navigation-toggle>
+                            <ui-icon name="menu" class="size-5" />
+                        </button>
+                        <span class="truncate text-sm font-semibold text-ink">@ViewData["Title"]</span>
+                    </div>
+                    <partial name="_TailwindLoginPartial" />
+                </div>
+            </header>
 
-        <footer class="border-t border-line bg-surface">
-            <div class="mx-auto flex w-full max-w-7xl justify-center px-4 py-8 sm:px-6 lg:px-8">
-                <nav aria-label="Footer navigation" class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
-                    <a class="transition-colors hover:text-brand-700" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
-                </nav>
-            </div>
-        </footer>
+            <main id="main-content" class="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8" tabindex="-1">
+                @RenderBody()
+            </main>
+
+            <footer class="border-t border-line bg-surface">
+                <div class="mx-auto flex w-full max-w-7xl justify-center px-4 py-6 sm:px-6 lg:px-8">
+                    <nav aria-label="Footer navigation" class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
+                        <a class="transition-colors hover:text-ink hover:underline" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
+                    </nav>
+                </div>
+            </footer>
+        </div>
     </div>
 
     <script src="~/plugins/jquery/jquery.min.js"></script>

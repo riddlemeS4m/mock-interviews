@@ -1,140 +1,35 @@
-@using MockInterviews.Data.Constants
+<aside id="tailwind-primary-navigation"
+       class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col bg-ink text-white shadow-2xl transition-[transform,width] duration-200 ease-out lg:translate-x-0 lg:shadow-none"
+       aria-label="Application navigation"
+       data-navigation-panel>
+    <div class="flex min-h-16 items-center justify-between border-b border-white/10 px-5" data-navigation-header>
+        <a asp-area="" asp-controller="Home" asp-action="Index" class="flex items-center gap-3 font-semibold text-white" title="Mock Interviews" data-navigation-brand>
+            <span class="flex size-8 items-center justify-center rounded-md bg-brand-600 text-sm font-bold text-white" aria-hidden="true">M</span>
+            <span data-navigation-brand-label>Mock Interviews</span>
+        </a>
+        <button type="button"
+                class="inline-flex size-10 items-center justify-center rounded-md text-white/70 hover:bg-white/8 hover:text-white lg:hidden"
+                aria-label="Close navigation"
+                data-navigation-close>
+            <ui-icon name="x" class="size-5" />
+        </button>
+    </div>
 
-@{
-    const string navLinkClasses = "block rounded-md px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-soft hover:text-ink";
-    const string menuButtonClasses = "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-soft hover:text-ink";
-    const string menuPanelClasses = "hidden z-20 mt-1 min-w-56 rounded-lg border border-line bg-surface p-2 shadow-lg lg:absolute lg:left-0 lg:top-full";
-    const string menuLinkClasses = "block rounded-md px-3 py-2 text-sm text-muted transition-colors hover:bg-soft hover:text-ink";
-}
+    <button type="button"
+            class="absolute -right-3 top-[1.125rem] hidden size-7 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-sm transition-colors hover:bg-canvas lg:inline-flex"
+            aria-controls="tailwind-primary-navigation"
+            aria-expanded="true"
+            aria-label="Collapse navigation"
+            title="Collapse navigation"
+            data-navigation-collapse>
+        <ui-icon name="chevron-right" class="size-4 rotate-180 transition-transform" data-navigation-collapse-icon />
+    </button>
 
-<header class="relative z-40 border-b border-line bg-surface shadow-sm" data-shell-navigation>
-    <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" aria-label="Primary navigation">
-        <div class="flex min-h-20 items-center justify-between gap-4">
-            <a asp-area="" asp-controller="Home" asp-action="Index" class="shrink-0 text-lg font-semibold text-ink">
-                Mock Interviews
-            </a>
+    <div class="flex-1 overflow-y-auto px-4 py-5" data-navigation-scroller>
+        <vc:navigation />
+    </div>
 
-            <button type="button"
-                    class="inline-flex size-11 items-center justify-center rounded-md border border-line text-muted hover:bg-canvas lg:hidden"
-                    aria-controls="tailwind-primary-navigation"
-                    aria-expanded="false"
-                    data-navigation-toggle>
-                <span class="sr-only">Toggle navigation</span>
-                <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-            </button>
-
-            <div id="tailwind-primary-navigation"
-                 class="absolute inset-x-0 top-20 hidden max-h-[calc(100vh-5rem)] overflow-y-auto border-y border-line bg-surface px-4 py-4 shadow-lg lg:static lg:flex lg:max-h-none lg:flex-1 lg:items-center lg:justify-between lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none"
-                 data-navigation-panel>
-                <div class="flex flex-col gap-1 lg:flex-row lg:items-center">
-                    <a class="@navLinkClasses" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-
-                    @if (User.IsInRole(RolesConstants.StudentRole) || User.IsInRole(RolesConstants.InterviewerRole))
-                    {
-                        <div class="relative" data-navigation-menu>
-                            <button type="button"
-                                    class="@menuButtonClasses"
-                                    aria-controls="tailwind-signup-menu"
-                                    aria-expanded="false"
-                                    aria-haspopup="true"
-                                    data-menu-toggle>
-                                Sign up
-                                <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                            <div id="tailwind-signup-menu" class="@menuPanelClasses" data-menu-panel>
-                                @if (User.IsInRole(RolesConstants.StudentRole))
-                                {
-                                    <a class="@menuLinkClasses" asp-area="" asp-controller="InterviewEvents" asp-action="Create">Student interviews</a>
-                                    <a class="@menuLinkClasses" asp-area="" asp-controller="VolunteerEvents" asp-action="Create">Volunteer events</a>
-                                }
-                                @if (User.IsInRole(RolesConstants.InterviewerRole))
-                                {
-                                    <a class="@menuLinkClasses" asp-area="" asp-controller="SignupInterviewerTimeslots" asp-action="Create">Interviewer timeslots</a>
-                                }
-                            </div>
-                        </div>
-                    }
-
-                    @if (User.IsInRole(RolesConstants.AdminRole))
-                    {
-                        <div class="relative" data-navigation-menu>
-                            <button type="button" class="@menuButtonClasses" aria-controls="tailwind-assign-menu" aria-expanded="false" aria-haspopup="true" data-menu-toggle>
-                                Assign
-                                <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
-                            </button>
-                            <div id="tailwind-assign-menu" class="@menuPanelClasses" data-menu-panel>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="InterviewEvents" asp-action="Index">Assign interviews</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="SignupInterviewers" asp-action="Index">Interviewer check-in</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="LocationInterviewers" asp-action="Index">Assign rooms</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="InterviewEvents" asp-action="PreAssignInterviews">Pre-assign interviews</a>
-                            </div>
-                        </div>
-
-                        <div class="relative" data-navigation-menu>
-                            <button type="button" class="@menuButtonClasses" aria-controls="tailwind-event-menu" aria-expanded="false" aria-haspopup="true" data-menu-toggle>
-                                Events
-                                <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
-                            </button>
-                            <div id="tailwind-event-menu" class="@menuPanelClasses" data-menu-panel>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="VolunteerEvents" asp-action="Index">Volunteers</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="Locations" asp-action="Index">Rooms</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="Timeslots" asp-action="Index">Timeslots</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="EventDates" asp-action="Index">Dates</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="GlobalConfigVars" asp-action="Index">Configuration</a>
-                            </div>
-                        </div>
-
-                        <div class="relative" data-navigation-menu>
-                            <button type="button" class="@menuButtonClasses" aria-controls="tailwind-roster-menu" aria-expanded="false" aria-haspopup="true" data-menu-toggle>
-                                Roster
-                                <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
-                            </button>
-                            <div id="tailwind-roster-menu" class="@menuPanelClasses" data-menu-panel>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="MSTeamsStudentUploads" asp-action="Index">Program roster</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="UserRoles" asp-action="Index">User roles and deletion</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="UserRoles" asp-action="MassAssign">Add interviewer roles</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="MSTeamsStudentUploads" asp-action="Create">Upload program roster</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="MSTeamsStudentUploads" asp-action="Upload221Students">Upload MIS 221 roster</a>
-                            </div>
-                        </div>
-
-                        <div class="relative" data-navigation-menu>
-                            <button type="button" class="@menuButtonClasses" aria-controls="tailwind-reports-menu" aria-expanded="false" aria-haspopup="true" data-menu-toggle>
-                                Reports
-                                <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
-                            </button>
-                            <div id="tailwind-reports-menu" class="@menuPanelClasses" data-menu-panel>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="InterviewEvents" asp-action="GetCompletedInterviews">Completed interviews</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="Reports" asp-action="EventStatistics">Event statistics</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="Reports" asp-action="AllocationReport">Allocation report</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="Reports" asp-action="SignupReport">Signup report</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="SignupInterviewerTimeslots" asp-action="LunchReport">Lunch report</a>
-                                <a class="@menuLinkClasses" asp-area="" asp-controller="InterviewEvents" asp-action="AttendanceReport">Attendance report</a>
-                            </div>
-                        </div>
-                    }
-
-                    <a class="@navLinkClasses" asp-area="" asp-controller="FAQs" asp-action="Resources">Resources</a>
-
-                    @if (User.IsInRole(RolesConstants.AdminRole))
-                    {
-                        <a class="@navLinkClasses" asp-area="" asp-controller="FAQs" asp-action="Index">Manage FAQs</a>
-                    }
-
-                    @if (User.IsInRole(RolesConstants.SystemAdminRole))
-                    {
-                        <a class="@navLinkClasses" asp-area="System" asp-controller="System" asp-action="Index">System Admin</a>
-                    }
-                </div>
-
-                <div class="mt-4 border-t border-line pt-4 lg:ml-6 lg:mt-0 lg:border-0 lg:pt-0">
-                    <partial name="_TailwindLoginPartial" />
-                </div>
-            </div>
-        </div>
-    </nav>
-</header>
+    <div class="border-t border-white/10 px-5 py-4 text-xs text-white/50" data-navigation-footer>
+        <span data-navigation-footer-label>Mock Interviews</span>
+    </div>
+</aside>
