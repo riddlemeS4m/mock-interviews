@@ -1606,6 +1606,17 @@ namespace MockInterviews.Controllers
             return NoContent();
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RolesConstants.AdminRole + "," + RolesConstants.InterviewerRole)]
+        public async Task<IActionResult> CompleteAssignedInterview(int id)
+        {
+            var result = await StudentComplete(id);
+            return result is NoContentResult
+                ? RedirectToAction("Index", "Home")
+                : result;
+        }
+
         [Authorize(Roles = RolesConstants.AdminRole)]
         public async Task<IActionResult> StudentNoShow(int id)
         {
