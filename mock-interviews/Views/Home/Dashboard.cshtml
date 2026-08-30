@@ -1,0 +1,52 @@
+@using MockInterviews.Data.Constants
+@model IndexViewModel
+
+@{
+    ViewData["Title"] = "My schedule";
+}
+
+<div id="disruption-banner" style="display: @Model.DisruptionBanner">
+    <p class="disruption-banner-text">
+        We are currently experiencing sitewide disruption of services, which will be resolved speedily. We apologize for
+        the inconvenience.
+    </p>
+</div>
+
+<div class="home-container max-width-home">
+    <h1>Hi @(string.IsNullOrWhiteSpace(Model.Name) ? "there" : Model.Name)!</h1>
+    <p style="font-size: 20px; text-align: center;">Your schedule is shown below.</p>
+    <div id="zoom-link" class="section-card section-card-gradient">
+        <div class="index-image-container virtual-interview-banner">
+            <div class="virtual-interview-caption">
+                <h3 style="margin: auto; justify-content: center;">Virtual Interviews</h3>
+                <p>If you have signed up for a virtual interview, use the link below when it is time for your interview.</p>
+                <div style="text-align:center;">
+                    <a class="btn btn-primary ms-2 ms-lg-3 join-meeting-btn"
+                       title="Join online meeting"
+                       href="@Model.ZoomLink"
+                       target="_blank"
+                       rel="noopener">Join online meeting</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="home-container max-width-home">
+    @if (User.IsInRole(RolesConstants.StudentRole))
+    {
+        <div class="section-card section-card-gradient">
+            @await Html.PartialAsync("_InterviewEventsPartial", Model.StudentScheduledInterviews)
+        </div>
+        <div class="section-card section-card-gradient">
+            @await Html.PartialAsync("_VolunteerEventsHomePartial", Model.TimeRangeViewModels)
+        </div>
+    }
+
+    @if (User.IsInRole(RolesConstants.InterviewerRole))
+    {
+        <div class="section-card section-card-gradient">
+            @await Html.PartialAsync("_SignupInterviewerTimeslotsPartial", Model)
+        </div>
+    }
+</div>

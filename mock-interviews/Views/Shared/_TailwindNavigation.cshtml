@@ -5,7 +5,7 @@
     <div class="flex min-h-16 items-center justify-between border-b border-white/10 px-5" data-navigation-header>
         <a asp-area="" asp-controller="Home" asp-action="Index" class="flex items-center gap-3 font-semibold text-white" title="Mock Interviews" data-navigation-brand>
             <span class="flex size-8 items-center justify-center rounded-md bg-brand-600 text-sm font-bold text-white" aria-hidden="true">M</span>
-            <span data-navigation-brand-label>Mock Interviews</span>
+            <span class="whitespace-nowrap" data-navigation-brand-label>Mock Interviews</span>
         </a>
         <button type="button"
                 class="inline-flex size-10 items-center justify-center rounded-md text-white/70 hover:bg-white/8 hover:text-white lg:hidden"
@@ -25,7 +25,7 @@
         <ui-icon name="chevron-right" class="size-4 rotate-180 transition-transform" data-navigation-collapse-icon />
     </button>
 
-    <div class="flex-1 overflow-y-auto px-4 py-5" data-navigation-scroller>
+    <div class="flex-1 overflow-x-hidden overflow-y-auto px-4 py-5" data-navigation-scroller>
         <vc:navigation />
     </div>
 

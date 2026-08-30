@@ -19,6 +19,7 @@ using MockInterviews.Extensions;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
 using MockInterviews.Options;
+using MockInterviews.Services;
 
 namespace MockInterviews.Tests;
 
@@ -247,7 +248,8 @@ public sealed class ConfigurationExtensionsTests
             null!,
             NullLogger<HomeController>.Instance,
             Microsoft.Extensions.Options.Options.Create(
-                new SuperUserOptions { Email = "admin@example.com" }))
+                new SuperUserOptions { Email = "admin@example.com" }),
+            new UserLandingPageResolver())
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext }
         };

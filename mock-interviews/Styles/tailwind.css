@@ -10,6 +10,10 @@
 @source "../TagHelpers/**/*.cs";
 @source "../Areas/System/Views/**/*.cshtml";
 @source "../Views/Locations/**/*.cshtml";
+@source "../Views/Home/Index.cshtml";
+@source "../Views/Home/Admin.cshtml";
+@source "../Views/Home/AccessPending.cshtml";
+@source "../Areas/Identity/Pages/**/*.cshtml";
 
 @theme {
   --color-brand-50: #fff1f3;

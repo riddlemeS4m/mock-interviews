@@ -1,0 +1,32 @@
+@{
+    ViewData["Title"] = "Administration";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
+}
+
+<section class="space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Administration", "Start with the operational work that keeps the next mock-interview event moving.")' />
+
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <article class="rounded-card border border-line bg-surface p-6 shadow-card">
+            <ui-icon name="clipboard-check" class="size-6 text-muted" />
+            <h2 class="mt-4 text-xl font-semibold text-ink">Assignments</h2>
+            <p class="mt-2 leading-6 text-muted">Assign interviewers, students, and rooms for active events.</p>
+            <a asp-controller="InterviewEvents" asp-action="Index" ui-variant="Secondary" class="mt-5">Manage assignments</a>
+        </article>
+
+        <article class="rounded-card border border-line bg-surface p-6 shadow-card">
+            <ui-icon name="calendar-days" class="size-6 text-muted" />
+            <h2 class="mt-4 text-xl font-semibold text-ink">Events and rooms</h2>
+            <p class="mt-2 leading-6 text-muted">Maintain event dates, timeslots, rooms, and configuration.</p>
+            <a asp-controller="Locations" asp-action="Index" ui-variant="Secondary" class="mt-5">Manage rooms</a>
+        </article>
+
+        <article class="rounded-card border border-line bg-surface p-6 shadow-card">
+            <ui-icon name="users" class="size-6 text-muted" />
+            <h2 class="mt-4 text-xl font-semibold text-ink">People and roles</h2>
+            <p class="mt-2 leading-6 text-muted">Review accounts, roster membership, and application access.</p>
+            <a asp-controller="UserRoles" asp-action="Index" ui-variant="Secondary" class="mt-5">Manage access</a>
+        </article>
+    </div>
+</section>

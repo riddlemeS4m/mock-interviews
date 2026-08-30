@@ -31,7 +31,17 @@
                     <span class="flex size-8 items-center justify-center rounded-md bg-brand-600 text-sm font-bold text-white" aria-hidden="true">M</span>
                     Mock Interviews
                 </a>
-                <a asp-area="" asp-controller="FAQs" asp-action="Resources" class="text-sm font-semibold text-ink hover:underline">Resources</a>
+                <nav aria-label="Public navigation" class="flex items-center gap-5 text-sm font-semibold text-ink">
+                    <a asp-area="" asp-controller="FAQs" asp-action="Resources" class="hover:underline">Resources</a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a asp-area="" asp-controller="Home" asp-action="Landing" class="hover:underline">Dashboard</a>
+                    }
+                    else
+                    {
+                        <a asp-area="Identity" asp-page="/Account/Login" class="hover:underline">Sign in</a>
+                    }
+                </nav>
             </div>
         </header>
 

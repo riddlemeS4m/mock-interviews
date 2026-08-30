@@ -1,0 +1,16 @@
+@{
+    ViewData["Title"] = "Access pending";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
+}
+
+<section class="mx-auto max-w-3xl py-8 text-center">
+    <ui-icon name="clock" class="mx-auto size-10 text-muted" />
+    <h1 class="mt-5 text-3xl font-bold tracking-tight text-ink">Your account needs access</h1>
+    <p class="mx-auto mt-3 max-w-xl text-lg leading-8 text-muted">Your account is ready, but it is not on the student roster and does not yet have an interviewer role. An administrator can grant access, or you can use the interviewer signup when it is available.</p>
+    <div class="mt-8 flex flex-wrap justify-center gap-3">
+        <a asp-area="Identity" asp-page="/Account/Manage/ProfileEdit" ui-variant="Secondary">Review profile</a>
+        <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
+            <button type="submit" ui-variant="Quiet">Sign out</button>
+        </form>
+    </div>
+</section>

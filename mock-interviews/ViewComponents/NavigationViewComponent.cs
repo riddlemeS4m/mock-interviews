@@ -8,21 +8,48 @@ public sealed class NavigationViewComponent : ViewComponent
 {
     public IViewComponentResult Invoke()
     {
+        var isStudent = User.IsInRole(RolesConstants.StudentRole);
+        var isInterviewer = User.IsInRole(RolesConstants.InterviewerRole);
+        var isAdmin = User.IsInRole(RolesConstants.AdminRole);
+        var isSystemAdmin = User.IsInRole(RolesConstants.SystemAdminRole);
+        var isPrivileged = isAdmin || isSystemAdmin;
+        var landingItem = isSystemAdmin || isAdmin
+                ? Item("Home", "Home", "Admin")
+                : isStudent && isInterviewer
+                    ? Item("Home", "Home", "Participant")
+                    : isStudent
+                        ? Item("Home", "Home", "Student")
+                        : isInterviewer
+                            ? Item("Home", "Home", "Interviewer")
+                            : Item("Home", "Home", "AccessPending");
+
         var groups = new List<NavigationGroupViewModel>
         {
-            Group("home", "Home", "house", Item("Home", "Home", "Index", matchAllActions: true))
+            Group("home", "Home", "house", landingItem)
         };
 
-        if (User.IsInRole(RolesConstants.StudentRole) || User.IsInRole(RolesConstants.InterviewerRole))
+        if (isPrivileged && (isStudent || isInterviewer))
+        {
+            var scheduleAction = isStudent && isInterviewer
+                ? "Participant"
+                : isStudent ? "Student" : "Interviewer";
+            groups.Add(Group(
+                "my-schedule",
+                "My schedule",
+                "calendar-days",
+                Item("My schedule", "Home", scheduleAction)));
+        }
+
+        if (isStudent || isInterviewer)
         {
             var signupItems = new List<NavigationItemViewModel>();
-            if (User.IsInRole(RolesConstants.StudentRole))
+            if (isStudent)
             {
                 signupItems.Add(Item("Student interviews", "InterviewEvents", "Create"));
                 signupItems.Add(Item("Volunteer events", "VolunteerEvents", "Create"));
             }
 
-            if (User.IsInRole(RolesConstants.InterviewerRole))
+            if (isInterviewer)
             {
                 signupItems.Add(Item("Interviewer timeslots", "SignupInterviewerTimeslots", "Create"));
             }
@@ -30,7 +57,7 @@ public sealed class NavigationViewComponent : ViewComponent
             groups.Add(Group("signup", "Sign up", "user-plus", signupItems));
         }
 
-        if (User.IsInRole(RolesConstants.AdminRole))
+        if (isPrivileged)
         {
             groups.Add(Group(
                 "assignments",
@@ -77,14 +104,14 @@ public sealed class NavigationViewComponent : ViewComponent
         {
             Item("Resources", "FAQs", "Resources")
         };
-        if (User.IsInRole(RolesConstants.AdminRole))
+        if (isPrivileged)
         {
             resourceItems.Add(Item("Manage FAQs", "FAQs", "Index"));
         }
 
         groups.Add(Group("resources", "Resources", "book-open", resourceItems));
 
-        if (User.IsInRole(RolesConstants.SystemAdminRole))
+        if (isSystemAdmin)
         {
             groups.Add(Group(
                 "system",

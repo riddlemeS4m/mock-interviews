@@ -1,90 +1,32 @@
-﻿@using MockInterviews.Models.ViewModels
-@using MockInterviews.Data.Constants
-@using MockInterviews.Models.Identity;
-@using Microsoft.AspNetCore.Identity
 @model IndexViewModel
-@inject UserManager<ApplicationUser> UserManager
 
 @{
-    ViewBag.Title = "Welcome to the Mock Interviews App";
+    ViewData["Title"] = "Mock Interviews";
+    Layout = "/Views/Shared/_TailwindPublicLayout.cshtml";
 }
 
-<div id="disruption-banner" style="
-    text-align: center; 
-    display: @Model.DisruptionBanner; 
-    justify-content: center;">
-    <!--This should be displayed based on globalconfigvars-->
-    <p class="disruption-banner-text">
-        We are currently experiencing sitewide disruption of services, which will be resolved speedily. We apologize for
-        the inconvenience.
-    </p>
-</div>
-@if (User.Identity?.IsAuthenticated == true)
-{
-    <div class="home-container max-width-home">
-
-        <h1>Hi @(UserManager.GetUserAsync(User).Result?.FirstName ?? "there")!</h1>
-        <p style="
-        font-size: 20px; 
-        text-align: center;">
-            Your schedule is shown below.
-        </p>
-        <div id="zoom-link" class="section-card section-card-gradient">
-            <div class="index-image-container virtual-interview-banner">
-                <div class="virtual-interview-caption">
-                    <h3 style="margin: auto; justify-content: center;">Virtual Interviews</h3>
-                    <p>
-                        If you have signed up for a virtual interview, please click the button below when it is time for
-                        your
-                        interview to start.
-                    </p>
-                    <div style="text-align:center;">
-                        <a class="btn btn-primary ms-2 ms-lg-3 join-meeting-btn" title="Join Zoom Meeting"
-                            href=@Model.ZoomLink target="_blank">Join
-                            Online Meeting
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-else
-{
-    <div class="home-container">
-        <div class="index-image-container home-picture-container">
-            <div class="home-picture-caption">
-                <h2 class="home-picture-header">
-                    @ViewBag.Title
-                </h2>
-
-                <hr class="home-picture-divider-line"/>
-
-                <p class="home-picture-text">
-                    Your platform for managing mock interviews
-                </p>
-            </div>
-
-            <img class="home-page-image" src="~/images/02_7.jpg" alt="Hewson Hall in the spring">
-        </div>
-    </div>
-}
-
-<div class="home-container max-width-home">
-    @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RolesConstants.StudentRole))
+<div class="space-y-10">
+    @if (Model.DisruptionBanner == "block")
     {
-        <div class="section-card section-card-gradient">
-            @await Html.PartialAsync("_InterviewEventsPartial", Model.StudentScheduledInterviews)
-        </div>
-        <div class="section-card section-card-gradient">
-            @await Html.PartialAsync("_VolunteerEventsHomePartial", Model.TimeRangeViewModels)
-        </div>
+        <partial name="DesignSystem/_Feedback"
+                 model='new UiFeedbackViewModel(UiFeedbackKind.Warning, "Service disruption", "Some Mock Interviews features are temporarily unavailable. Please try again shortly.")' />
     }
 
-    @if (User.Identity?.IsAuthenticated == true && User.IsInRole(RolesConstants.InterviewerRole))
-    {
-        <div class="section-card section-card-gradient">
-            @await Html.PartialAsync("_SignupInterviewerTimeslotsPartial", Model)
+    <section class="grid items-center gap-10 lg:grid-cols-2">
+        <div class="max-w-3xl">
+            <h1 class="text-4xl font-bold tracking-tight text-ink sm:text-5xl">Prepare for the conversation that comes next.</h1>
+            <p class="mt-5 text-xl leading-8 text-muted">Mock Interviews brings students, interviewers, and event teams together to schedule and run practice interviews.</p>
+            <div class="mt-8 flex flex-wrap gap-3">
+                <a asp-area="Identity" asp-page="/Account/Login" ui-variant="Primary">Sign in</a>
+                <a asp-area="Identity" asp-page="/Account/Register" ui-variant="Secondary">Create account</a>
+                <a asp-controller="FAQs" asp-action="Resources" ui-variant="Quiet">View resources</a>
+            </div>
         </div>
-    }
+
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <img src="~/images/02_7.jpg"
+                 alt="Hewson Hall in the spring"
+                 class="h-full min-h-[22rem] w-full object-cover" />
+        </div>
+    </section>
 </div>

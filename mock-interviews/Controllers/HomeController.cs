@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,7 @@ using MockInterviews.Models.ViewModels.HomeController;
 using MockInterviews.Models.ViewModels.InterviewEventsController;
 using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Options;
+using MockInterviews.Services;
 using SendGrid;
 
 namespace MockInterviews.Controllers
@@ -26,6 +28,7 @@ namespace MockInterviews.Controllers
         private readonly ISendGridClient _sendGridClient;
         private readonly ILogger<HomeController> _logger;
         private readonly string _superUserEmail;
+        private readonly UserLandingPageResolver _landingPageResolver;
 
 
         public HomeController(
@@ -33,16 +36,58 @@ namespace MockInterviews.Controllers
             UserManager<ApplicationUser> userManager,
             ISendGridClient sendGridClient,
             ILogger<HomeController> logger,
-            IOptions<SuperUserOptions> superUserOptions)
+            IOptions<SuperUserOptions> superUserOptions,
+            UserLandingPageResolver landingPageResolver)
         {
             _context = context;
             _userManager = userManager;
             _sendGridClient = sendGridClient;
             _logger = logger;
             _superUserEmail = superUserOptions.Value.Email;
+            _landingPageResolver = landingPageResolver;
         }
 
         public async Task<IActionResult> Index()
+        {
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                return RedirectToAction(nameof(Landing));
+            }
+
+            return await RenderHomeAsync(nameof(Index));
+        }
+
+        [Authorize]
+        public IActionResult Landing()
+        {
+            var destination = _landingPageResolver.Resolve(User);
+            return RedirectToAction(
+                destination.Action,
+                destination.Controller,
+                new { area = destination.Area });
+        }
+
+        [Authorize(Roles = RolesConstants.AdminRole + "," + RolesConstants.SystemAdminRole)]
+        public IActionResult Admin()
+            => View();
+
+        [Authorize(Roles = RolesConstants.StudentRole)]
+        public async Task<IActionResult> Student()
+            => await RenderHomeAsync("Dashboard");
+
+        [Authorize(Roles = RolesConstants.InterviewerRole)]
+        public async Task<IActionResult> Interviewer()
+            => await RenderHomeAsync("Dashboard");
+
+        [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.InterviewerRole)]
+        public async Task<IActionResult> Participant()
+            => await RenderHomeAsync("Dashboard");
+
+        [Authorize]
+        public IActionResult AccessPending()
+            => View();
+
+        private async Task<IActionResult> RenderHomeAsync(string viewName)
         {
             _logger.LogInformation("Calling {method} method...", nameof(Index));
 
@@ -263,7 +308,7 @@ namespace MockInterviews.Controllers
                 }
             }
 
-            return View(model);
+            return View(viewName, model);
         }
 
         private async Task<string> GetZoomLink()
