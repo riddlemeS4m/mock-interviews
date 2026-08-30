@@ -184,6 +184,27 @@
         </div>
     </section>
 
+    <section aria-labelledby="dialogs-heading" class="space-y-6">
+        <div>
+            <h2 id="dialogs-heading" class="text-2xl font-semibold tracking-tight text-ink">Dialogs</h2>
+            <p class="mt-1 text-muted">Use a modal for a short task that benefits from keeping the current list or schedule visible.</p>
+        </div>
+
+        <article class="rounded-card border border-line bg-surface p-6 shadow-card">
+            <h3 class="text-lg font-semibold text-ink">Focused edit</h3>
+            <p class="mt-2 max-w-3xl leading-6 text-muted">Native dialogs provide keyboard behavior and a no-JavaScript link can still lead to the equivalent full page.</p>
+            <button type="button"
+                    ui-variant="Secondary"
+                    class="mt-5"
+                    data-dialog-target="design-dialog-example">
+                Open dialog example
+            </button>
+        </article>
+
+        <partial name="DesignSystem/_Dialog"
+                 model='new UiDialogViewModel("design-dialog-example", "Edit room", "Update the details without leaving the room list.", "/Views/Shared/DesignSystem/_DialogExampleContent.cshtml")' />
+    </section>
+
     <section aria-labelledby="feedback-heading" class="space-y-6">
         <div>
             <h2 id="feedback-heading" class="text-2xl font-semibold tracking-tight text-ink">Feedback and status</h2>

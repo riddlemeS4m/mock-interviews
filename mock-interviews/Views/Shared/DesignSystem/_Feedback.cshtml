@@ -22,7 +22,10 @@
         <ui-icon name="@icon" class="mt-0.5 size-5 shrink-0 @iconClass" />
         <div>
             <p class="font-semibold text-ink">@Model.Title</p>
-            <p class="mt-1 text-sm leading-6 text-muted">@Model.Message</p>
+            @if (!string.IsNullOrWhiteSpace(Model.Message))
+            {
+                <p class="mt-1 text-sm leading-6 text-muted">@Model.Message</p>
+            }
         </div>
     </div>
 </div>
