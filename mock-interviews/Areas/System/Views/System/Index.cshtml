@@ -3,12 +3,7 @@
 }
 
 <section class="space-y-8">
-    <div class="max-w-3xl space-y-3">
-        <h1 class="text-3xl font-bold tracking-tight text-ink sm:text-4xl">System Administration</h1>
-        <p class="text-lg leading-8 text-muted">
-            A dedicated workspace for the tools that keep Mock Interviews running smoothly.
-        </p>
-    </div>
+    <partial name="DesignSystem/_PageHeader" model='new UiPageHeaderViewModel("System Administration", "A dedicated workspace for the tools that keep Mock Interviews running smoothly.")' />
 
     <div class="grid gap-6 md:grid-cols-2">
         <article class="rounded-card border border-line bg-surface p-6 shadow-card">
@@ -21,7 +16,7 @@
             <ui-icon name="layout-dashboard" class="size-6 text-muted" />
             <h2 class="mt-4 text-xl font-semibold text-ink">UI design system</h2>
             <p class="mt-3 leading-6 text-muted">Use the living reference for application shells, typography, controls, feedback, data, and shared states.</p>
-            <a asp-area="System" asp-controller="System" asp-action="Design" class="mt-5 inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-ink/90">
+            <a asp-area="System" asp-controller="System" asp-action="Design" ui-variant="Primary" class="mt-5">
                 Open design system
                 <ui-icon name="chevron-right" class="size-4" />
             </a>

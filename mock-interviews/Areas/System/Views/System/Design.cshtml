@@ -3,16 +3,13 @@
 }
 
 <div class="space-y-12">
-    <header class="max-w-3xl space-y-3">
+    <div class="max-w-3xl space-y-3">
         <a asp-area="System" asp-controller="System" asp-action="Index" class="inline-flex items-center gap-2 text-sm font-semibold text-ink hover:text-brand-700">
             <ui-icon name="chevron-right" class="size-4 rotate-180" />
             System administration
         </a>
-        <h1 class="text-4xl font-bold tracking-tight text-ink sm:text-5xl">Mock Interviews design system</h1>
-        <p class="text-lg leading-8 text-muted">
-            A living reference for the visual language and reusable interface patterns used throughout the application.
-        </p>
-    </header>
+        <partial name="DesignSystem/_PageHeader" model='new UiPageHeaderViewModel("Mock Interviews design system", "A living reference for the visual language and reusable interface patterns used throughout the application.")' />
+    </div>
 
     <section aria-labelledby="direction-heading" class="space-y-5">
         <div>
@@ -145,10 +142,10 @@
             <article class="rounded-card border border-line bg-surface p-6 shadow-card">
                 <h3 class="text-lg font-semibold text-ink">Actions</h3>
                 <div class="mt-5 flex flex-wrap gap-3">
-                    <button type="button" class="inline-flex min-h-10 items-center justify-center rounded-md bg-ink px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-ink/90">Primary action</button>
-                    <button type="button" class="inline-flex min-h-10 items-center justify-center rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink shadow-sm transition-colors hover:bg-canvas">Secondary</button>
-                    <button type="button" class="inline-flex min-h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-soft">Quiet action</button>
-                    <button type="button" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-negative px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-negative/90">
+                    <button type="button" ui-variant="Primary">Primary action</button>
+                    <button type="button" ui-variant="Secondary">Secondary</button>
+                    <button type="button" ui-variant="Quiet">Quiet action</button>
+                    <button type="button" ui-variant="Destructive">
                         <ui-icon name="trash-2" class="size-4" />
                         Delete
                     </button>
@@ -194,33 +191,9 @@
         </div>
 
         <div class="grid gap-4 lg:grid-cols-3">
-            <div class="rounded-card border border-line border-l-4 border-l-positive bg-surface p-5 shadow-sm">
-                <div class="flex gap-3">
-                    <ui-icon name="circle-check" class="mt-0.5 size-5 shrink-0 text-positive" />
-                    <div>
-                        <p class="font-semibold text-ink">Schedule saved</p>
-                        <p class="mt-1 text-sm leading-6 text-muted">The interviewer received a confirmation email.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-card border border-line border-l-4 border-l-warning bg-surface p-5 shadow-sm">
-                <div class="flex gap-3">
-                    <ui-icon name="triangle-alert" class="mt-0.5 size-5 shrink-0 text-warning" />
-                    <div>
-                        <p class="font-semibold text-ink">Assignment needs attention</p>
-                        <p class="mt-1 text-sm leading-6 text-muted">Three interviews do not have rooms yet.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-card border border-line border-l-4 border-l-negative bg-surface p-5 shadow-sm">
-                <div class="flex gap-3">
-                    <ui-icon name="circle-x" class="mt-0.5 size-5 shrink-0 text-negative" />
-                    <div>
-                        <p class="font-semibold text-ink">Unable to save</p>
-                        <p class="mt-1 text-sm leading-6 text-muted">Review the highlighted fields and try again.</p>
-                    </div>
-                </div>
-            </div>
+            <partial name="DesignSystem/_Feedback" model='new UiFeedbackViewModel(UiFeedbackKind.Success, "Schedule saved", "The interviewer received a confirmation email.")' />
+            <partial name="DesignSystem/_Feedback" model='new UiFeedbackViewModel(UiFeedbackKind.Warning, "Assignment needs attention", "Three interviews do not have rooms yet.")' />
+            <partial name="DesignSystem/_Feedback" model='new UiFeedbackViewModel(UiFeedbackKind.Error, "Unable to save", "Review the highlighted fields and try again.")' />
         </div>
     </section>
 
@@ -293,21 +266,19 @@
         </div>
 
         <div class="grid gap-6 lg:grid-cols-2">
-            <article class="px-6 py-10 text-center">
-                <ui-icon name="inbox" class="mx-auto size-10 text-muted" />
-                <h3 class="mt-4 text-lg font-semibold text-ink">Nothing needs attention</h3>
-                <p class="mx-auto mt-1 max-w-sm text-sm leading-6 text-muted">New assignments and exceptions will appear here when they need review.</p>
+            <article>
+                <partial name="DesignSystem/_EmptyState" model='new UiEmptyStateViewModel("inbox", "Nothing needs attention", "New assignments and exceptions will appear here when they need review.")' />
             </article>
 
             <article class="rounded-card border border-line bg-surface p-6 shadow-card">
                 <h3 class="text-xl font-semibold text-ink">Delete Hewson 3021?</h3>
                 <p class="mt-2 leading-6 text-muted">This room will no longer be available for assignments. Existing interview records will remain.</p>
                 <div class="mt-6 flex flex-wrap gap-3">
-                    <button type="button" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-negative px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-negative/90">
+                    <button type="button" ui-variant="Destructive">
                         <ui-icon name="trash-2" class="size-4" />
                         Delete room
                     </button>
-                    <button type="button" class="inline-flex min-h-10 items-center justify-center rounded-md border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink shadow-sm hover:bg-canvas">Cancel</button>
+                    <button type="button" ui-variant="Secondary">Cancel</button>
                 </div>
             </article>
         </div>

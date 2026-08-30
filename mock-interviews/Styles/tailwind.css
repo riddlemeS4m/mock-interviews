@@ -4,6 +4,8 @@
 @source "../Views/Shared/_TailwindLayout.cshtml";
 @source "../Views/Shared/_TailwindNavigation.cshtml";
 @source "../Views/Shared/_TailwindLoginPartial.cshtml";
+@source "../Views/Shared/DesignSystem/**/*.cshtml";
+@source "../TagHelpers/**/*.cs";
 @source "../Areas/System/Views/**/*.cshtml";
 
 @theme {
