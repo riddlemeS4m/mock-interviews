@@ -125,6 +125,7 @@ namespace MockInterviews.Controllers
             return BadRequest("Something went wrong.");
         }
 
+        [NonAction]
         public IActionResult UploadMastersStudents()
         {
             var viewModel = new MSTeamsStudentUploadViewModel();
@@ -134,6 +135,7 @@ namespace MockInterviews.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = RolesConstants.AdminRole)]
+        [NonAction]
         public async Task<IActionResult> UploadMastersStudents(MSTeamsStudentUploadViewModel viewModel)
         {
             var RosterData = viewModel.RosterData;
