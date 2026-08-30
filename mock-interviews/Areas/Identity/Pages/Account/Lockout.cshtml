@@ -1,10 +1,12 @@
-﻿@page
+@page
 @model LockoutModel
 @{
-    ViewData["Title"] = "Locked out";
+    ViewData["Title"] = "Account locked";
 }
 
-<header>
-    <h1 class="text-danger">@ViewData["Title"]</h1>
-    <p class="text-danger">This account has been locked out, please try again later.</p>
-</header>
+<div class="mx-auto max-w-xl py-12 text-center">
+    <ui-icon name="lock" class="mx-auto size-10 text-negative" aria-hidden="true"></ui-icon>
+    <h1 class="mt-5 text-3xl font-semibold tracking-tight text-ink">Account temporarily locked</h1>
+    <p class="mt-3 text-muted">Too many unsuccessful attempts were made. Please wait a few minutes before trying again.</p>
+    <a asp-page="./ForgotPassword" ui-variant="Secondary" class="mt-7">Reset password</a>
+</div>

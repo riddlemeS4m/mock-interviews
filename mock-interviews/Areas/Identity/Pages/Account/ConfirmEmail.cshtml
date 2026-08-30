@@ -1,8 +1,12 @@
-﻿@page
+@page
 @model ConfirmEmailModel
 @{
     ViewData["Title"] = "Confirm email";
 }
 
-<h1>@ViewData["Title"]</h1>
-<partial name="_StatusMessage" model="Model.StatusMessage" />
+<div class="mx-auto max-w-xl py-12 text-center">
+    <ui-icon name="mail-check" class="mx-auto size-10 text-muted" aria-hidden="true"></ui-icon>
+    <h1 class="mt-5 text-3xl font-semibold tracking-tight text-ink">Email confirmation</h1>
+    <div class="mt-5"><partial name="_StatusMessage" model="Model.StatusMessage" /></div>
+    <a asp-page="./Login" ui-variant="Primary" class="mt-7">Continue to sign in</a>
+</div>

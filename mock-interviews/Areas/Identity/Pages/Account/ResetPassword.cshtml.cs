@@ -9,12 +9,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
-using MockInterviews.Data.Constants;
 using MockInterviews.Models.Identity;
 
 namespace MockInterviews.Areas.Identity.Pages.Account
 {
-    [Authorize(Roles = RolesConstants.AdminRole)]
+    [AllowAnonymous]
     public class ResetPasswordModel : PageModel
     {
         private readonly UserManager<ApplicationUser> _userManager;

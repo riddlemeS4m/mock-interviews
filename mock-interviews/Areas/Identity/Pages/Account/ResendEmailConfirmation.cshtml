@@ -1,26 +1,22 @@
-﻿@page
+@page
 @model ResendEmailConfirmationModel
 @{
-    ViewData["Title"] = "Resend email confirmation";
+    ViewData["Title"] = "Resend confirmation";
 }
 
-<h1>@ViewData["Title"]</h1>
-<h2>Enter your email.</h2>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form method="post">
-            <div asp-validation-summary="All" class="text-danger"></div>
-            <div class="form-floating">
-                <input asp-for="Input.Email" class="form-control" aria-required="true" />
-                <label asp-for="Input.Email" class="form-label"></label>
-                <span asp-validation-for="Input.Email" class="text-danger"></span>
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Resend</button>
-        </form>
-    </div>
+<div class="mx-auto max-w-md">
+    <h1 class="text-3xl font-semibold tracking-tight text-ink">Resend confirmation email</h1>
+    <p class="mt-2 text-muted">Enter the email address used to create your account.</p>
+    <form method="post" class="mt-8 space-y-5 rounded-lg border border-line bg-surface p-6 shadow-sm">
+        <div asp-validation-summary="All" ui-validation-summary></div>
+        <div>
+            <label asp-for="Input.Email" ui-label></label>
+            <input asp-for="Input.Email" ui-control autocomplete="email" aria-required="true" />
+            <span asp-validation-for="Input.Email" ui-validation></span>
+        </div>
+        <button type="submit" ui-variant="Primary" class="w-full">Resend confirmation</button>
+    </form>
+    <p class="mt-5 text-center text-sm"><a asp-page="./Login" class="font-semibold text-ink underline">Back to sign in</a></p>
 </div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
