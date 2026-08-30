@@ -1,4 +1,4 @@
-@model IndexViewModel
+@model PublicHomeViewModel
 
 @{
     ViewData["Title"] = "Mock Interviews";
@@ -6,7 +6,7 @@
 }
 
 <div class="space-y-10">
-    @if (Model.DisruptionBanner == "block")
+    @if (Model.ShowServiceDisruption)
     {
         <partial name="DesignSystem/_Feedback"
                  model='new UiFeedbackViewModel(UiFeedbackKind.Warning, "Service disruption", "Some Mock Interviews features are temporarily unavailable. Please try again shortly.")' />

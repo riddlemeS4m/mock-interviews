@@ -13,6 +13,9 @@
 @source "../Views/Home/Index.cshtml";
 @source "../Views/Home/Admin.cshtml";
 @source "../Views/Home/AccessPending.cshtml";
+@source "../Views/Home/Dashboard.cshtml";
+@source "../Views/Home/DashboardPartials/**/*.cshtml";
+@source "../wwwroot/js/dashboard.js";
 @source "../Areas/Identity/Pages/**/*.cshtml";
 
 @theme {

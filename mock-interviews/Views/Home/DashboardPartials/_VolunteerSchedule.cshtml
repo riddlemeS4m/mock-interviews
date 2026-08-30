@@ -1,0 +1,45 @@
+@model IReadOnlyList<VolunteerScheduleItemViewModel>
+
+<section aria-labelledby="volunteer-schedule-heading">
+    <div class="mb-3 flex items-center gap-3">
+        <ui-icon name="users" class="size-5 text-muted" />
+        <h2 id="volunteer-schedule-heading" class="text-xl font-semibold text-ink">Volunteer shifts</h2>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("users", "No volunteer shifts", "Any volunteer times you select will appear here.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-line text-left text-sm">
+                    <thead class="bg-soft/60 text-xs font-semibold uppercase tracking-wide text-muted">
+                        <tr>
+                            <th scope="col" class="px-5 py-3">Date</th>
+                            <th scope="col" class="px-5 py-3">Time</th>
+                            <th scope="col" class="px-5 py-3"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var shift in Model)
+                        {
+                            <tr>
+                                <td class="whitespace-nowrap px-5 py-4 font-medium text-ink">
+                                    <time datetime="@shift.Date.ToString("yyyy-MM-dd")">@shift.Date.ToString("MMM d, yyyy")</time>
+                                </td>
+                                <td class="whitespace-nowrap px-5 py-4 text-ink">@shift.StartTime–@shift.EndTime</td>
+                                <td class="whitespace-nowrap px-5 py-4 text-right">
+                                    <a href="@Url.Action("UserDeleteRange", "VolunteerEvents", new { timeslots = shift.VolunteerTimeslotIds.ToArray() })"
+                                       class="font-semibold text-negative hover:underline">Cancel shift</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>

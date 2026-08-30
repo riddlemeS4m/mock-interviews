@@ -1,52 +1,55 @@
-@using MockInterviews.Data.Constants
-@model IndexViewModel
+@model DashboardViewModel
 
 @{
     ViewData["Title"] = "My schedule";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<div id="disruption-banner" style="display: @Model.DisruptionBanner">
-    <p class="disruption-banner-text">
-        We are currently experiencing sitewide disruption of services, which will be resolved speedily. We apologize for
-        the inconvenience.
-    </p>
-</div>
+<div class="space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel($"Hi, {Model.DisplayName}", "Here is your current interview and volunteer schedule.")' />
 
-<div class="home-container max-width-home">
-    <h1>Hi @(string.IsNullOrWhiteSpace(Model.Name) ? "there" : Model.Name)!</h1>
-    <p style="font-size: 20px; text-align: center;">Your schedule is shown below.</p>
-    <div id="zoom-link" class="section-card section-card-gradient">
-        <div class="index-image-container virtual-interview-banner">
-            <div class="virtual-interview-caption">
-                <h3 style="margin: auto; justify-content: center;">Virtual Interviews</h3>
-                <p>If you have signed up for a virtual interview, use the link below when it is time for your interview.</p>
-                <div style="text-align:center;">
-                    <a class="btn btn-primary ms-2 ms-lg-3 join-meeting-btn"
-                       title="Join online meeting"
-                       href="@Model.ZoomLink"
-                       target="_blank"
-                       rel="noopener">Join online meeting</a>
+    @if (Model.ShowServiceDisruption)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model='new UiFeedbackViewModel(UiFeedbackKind.Warning, "Service disruption", "Some Mock Interviews features are temporarily unavailable. Please try again shortly.")' />
+    }
+
+    @if (Model.Meeting is not null)
+    {
+        <aside class="rounded-card border border-line bg-surface p-5 shadow-card sm:flex sm:items-center sm:justify-between sm:gap-6">
+            <div class="flex gap-3">
+                <ui-icon name="link" class="mt-0.5 size-5 shrink-0 text-muted" />
+                <div>
+                    <p class="font-semibold text-ink">Virtual interview room</p>
+                    <p class="mt-1 text-sm leading-6 text-muted">Use this meeting link when it is time for your virtual interview.</p>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<div class="home-container max-width-home">
-    @if (User.IsInRole(RolesConstants.StudentRole))
-    {
-        <div class="section-card section-card-gradient">
-            @await Html.PartialAsync("_InterviewEventsPartial", Model.StudentScheduledInterviews)
-        </div>
-        <div class="section-card section-card-gradient">
-            @await Html.PartialAsync("_VolunteerEventsHomePartial", Model.TimeRangeViewModels)
-        </div>
+            <a href="@Model.Meeting.Url"
+               target="_blank"
+               rel="noopener"
+               ui-variant="Primary"
+               class="mt-4 w-full shrink-0 sm:mt-0 sm:w-auto">
+                Join meeting
+                <ui-icon name="external-link" class="size-4" />
+            </a>
+        </aside>
     }
 
-    @if (User.IsInRole(RolesConstants.InterviewerRole))
+    @if (Model.Student is not null)
     {
-        <div class="section-card section-card-gradient">
-            @await Html.PartialAsync("_SignupInterviewerTimeslotsPartial", Model)
-        </div>
+        <partial name="DashboardPartials/_StudentInterviews" model="Model.Student.Interviews" />
+        <partial name="DashboardPartials/_VolunteerSchedule" model="Model.Student.VolunteerShifts" />
+    }
+
+    @if (Model.Interviewer is not null)
+    {
+        <partial name="DashboardPartials/_ActiveInterviews" model="Model.Interviewer.ActiveInterviews" />
+        <partial name="DashboardPartials/_InterviewerSchedule" model="Model.Interviewer.ScheduleGroups" />
+        <partial name="DashboardPartials/_CompletedInterviews" model="Model.Interviewer.CompletedInterviews" />
     }
 </div>
+
+@section Scripts {
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+}

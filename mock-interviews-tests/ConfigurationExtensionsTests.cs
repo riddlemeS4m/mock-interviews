@@ -287,7 +287,8 @@ public sealed class ConfigurationExtensionsTests
             NullLogger<HomeController>.Instance,
             Microsoft.Extensions.Options.Options.Create(
                 new SuperUserOptions { Email = "admin@example.com" }),
-            new UserLandingPageResolver())
+            new UserLandingPageResolver(),
+            null!)
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext }
         };

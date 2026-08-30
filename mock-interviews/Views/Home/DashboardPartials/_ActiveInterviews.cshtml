@@ -1,0 +1,74 @@
+@using MockInterviews.Data.Constants
+@model IReadOnlyList<ActiveInterviewViewModel>
+
+<section aria-labelledby="active-interviews-heading">
+    <div class="mb-3 flex items-center gap-3">
+        <ui-icon name="clock" class="size-5 text-muted" />
+        <h2 id="active-interviews-heading" class="text-xl font-semibold text-ink">Active interviews</h2>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("clock", "No active interviews", "Checked-in students and interviews in progress will appear here.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-line text-left text-sm">
+                    <thead class="bg-soft/60 text-xs font-semibold uppercase tracking-wide text-muted">
+                        <tr>
+                            <th scope="col" class="px-5 py-3">Student</th>
+                            <th scope="col" class="px-5 py-3">Class</th>
+                            <th scope="col" class="px-5 py-3">Type</th>
+                            <th scope="col" class="px-5 py-3">Elapsed</th>
+                            <th scope="col" class="px-5 py-3"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line" data-active-interviews>
+                        @foreach (var interview in Model)
+                        {
+                            <tr data-interview-row="@interview.InterviewId">
+                                <td class="px-5 py-4">
+                                    <span class="font-medium text-ink">@interview.StudentName</span>
+                                    <span class="mt-0.5 flex items-center gap-2 text-xs text-muted">
+                                        <span class="size-2 rounded-full @(interview.Status == StatusConstants.Ongoing ? "bg-positive" : "bg-warning")" aria-hidden="true"></span>
+                                        @interview.Status
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 text-ink">@interview.ClassName</td>
+                                <td class="px-5 py-4 text-ink">@interview.InterviewType</td>
+                                <td class="whitespace-nowrap px-5 py-4 font-mono text-ink">
+                                    @if (interview.StartedAt is not null)
+                                    {
+                                        <time datetime="@interview.StartedAt.Value.ToString("O")" data-dashboard-timer>00:00:00</time>
+                                    }
+                                    else
+                                    {
+                                        <span class="font-sans text-muted">Not started</span>
+                                    }
+                                </td>
+                                <td class="whitespace-nowrap px-5 py-4 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a asp-controller="Users"
+                                           asp-action="ExternalUserProfileView"
+                                           asp-route-userId="@interview.StudentId"
+                                           ui-variant="Quiet">View profile</a>
+                                        @if (interview.Status == StatusConstants.Ongoing)
+                                        {
+                                            <a asp-controller="InterviewEvents"
+                                               asp-action="StudentComplete"
+                                               asp-route-id="@interview.InterviewId"
+                                               ui-variant="Primary">Mark done</a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>

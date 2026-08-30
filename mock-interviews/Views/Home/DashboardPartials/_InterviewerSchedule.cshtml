@@ -1,0 +1,50 @@
+@model IReadOnlyList<InterviewerScheduleGroupViewModel>
+
+<section aria-labelledby="interviewer-schedule-heading">
+    <div class="mb-3 flex items-center gap-3">
+        <ui-icon name="calendar-days" class="size-5 text-muted" />
+        <h2 id="interviewer-schedule-heading" class="text-xl font-semibold text-ink">Interviewer availability</h2>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("calendar-days", "No availability selected", "Your interviewer availability will appear here after you sign up.")' />
+    }
+    else
+    {
+        <div class="grid gap-5 xl:grid-cols-2">
+            @foreach (var group in Model)
+            {
+                <article class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+                    <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+                        <div>
+                            <h3 class="font-semibold text-ink">@group.Location</h3>
+                            <p class="mt-0.5 text-sm text-muted">@group.InterviewType interviews</p>
+                        </div>
+                        <div class="flex gap-1">
+                            <a asp-controller="SignupInterviewerTimeslots"
+                               asp-action="Edit"
+                               asp-route-id="@group.SignupId"
+                               ui-variant="Quiet">Edit</a>
+                            <a asp-controller="SignupInterviewerTimeslots"
+                               asp-action="UserDeleteRange"
+                               asp-route-id="@group.SignupId"
+                               ui-variant="Quiet"
+                               class="text-negative">Cancel</a>
+                        </div>
+                    </div>
+                    <ul class="divide-y divide-line">
+                        @foreach (var range in group.Ranges)
+                        {
+                            <li class="flex items-center justify-between gap-4 px-5 py-4 text-sm">
+                                <time datetime="@range.Date.ToString("yyyy-MM-dd")" class="font-medium text-ink">@range.Date.ToString("MMM d, yyyy")</time>
+                                <span class="whitespace-nowrap text-muted">@range.StartTime–@range.EndTime</span>
+                            </li>
+                        }
+                    </ul>
+                </article>
+            }
+        </div>
+    }
+</section>
