@@ -6,6 +6,7 @@ using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.UsersController;
+using MockInterviews.Services;
 
 namespace MockInterviews.Controllers
 {
@@ -13,11 +14,16 @@ namespace MockInterviews.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly MockInterviewsDbContext _context;
+        private readonly AccountInvitationService _accountInvitationService;
 
-        public UsersController(UserManager<ApplicationUser> userManager, MockInterviewsDbContext context)
+        public UsersController(
+            UserManager<ApplicationUser> userManager,
+            MockInterviewsDbContext context,
+            AccountInvitationService accountInvitationService)
         {
             _userManager = userManager;
             _context = context;
+            _accountInvitationService = accountInvitationService;
         }
 
         [Authorize(Roles = RolesConstants.AdminRole)]
@@ -123,24 +129,11 @@ namespace MockInterviews.Controllers
                     Email = model.Email,
                     UserName = model.Email
                 };
-                var result = await _userManager.CreateAsync(user, $"{model.FirstName}Spring2024!");
+                var result = await _accountInvitationService.CreateAndInviteAsync(user, RolesConstants.InterviewerRole);
 
                 if (result.Succeeded)
                 {
-                    var newUser = await _userManager.FindByEmailAsync(model.Email) ?? throw new Exception($"User with email {model.Email} was not successfully created.");
-                    var roleResult = await _userManager.AddToRoleAsync(newUser, RolesConstants.InterviewerRole);
-
-                    if (roleResult.Succeeded)
-                    {
-                        return RedirectToAction("Index", "UserRoles");
-                    }
-                    else
-                    {
-                        foreach (var error in result.Errors)
-                        {
-                            ModelState.AddModelError(string.Empty, error.Description);
-                        }
-                    }
+                    return RedirectToAction("Index", "UserRoles");
                 }
                 else
                 {

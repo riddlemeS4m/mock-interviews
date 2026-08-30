@@ -17,6 +17,7 @@ using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsController;
 using MockInterviews.Options;
+using MockInterviews.Services;
 using SendGrid;
 using SendGrid.Helpers.Errors.Model;
 
@@ -28,16 +29,19 @@ namespace MockInterviews.Controllers
         private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISendGridClient _sendGridClient;
+        private readonly AccountInvitationService _accountInvitationService;
         private readonly string _superUserEmail;
 
         public SignupInterviewerTimeslotsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
             ISendGridClient sendGridClient,
-            IOptions<SuperUserOptions> superUserOptions)
+            IOptions<SuperUserOptions> superUserOptions,
+            AccountInvitationService accountInvitationService)
         {
             _context = context;
             _userManager = userManager;
             _sendGridClient = sendGridClient;
+            _accountInvitationService = accountInvitationService;
             _superUserEmail = superUserOptions.Value.Email;
         }
 
@@ -329,14 +333,29 @@ namespace MockInterviews.Controllers
             if (user == null)
             {
                 user = new ApplicationUser { FirstName = FirstName, LastName = LastName, Email = Email, UserName = Email, Company = Company };
-                var result = await _userManager.CreateAsync(user, $"{FirstName}Fall2024!");
+                var result = await _accountInvitationService.CreateAndInviteAsync(user, RolesConstants.InterviewerRole);
+                if (!result.Succeeded)
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
 
-                user = await _userManager.FindByEmailAsync(Email) ?? throw new Exception($"User with email {Email} was not successfully created.");
+                    return View(vm);
+                }
             }
-
-            if (!await _userManager.IsInRoleAsync(user, RolesConstants.InterviewerRole))
+            else if (!await _userManager.IsInRoleAsync(user, RolesConstants.InterviewerRole))
             {
-                await _userManager.AddToRoleAsync(user, RolesConstants.InterviewerRole);
+                var roleResult = await _userManager.AddToRoleAsync(user, RolesConstants.InterviewerRole);
+                if (!roleResult.Succeeded)
+                {
+                    foreach (var error in roleResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+
+                    return View(vm);
+                }
             }
 
             var alreadySelected = await _context.InterviewerTimeslots

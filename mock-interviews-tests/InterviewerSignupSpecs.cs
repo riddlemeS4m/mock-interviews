@@ -36,7 +36,11 @@ public sealed class InterviewerSignupSpecs(MockInterviewsWebApplicationFactory f
             new[] { data.Timeslots[0].Id, data.Timeslots[1].Id },
             graph.availability.Select(item => item.TimeslotId).ToArray());
         Assert.Equal(Data.Constants.InterviewLocationConstants.InPerson, graph.location.Preference);
-        Assert.Equal(2, Factory.SentEmails.Count);
+        Assert.Equal(3, Factory.SentEmails.Count);
+        Assert.Contains(
+            Factory.SentEmails,
+            message => message.Contents?.Any(content =>
+                content.Type == "text/html" && content.Value.Contains("You have been invited to Mock Interviews.")) == true);
     }
 
     [Fact]
@@ -104,7 +108,7 @@ public sealed class InterviewerSignupSpecs(MockInterviewsWebApplicationFactory f
             Assert.Single(await context.InterviewerLocations.ToListAsync());
             Assert.Equal(4, await context.InterviewerTimeslots.CountAsync());
         });
-        Assert.Equal(4, Factory.SentEmails.Count);
+        Assert.Equal(5, Factory.SentEmails.Count);
     }
 
     private static async Task<HttpResponseMessage> SubmitSignupAsync(HttpClient client, int selectedTimeslotId)
