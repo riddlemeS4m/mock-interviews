@@ -13,14 +13,12 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.EntityFrameworkCore;
-using MockInterviews.Data.Constants;
-using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Identity;
+using MockInterviews.Services;
 
 namespace MockInterviews.Areas.Identity.Pages.Account
 {
-    [Authorize(Roles = RolesConstants.AdminRole)]
+    [AllowAnonymous]
     public class RegisterModel : PageModel
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
@@ -29,7 +27,7 @@ namespace MockInterviews.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<ApplicationUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
-        private readonly MockInterviewsDbContext _context;
+        private readonly AccountRoleProvisioner _roleProvisioner;
 
         public RegisterModel(
             UserManager<ApplicationUser> userManager,
@@ -37,7 +35,7 @@ namespace MockInterviews.Areas.Identity.Pages.Account
             SignInManager<ApplicationUser> signInManager,
             ILogger<RegisterModel> logger,
             IEmailSender emailSender,
-            MockInterviewsDbContext context)
+            AccountRoleProvisioner roleProvisioner)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -45,7 +43,7 @@ namespace MockInterviews.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
-            _context = context;
+            _roleProvisioner = roleProvisioner;
         }
 
         /// <summary>
@@ -138,20 +136,7 @@ namespace MockInterviews.Areas.Identity.Pages.Account
                     _logger.LogInformation("User created a new account with password.");
 
                     var userId = await _userManager.GetUserIdAsync(user);
-                    var exists = await _context.RosteredStudents.FirstOrDefaultAsync(record => record.Email == Input.Email);
-
-                    if (exists != null)
-                    {
-                        await _userManager.AddToRoleAsync(user, RolesConstants.StudentRole);
-                    }
-                    else if (exists == null)
-                    {
-                        await _userManager.AddToRoleAsync(user, RolesConstants.InterviewerRole);
-                    }
-                    else
-                    {
-                        return BadRequest("Role assignment failed. Please try registering again.");
-                    }
+                    await _roleProvisioner.ProvisionStudentRoleAsync(user);
 
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
@@ -168,12 +153,7 @@ namespace MockInterviews.Areas.Identity.Pages.Account
                     {
                         return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl = returnUrl });
                     }
-                    else
-                    {
-                        await _signInManager.SignInAsync(user, isPersistent: false);
-                        //return LocalRedirect(returnUrl);
-                        return RedirectToPage("/Account/Manage/ProfileEdit");
-                    }
+                    return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl });
                 }
                 foreach (var error in result.Errors)
                 {

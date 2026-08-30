@@ -5,18 +5,15 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Security.Claims;
-using System.Text;
-using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Identity;
+using MockInterviews.Services;
 
 namespace MockInterviews.Areas.Identity.Pages.Account
 {
@@ -27,9 +24,10 @@ namespace MockInterviews.Areas.Identity.Pages.Account
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IUserStore<ApplicationUser> _userStore;
         private readonly IUserEmailStore<ApplicationUser> _emailStore;
-        private readonly IEmailSender _emailSender;
         private readonly ILogger<ExternalLoginModel> _logger;
         private readonly MockInterviewsDbContext _context;
+        private readonly AccountRoleProvisioner _roleProvisioner;
+        private readonly UserProfileCompletionService _profileCompletionService;
         public bool IsStudent { get; set; }
 
         public ExternalLoginModel(
@@ -37,16 +35,18 @@ namespace MockInterviews.Areas.Identity.Pages.Account
             UserManager<ApplicationUser> userManager,
             IUserStore<ApplicationUser> userStore,
             ILogger<ExternalLoginModel> logger,
-            IEmailSender emailSender,
-            MockInterviewsDbContext context)
+            MockInterviewsDbContext context,
+            AccountRoleProvisioner roleProvisioner,
+            UserProfileCompletionService profileCompletionService)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _userStore = userStore;
             _emailStore = GetEmailStore();
             _logger = logger;
-            _emailSender = emailSender;
             _context = context;
+            _roleProvisioner = roleProvisioner;
+            _profileCompletionService = profileCompletionService;
         }
 
         /// <summary>
@@ -94,8 +94,6 @@ namespace MockInterviews.Areas.Identity.Pages.Account
             [Required]
             [Display(Name = "Last Name")]
             public string LastName { get; set; }
-            //[Required]
-            [ConditionalRequired("@crimson.ua.edu", ErrorMessage = "The Company field is required for non-student accounts.")]
             [Display(Name = "Company")]
             public string Company { get; set; }
         }
@@ -140,43 +138,77 @@ namespace MockInterviews.Areas.Identity.Pages.Account
             if (result.Succeeded)
             {
                 _logger.LogInformation("{Name} logged in with {LoginProvider} provider.", info.Principal.Identity.Name, info.LoginProvider);
+                var existingUser = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+                if (existingUser is not null)
+                {
+                    await _roleProvisioner.ProvisionStudentRoleAsync(existingUser);
+                    await _signInManager.RefreshSignInAsync(existingUser);
+                    if (await _profileCompletionService.IsRequiredAsync(existingUser))
+                    {
+                        return RedirectToPage("/Account/Manage/ProfileEdit", new { ReturnUrl = returnUrl });
+                    }
+                }
+
                 return LocalRedirect(returnUrl);
             }
             if (result.IsLockedOut)
             {
                 return RedirectToPage("./Lockout");
             }
-            else
+            if (result.IsNotAllowed)
             {
-                // If the user does not have an account, then ask the user to create an account.
-                ReturnUrl = returnUrl;
-                ProviderDisplayName = info.ProviderDisplayName;
-                if (info.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
+                var existingUser = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+                if (existingUser is not null && !await _userManager.IsEmailConfirmedAsync(existingUser))
                 {
-                    IsStudent = info.Principal.FindFirstValue(ClaimTypes.Email).Contains("crimson.ua.edu", StringComparison.OrdinalIgnoreCase);
-                    if (IsStudent)
+                    existingUser.EmailConfirmed = true;
+                    var updateResult = await _userManager.UpdateAsync(existingUser);
+                    if (updateResult.Succeeded)
                     {
-                        Input = new InputModel
+                        await _roleProvisioner.ProvisionStudentRoleAsync(existingUser);
+                        await _signInManager.SignInAsync(existingUser, isPersistent: false, info.LoginProvider);
+                        if (await _profileCompletionService.IsRequiredAsync(existingUser))
                         {
-                            Email = info.Principal.FindFirstValue(ClaimTypes.Email),
-                            FirstName = info.Principal.FindFirstValue(ClaimTypes.GivenName),
-                            LastName = info.Principal.FindFirstValue(ClaimTypes.Surname),
-                            Company = "none"
-                        };
-                    }
-                    else
-                    {
-                        Input = new InputModel
-                        {
-                            Email = info.Principal.FindFirstValue(ClaimTypes.Email),
-                            FirstName = info.Principal.FindFirstValue(ClaimTypes.GivenName),
-                            LastName = info.Principal.FindFirstValue(ClaimTypes.Surname),
-                            Company = ""
-                        };
+                            return RedirectToPage("/Account/Manage/ProfileEdit", new { ReturnUrl = returnUrl });
+                        }
+
+                        return LocalRedirect(returnUrl);
                     }
                 }
-                return Page();
+
+                ErrorMessage = "This external sign-in could not be confirmed.";
+                return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
             }
+
+            // If the user does not have an account, then ask the user to create an account.
+            ReturnUrl = returnUrl;
+            ProviderDisplayName = info.ProviderDisplayName;
+            if (info.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
+            {
+                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+                IsStudent = await _context.RosteredStudents.AnyAsync(record => record.Email == email);
+                if (IsStudent)
+                {
+                    Input = new InputModel
+                    {
+                        Email = email,
+                        FirstName = info.Principal.FindFirstValue(ClaimTypes.GivenName),
+                        LastName = info.Principal.FindFirstValue(ClaimTypes.Surname),
+                        Company = "none"
+                    };
+                }
+                else
+                {
+                    Input = new InputModel
+                    {
+                        Email = email,
+                        FirstName = info.Principal.FindFirstValue(ClaimTypes.GivenName),
+                        LastName = info.Principal.FindFirstValue(ClaimTypes.Surname),
+                        Company = ""
+                    };
+                }
+            }
+
+            return Page();
         }
 
         public async Task<IActionResult> OnPostConfirmationAsync(string returnUrl = null)
@@ -190,9 +222,21 @@ namespace MockInterviews.Areas.Identity.Pages.Account
                 return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
             }
 
+            var providerEmail = info.Principal.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrWhiteSpace(providerEmail))
+            {
+                ModelState.AddModelError(string.Empty, "The external provider did not supply an email address.");
+                ProviderDisplayName = info.ProviderDisplayName;
+                ReturnUrl = returnUrl;
+                return Page();
+            }
+
+            Input.Email = providerEmail;
+
             if (ModelState.IsValid)
             {
                 var user = CreateUser();
+                user.EmailConfirmed = true;
 
                 var textInfo = new CultureInfo("en-US", false).TextInfo;
                 user.FirstName = textInfo.ToTitleCase(Input.FirstName);
@@ -209,7 +253,9 @@ namespace MockInterviews.Areas.Identity.Pages.Account
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
 
-                var exists = await _context.RosteredStudents.FirstOrDefaultAsync(record => record.Email == Input.Email);
+                var normalizedEmail = Input.Email.Trim().ToUpper();
+                var exists = await _context.RosteredStudents
+                    .FirstOrDefaultAsync(record => record.Email.ToUpper() == normalizedEmail);
 
                 if (exists != null)
                 {
@@ -227,44 +273,15 @@ namespace MockInterviews.Areas.Identity.Pages.Account
                     {
                         _logger.LogInformation("User created an account using {Name} provider.", info.LoginProvider);
 
-                        if (exists != null)
-                        {
-                            if (exists.InMasters)
-                            {
-                                await _userManager.AddToRoleAsync(user, RolesConstants.InterviewerRole);
-                            }
-                            await _userManager.AddToRoleAsync(user, RolesConstants.StudentRole);
-                        }
-                        else if (exists == null)
-                        {
-                            await _userManager.AddToRoleAsync(user, RolesConstants.InterviewerRole);
-                        }
-                        else
-                        {
-                            return BadRequest("Role assignment failed. Please try registering again.");
-                        }
-
-                        var userId = await _userManager.GetUserIdAsync(user);
-                        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                        var callbackUrl = Url.Page(
-                            "/Account/ConfirmEmail",
-                            pageHandler: null,
-                            values: new { area = "Identity", userId = userId, code = code },
-                            protocol: Request.Scheme);
-
-                        await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                            $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
-                        // If account confirmation is required, we need to show the link if we don't have a real email sender
-                        if (_userManager.Options.SignIn.RequireConfirmedAccount)
-                        {
-                            return RedirectToPage("./RegisterConfirmation", new { Email = Input.Email });
-                        }
+                        await _roleProvisioner.ProvisionStudentRoleAsync(user);
 
                         await _signInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
-                        //return LocalRedirect(returnUrl);
-                        return RedirectToPage("/Account/Manage/ProfileEdit");
+                        if (await _profileCompletionService.IsRequiredAsync(user))
+                        {
+                            return RedirectToPage("/Account/Manage/ProfileEdit", new { ReturnUrl = returnUrl });
+                        }
+
+                        return LocalRedirect(returnUrl);
                     }
                 }
                 foreach (var error in result.Errors)
