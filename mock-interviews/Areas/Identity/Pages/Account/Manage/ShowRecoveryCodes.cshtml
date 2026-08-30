@@ -1,25 +1,18 @@
-﻿@page
+@page
 @model ShowRecoveryCodesModel
 @{
     ViewData["Title"] = "Recovery codes";
-    ViewData["ActivePage"] = "TwoFactorAuthentication";
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
 }
 
-<partial name="_StatusMessage" for="StatusMessage" />
-<h3>@ViewData["Title"]</h3>
-<div class="alert alert-warning" role="alert">
-    <p>
-        <strong>Put these codes in a safe place.</strong>
-    </p>
-    <p>
-        If you lose your device and don't have the recovery codes you will lose access to your account.
-    </p>
-</div>
-<div class="row">
-    <div class="col-md-12">
-        @for (var row = 0; row < Model.RecoveryCodes.Length; row += 2)
+<div class="max-w-xl space-y-6">
+    <div><h1 class="text-2xl font-semibold text-ink">Save your recovery codes</h1><p class="mt-1 text-sm text-muted">Each code can be used once if you lose access to your authenticator.</p></div>
+    <div class="border-l-4 border-warning bg-surface px-4 py-3 text-sm text-ink shadow-sm"><strong>This is your only chance to copy these codes.</strong> Store them in a password manager or another secure location.</div>
+    <div class="grid grid-cols-2 gap-3 rounded-card border border-line bg-surface p-6 shadow-sm">
+        @foreach (var code in Model.RecoveryCodes)
         {
-            <code class="recovery-code">@Model.RecoveryCodes[row]</code><text>&nbsp;</text><code class="recovery-code">@Model.RecoveryCodes[row + 1]</code><br />
+            <code class="rounded-md bg-soft px-3 py-2 text-center font-mono text-sm text-ink">@code</code>
         }
     </div>
+    <a asp-page="./TwoFactorAuthentication" ui-variant="Primary">Done</a>
 </div>

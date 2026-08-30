@@ -1,27 +1,18 @@
-﻿@page
+@page
 @model PersonalDataModel
 @{
-    ViewData["Title"] = "Personal Data";
+    ViewData["Title"] = "Personal data";
     ViewData["ActivePage"] = ManageNavPages.PersonalData;
 }
 
-<h3>@ViewData["Title"]</h3>
-
-<div class="row">
-    <div class="col-md-6">
-        <p>Your account contains personal data that you have given us. This page allows you to download or delete that data.</p>
-        <p>
-            <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
-        </p>
-        <form id="download-data" asp-page="DownloadPersonalData" method="post">
-            <button class="btn btn-primary" type="submit">Download</button>
-        </form>
-        <p>
-            <a id="delete" asp-page="DeletePersonalData" class="btn btn-primary">Delete</a>
-        </p>
+<div class="max-w-2xl space-y-8">
+    <div><h1 class="text-2xl font-semibold text-ink">Personal data</h1><p class="mt-1 text-sm text-muted">Download a copy of your account data or request account deletion.</p></div>
+    <div class="rounded-card border border-line bg-surface p-6 shadow-sm">
+        <h2 class="font-semibold text-ink">Download your data</h2><p class="mt-1 text-sm text-muted">Get a machine-readable copy of the personal information stored with your account.</p>
+        <form id="download-data" asp-page="DownloadPersonalData" method="post" class="mt-5"><button type="submit" ui-variant="Secondary">Download data</button></form>
+    </div>
+    <div class="border-t border-line pt-7">
+        <h2 class="font-semibold text-ink">Close your account</h2><p class="mt-1 max-w-xl text-sm text-muted">Account deletion is permanent. Accounts connected to interview or signup records cannot be deleted until those records are resolved.</p>
+        <a id="delete" asp-page="DeletePersonalData" ui-variant="Destructive" class="mt-5">Delete account</a>
     </div>
 </div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
