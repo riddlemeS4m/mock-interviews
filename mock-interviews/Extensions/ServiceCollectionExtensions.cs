@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MockInterviews.Data.Contexts;
@@ -66,6 +67,9 @@ public static class ServiceCollectionExtensions
     {
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
+                options.SignIn.RequireConfirmedAccount = true;
+                options.SignIn.RequireConfirmedEmail = true;
+
                 if (environment?.IsDevelopment() == true)
                 {
                     options.Password.RequireDigit = false;
@@ -81,6 +85,10 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<RoleManager<IdentityRole>>();
         services.AddScoped<UserManager<ApplicationUser>>();
+        services.AddScoped<AccountRoleProvisioner>();
+        services.AddScoped<AccountInvitationService>();
+        services.AddScoped<UserProfileCompletionService>();
+        services.AddSingleton<UserLandingPageResolver>();
 
         return services;
     }
@@ -92,7 +100,36 @@ public static class ServiceCollectionExtensions
         services.AddResponseCompression(opts => { opts.EnableForHttps = true; });
         services.AddHealthChecks();
         services.AddControllersWithViews();
-        services.AddRazorPages();
+        services.AddRazorPages(options =>
+            options.Conventions.AuthorizeAreaFolder("Identity", "/Account/Manage"));
+
+        return services;
+    }
+
+    public static IServiceCollection AddOptionalMicrosoftAuthentication(
+        this IServiceCollection services,
+        IConfiguration config)
+    {
+        var clientId = config["Authentication:Microsoft:ClientId"];
+        var clientSecret = config["Authentication:Microsoft:ClientSecret"];
+
+        if (string.IsNullOrWhiteSpace(clientId) && string.IsNullOrWhiteSpace(clientSecret))
+        {
+            return services;
+        }
+
+        if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
+        {
+            throw new InvalidOperationException(
+                "Microsoft authentication requires both Authentication:Microsoft:ClientId and Authentication:Microsoft:ClientSecret.");
+        }
+
+        services.AddAuthentication()
+            .AddMicrosoftAccount(options =>
+            {
+                options.ClientId = clientId;
+                options.ClientSecret = clientSecret;
+            });
 
         return services;
     }
@@ -107,6 +144,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<InterviewerLocationService>();
         services.AddScoped<InterviewerTimeslotService>();
         services.AddScoped<UserService>();
+        services.AddTransient<IEmailSender, IdentityEmailSender>();
 
         services.AddTransient<IManageInterviews, ManageInterviewsService>();
 

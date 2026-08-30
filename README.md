@@ -44,6 +44,10 @@ dotnet test mock-interviews.sln
 For safety, the test fixture cleans only a database named exactly `mock_interviews_test_db` on a loopback host
 (`localhost`, `127.0.0.1`, or `::1`).
 
+## Authentication
+
+Local ASP.NET Identity accounts are always available and new accounts must confirm their email. Microsoft sign-in is optional: set both `Authentication__Microsoft__ClientId` and `Authentication__Microsoft__ClientSecret` to enable it, or leave both unset.
+
 
 ## Resource Links
 

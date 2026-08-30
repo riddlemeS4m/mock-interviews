@@ -215,6 +215,42 @@ public sealed class ConfigurationExtensionsTests
         Assert.Null(await schemes.GetSchemeAsync("Microsoft"));
     }
 
+    [Fact]
+    public async Task OptionalMicrosoftAuthentication_RegistersProviderOnlyWhenConfigured()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Authentication:Microsoft:ClientId"] = "client-id",
+                ["Authentication:Microsoft:ClientSecret"] = "client-secret"
+            })
+            .Build();
+        var services = new ServiceCollection();
+        services.AddIdentityAndAuth();
+        services.AddOptionalMicrosoftAuthentication(configuration);
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var schemes = serviceProvider.GetRequiredService<IAuthenticationSchemeProvider>();
+
+        Assert.NotNull(await schemes.GetSchemeAsync("Microsoft"));
+    }
+
+    [Fact]
+    public void OptionalMicrosoftAuthentication_RejectsPartialConfiguration()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Authentication:Microsoft:ClientId"] = "client-id"
+            })
+            .Build();
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => new ServiceCollection().AddOptionalMicrosoftAuthentication(configuration));
+
+        Assert.Contains("ClientSecret", exception.Message);
+    }
+
     [Theory]
     [InlineData("Development", false)]
     [InlineData("Production", true)]
@@ -233,6 +269,8 @@ public sealed class ConfigurationExtensionsTests
         Assert.Equal(requiresComplexPassword, options.Password.RequireUppercase);
         Assert.Equal(requiresComplexPassword, options.Password.RequireNonAlphanumeric);
         Assert.Equal(6, options.Password.RequiredLength);
+        Assert.True(options.SignIn.RequireConfirmedAccount);
+        Assert.True(options.SignIn.RequireConfirmedEmail);
     }
 
     [Fact]
