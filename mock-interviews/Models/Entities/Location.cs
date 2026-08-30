@@ -19,7 +19,7 @@ namespace MockInterviews.Models.Entities
 
         [Required]
         [DefaultValue(true)]
-        public bool InPerson { get; set; }
+        public bool InPerson { get; set; } = true;
 
         public override string ToString()
         {

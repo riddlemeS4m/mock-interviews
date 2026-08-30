@@ -83,6 +83,10 @@ public sealed class UiIconTagHelper : TagHelper
                 <path d="M4 12h16" />
                 <path d="M4 19h16" />
                 """,
+            ["plus"] = """
+                <path d="M5 12h14" />
+                <path d="M12 5v14" />
+                """,
             ["search"] = """
                 <path d="m21 21-4.34-4.34" />
                 <circle cx="11" cy="11" r="8" />

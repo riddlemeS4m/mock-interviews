@@ -1,0 +1,51 @@
+@using MockInterviews.Models.Entities
+@model Location
+
+@{
+    var fieldIdPrefix = ViewData["FieldIdPrefix"]?.ToString() ?? "location";
+    var roomId = $"{fieldIdPrefix}-room";
+    var virtualId = $"{fieldIdPrefix}-virtual";
+    var inPersonId = $"{fieldIdPrefix}-in-person";
+}
+
+<div asp-validation-summary="ModelOnly" class="mb-5 border-l-4 border-l-negative pl-4 text-sm text-negative"></div>
+
+<div>
+    <label for="@roomId" class="block text-sm font-semibold text-ink">Room or location name</label>
+    <p id="@($"{roomId}-hint")" class="mt-1 text-sm text-muted">Use the name administrators and interviewers will recognize.</p>
+    <input asp-for="Room"
+           id="@roomId"
+           class="mt-2 block min-h-11 w-full rounded-md border border-line bg-surface px-3 py-2 text-ink shadow-sm placeholder:text-muted focus:border-ink focus:outline-none focus:ring-3 focus:ring-ink/10"
+           aria-describedby="@($"{roomId}-hint")"
+           autocomplete="off"
+           data-dialog-initial-focus
+           data-dialog-field="room" />
+    <span asp-validation-for="Room" class="mt-1.5 block text-sm text-negative"></span>
+</div>
+
+<fieldset class="mt-6 space-y-3">
+    <legend class="text-sm font-semibold text-ink">Supported interview formats</legend>
+    <p class="text-sm text-muted">Choose every format this location can accommodate.</p>
+
+    <label for="@virtualId" class="flex cursor-pointer items-start gap-3 rounded-lg border border-line bg-surface p-4 hover:bg-canvas">
+        <input asp-for="IsVirtual"
+               id="@virtualId"
+               class="mt-0.5 size-4 shrink-0 rounded border-line text-ink focus:ring-ink"
+               data-dialog-field="virtual" />
+        <span>
+            <span class="block font-semibold text-ink">Virtual interviewers</span>
+            <span class="mt-0.5 block text-sm leading-6 text-muted">An interviewer can join this room remotely.</span>
+        </span>
+    </label>
+
+    <label for="@inPersonId" class="flex cursor-pointer items-start gap-3 rounded-lg border border-line bg-surface p-4 hover:bg-canvas">
+        <input asp-for="InPerson"
+               id="@inPersonId"
+               class="mt-0.5 size-4 shrink-0 rounded border-line text-ink focus:ring-ink"
+               data-dialog-field="in-person" />
+        <span>
+            <span class="block font-semibold text-ink">In-person interviewers</span>
+            <span class="mt-0.5 block text-sm leading-6 text-muted">An interviewer can meet with a student in this room.</span>
+        </span>
+    </label>
+</fieldset>

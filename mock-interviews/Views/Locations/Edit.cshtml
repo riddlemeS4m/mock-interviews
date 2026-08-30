@@ -1,45 +1,25 @@
-﻿@using MockInterviews.Models.Entities
+@using MockInterviews.Models.Entities
 @model Location
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Edit room";
+    ViewData["FieldIdPrefix"] = "location-edit-page";
 }
 
-<h1>Edit</h1>
+<section class="max-w-3xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel($"Edit {Model.Room}", "Update the room name or supported interview formats.")' />
 
-<h4>Location</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" />
-            <div class="form-group">
-                <label asp-for="Room" class="control-label"></label>
-                <input asp-for="Room" class="form-control" />
-                <span asp-validation-for="Room" class="text-danger"></span>
-            </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="IsVirtual" /> Virtual Interviewer
-                </label>
-            </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="InPerson" /> In-Person Interviewer
-                </label>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
-
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="rounded-card border border-line bg-surface p-6 shadow-card sm:p-8">
+        <input asp-for="Id" type="hidden" />
+        <partial name="_FormFields" model="Model" />
+        <div class="mt-8 flex flex-wrap justify-end gap-3 border-t border-line pt-6">
+            <a asp-action="Index" ui-variant="Secondary">Cancel</a>
+            <button type="submit" ui-variant="Primary">Save changes</button>
+        </div>
+    </form>
+</section>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
 }

@@ -9,6 +9,7 @@
 @source "../Views/Shared/DesignSystem/**/*.cshtml";
 @source "../TagHelpers/**/*.cs";
 @source "../Areas/System/Views/**/*.cshtml";
+@source "../Views/Locations/**/*.cshtml";
 
 @theme {
   --color-brand-50: #fff1f3;
@@ -60,6 +61,15 @@
   input[type="checkbox"],
   input[type="radio"] {
     accent-color: var(--color-ink);
+  }
+
+  .field-validation-valid,
+  .validation-summary-valid {
+    display: none;
+  }
+
+  .input-validation-error {
+    border-color: var(--color-negative);
   }
 }
 
