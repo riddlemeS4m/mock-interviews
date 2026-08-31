@@ -10,26 +10,22 @@ using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Models.ViewModels.SignupInterviewersController;
 using MockInterviews.Services.SignalR;
-using SendGrid;
 
 namespace MockInterviews.Controllers
 {
     public class SignupInterviewersController : Controller
     {
         private readonly MockInterviewsDbContext _context;
-        private readonly ISendGridClient _sendGridClient;
         private readonly IHubContext<AvailableInterviewersHub> _hubContext;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<SignupInterviewersController> _logger;
 
         public SignupInterviewersController(MockInterviewsDbContext context,
-            ISendGridClient sendGridClient,
             IHubContext<AvailableInterviewersHub> hubContext,
             UserManager<ApplicationUser> userManager,
             ILogger<SignupInterviewersController> logger)
         {
             _context = context;
-            _sendGridClient = sendGridClient;
             _hubContext = hubContext;
             _userManager = userManager;
             _logger = logger;

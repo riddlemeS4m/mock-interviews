@@ -4,7 +4,6 @@ using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.ViewModels.InterviewEventsController;
 using MockInterviews.Services.SignalR;
-using SendGrid;
 
 namespace MockInterviews.Services
 {
@@ -13,7 +12,6 @@ namespace MockInterviews.Services
         private readonly InterviewService _interviewService;
         private readonly InterviewerTimeslotService _interviewerTimeslotService;
         private readonly UserService _userService;
-        private readonly ISendGridClient _sendGridClient;
         private readonly IHubContext<AssignInterviewsHub> _interviewsHub;
         private readonly IHubContext<AvailableInterviewersHub> _interviewersHub;
         private readonly ILogger<ManageInterviewsService> _logger;
@@ -22,7 +20,6 @@ namespace MockInterviews.Services
             InterviewService interviewService,
             InterviewerTimeslotService interviewerTimeslotService,
             UserService userService,
-            ISendGridClient sendGridClient,
             IHubContext<AssignInterviewsHub> interviewsHub,
             IHubContext<AvailableInterviewersHub> interviewersHub,
             ILogger<ManageInterviewsService> logger)
@@ -30,7 +27,6 @@ namespace MockInterviews.Services
             _interviewService = interviewService;
             _interviewerTimeslotService = interviewerTimeslotService;
             _userService = userService;
-            _sendGridClient = sendGridClient;
             _interviewsHub = interviewsHub;
             _interviewersHub = interviewersHub;
             _logger = logger;
