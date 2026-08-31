@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Email;
 using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Identity;
 using MockInterviews.Options;
@@ -24,19 +25,45 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddSendGrid(this IServiceCollection services, IConfiguration config)
+    public static IServiceCollection AddEmailTransport(this IServiceCollection services, IConfiguration config)
     {
-        services.AddOptions<SendGridOptions>()
-            .Bind(config.GetSection("SendGrid"))
+        var provider = config[$"{EmailOptions.SectionName}:Provider"];
+        if (string.Equals(provider, EmailOptions.SendGridProvider, StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddOptions<SendGridOptions>()
+                .Bind(config.GetSection(SendGridOptions.SectionName))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            services.AddSingleton<ISendGridClient>(serviceProvider =>
+            {
+                var options = serviceProvider.GetRequiredService<IOptions<SendGridOptions>>().Value;
+                return new SendGridClient(options.ApiKey);
+            });
+            services.AddSingleton<IEmailTransport, SendGridEmailTransport>();
+            return services;
+        }
+
+        if (string.Equals(provider, EmailOptions.SmtpProvider, StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddOptions<SmtpEmailOptions>()
+                .Bind(config.GetSection(SmtpEmailOptions.SectionName))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+            services.AddSingleton<IEmailTransport, SmtpEmailTransport>();
+            return services;
+        }
+
+        throw new InvalidOperationException(
+            $"Unsupported Email:Provider '{provider}'. Supported values are {EmailOptions.SendGridProvider} and {EmailOptions.SmtpProvider}.");
+    }
+
+    public static IServiceCollection AddEmailOptions(this IServiceCollection services, IConfiguration config)
+    {
+        services.AddOptions<EmailOptions>()
+            .Bind(config.GetSection(EmailOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
-
-        services.AddSingleton<ISendGridClient>(provider =>
-        {
-            var options = provider.GetRequiredService<IOptions<SendGridOptions>>().Value;
-            return new SendGridClient(options.ApiKey);
-        });
-
         return services;
     }
 

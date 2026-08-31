@@ -7,11 +7,11 @@ using Microsoft.Extensions.Options;
 using MockInterviews.Data.Access.Emails;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Email;
 using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
 using MockInterviews.Options;
-using SendGrid;
 
 namespace MockInterviews.Controllers
 {
@@ -19,18 +19,18 @@ namespace MockInterviews.Controllers
     {
         private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ISendGridClient _sendGridClient;
+        private readonly IEmailTransport _emailTransport;
         private readonly ILogger<FAQsController> _logger;
         private readonly string _superUserEmail;
         public FAQsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
-            ISendGridClient sendGridClient,
+            IEmailTransport emailTransport,
             ILogger<FAQsController> logger,
             IOptions<SuperUserOptions> superUserOptions)
         {
             _context = context;
             _userManager = userManager;
-            _sendGridClient = sendGridClient;
+            _emailTransport = emailTransport;
             _logger = logger;
             _superUserEmail = superUserOptions.Value.Email;
         }
@@ -104,7 +104,7 @@ namespace MockInterviews.Controllers
                 else
                 {
                     ASendAnEmail emailer = new NewFAQSubmitted();
-                    await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "A Required: Student Submitted New Question", _superUserEmail, user is null ? "Deleted user" : user.FirstName + " " + user.LastName, faq.Q, null);
+                    await emailer.SendEmailAsync(_emailTransport, _superUserEmail, "A Required: Student Submitted New Question", _superUserEmail, user is null ? "Deleted user" : user.FirstName + " " + user.LastName, faq.Q, null);
 
                     return RedirectToAction("Resources", "Question");
                 }

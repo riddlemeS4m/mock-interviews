@@ -1,7 +1,6 @@
 using System.Text;
 using MockInterviews.Data.Constants;
-using SendGrid;
-using SendGrid.Helpers.Mail;
+using MockInterviews.Email;
 
 namespace MockInterviews.Interfaces.IServices
 {
@@ -19,7 +18,7 @@ namespace MockInterviews.Interfaces.IServices
         public abstract void InjectHTMLContent();
 
         public async Task SendEmailAsync(
-            ISendGridClient sendGridClient,
+            IEmailTransport emailTransport,
             string senderEmail,
             string subject,
             string emailto,
@@ -40,17 +39,10 @@ namespace MockInterviews.Interfaces.IServices
 
             InjectHTMLContent();
 
-            var msg = MailHelper.CreateSingleEmail(FromEmail, ToEmail, Subject, PlainTextContent, HTMLContent);
-
-            if (base64CalendarContent != null)
-            {
-                foreach (string Event in base64CalendarContent)
-                {
-                    msg.AddAttachment("MockInterviews.ics", Event, "text/calendar");
-                }
-            }
-
-            await sendGridClient.SendEmailAsync(msg);
+            var attachments = base64CalendarContent?.Select(calendar =>
+                new EmailAttachment("MockInterviews.ics", "text/calendar", Convert.FromBase64String(calendar)));
+            var message = new EmailMessage(FromEmail, ToEmail, Subject, PlainTextContent, HTMLContent, attachments);
+            await emailTransport.SendAsync(message);
         }
     }
 }

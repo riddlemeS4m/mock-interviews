@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using MockInterviews.Data.Access.Emails;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Email;
 using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
@@ -21,7 +22,6 @@ using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Options;
 using MockInterviews.Services;
 using MockInterviews.Services.SignalR;
-using SendGrid;
 
 namespace MockInterviews.Controllers
 {
@@ -33,7 +33,7 @@ namespace MockInterviews.Controllers
         private readonly InterviewService _interviewService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly UserService _userService;
-        private readonly ISendGridClient _sendGridClient;
+        private readonly IEmailTransport _emailTransport;
         private readonly IHubContext<AssignInterviewsHub> _hubContext;
         private readonly IHubContext<AvailableInterviewersHub> _hubContextInterviewer;
         private readonly ILogger<InterviewEventsController> _logger;
@@ -45,7 +45,7 @@ namespace MockInterviews.Controllers
             InterviewService interviewService,
             UserManager<ApplicationUser> userManager,
             UserService userService,
-            ISendGridClient sendGridClient,
+            IEmailTransport emailTransport,
             IHubContext<AssignInterviewsHub> hubContext,
             IHubContext<AvailableInterviewersHub> hubContextInterviewer,
             ILogger<InterviewEventsController> logger,
@@ -57,7 +57,7 @@ namespace MockInterviews.Controllers
             _interviewService = interviewService;
             _userManager = userManager;
             _userService = userService;
-            _sendGridClient = sendGridClient;
+            _emailTransport = emailTransport;
             _hubContext = hubContext;
             _hubContextInterviewer = hubContextInterviewer;
             _logger = logger;
@@ -708,7 +708,7 @@ namespace MockInterviews.Controllers
                 ASendAnEmail emailer = new StudentSignupEmail();
                 if (user.Email is { Length: > 0 } emailAddress)
                 {
-                    await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Mock Interview Sign-Up Confirmation", emailAddress, user.FirstName ?? "Deleted user", interviewDetails, calendarEvents);
+                    await emailer.SendEmailAsync(_emailTransport, _superUserEmail, "Mock Interview Sign-Up Confirmation", emailAddress, user.FirstName ?? "Deleted user", interviewDetails, calendarEvents);
                 }
 
                 return RedirectToAction("Index", "Home");

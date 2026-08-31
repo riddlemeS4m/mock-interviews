@@ -9,6 +9,7 @@ using MockInterviews.Data.Access.Emails;
 using MockInterviews.Data.Access.Reports;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Email;
 using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
@@ -16,7 +17,6 @@ using MockInterviews.Models.ViewModels.HomeController;
 using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Options;
 using MockInterviews.Services;
-using SendGrid;
 
 namespace MockInterviews.Controllers
 {
@@ -24,7 +24,7 @@ namespace MockInterviews.Controllers
     {
         private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ISendGridClient _sendGridClient;
+        private readonly IEmailTransport _emailTransport;
         private readonly ILogger<HomeController> _logger;
         private readonly string _superUserEmail;
         private readonly UserLandingPageResolver _landingPageResolver;
@@ -34,7 +34,7 @@ namespace MockInterviews.Controllers
         public HomeController(
             MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
-            ISendGridClient sendGridClient,
+            IEmailTransport emailTransport,
             ILogger<HomeController> logger,
             IOptions<SuperUserOptions> superUserOptions,
             UserLandingPageResolver landingPageResolver,
@@ -42,7 +42,7 @@ namespace MockInterviews.Controllers
         {
             _context = context;
             _userManager = userManager;
-            _sendGridClient = sendGridClient;
+            _emailTransport = emailTransport;
             _logger = logger;
             _superUserEmail = superUserOptions.Value.Email;
             _landingPageResolver = landingPageResolver;
@@ -164,7 +164,7 @@ namespace MockInterviews.Controllers
                 }
 
                 ASendAnEmail emailer = new StudentReminderEmail();
-                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Mock Interviews Reminder", userFull.Email, GetDisplayName(userFull), times, null);
+                await emailer.SendEmailAsync(_emailTransport, _superUserEmail, "Mock Interviews Reminder", userFull.Email, GetDisplayName(userFull), times, null);
             }
 
             return RedirectToAction("Index", "Home");
@@ -204,7 +204,7 @@ namespace MockInterviews.Controllers
                 }
 
                 ASendAnEmail emailer = new InterviewerReminderEmail();
-                await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Mock Interviews Reminder", userFull.Email, GetDisplayName(userFull), times, null);
+                await emailer.SendEmailAsync(_emailTransport, _superUserEmail, "Mock Interviews Reminder", userFull.Email, GetDisplayName(userFull), times, null);
             }
 
             return RedirectToAction("Index", "Home");

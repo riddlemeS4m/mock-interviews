@@ -11,6 +11,7 @@ using MockInterviews.Data.Access.Emails;
 using MockInterviews.Data.Access.Reports;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Email;
 using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
@@ -18,7 +19,6 @@ using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsController;
 using MockInterviews.Options;
 using MockInterviews.Services;
-using SendGrid;
 using SendGrid.Helpers.Errors.Model;
 
 
@@ -28,19 +28,19 @@ namespace MockInterviews.Controllers
     {
         private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ISendGridClient _sendGridClient;
+        private readonly IEmailTransport _emailTransport;
         private readonly AccountInvitationService _accountInvitationService;
         private readonly string _superUserEmail;
 
         public SignupInterviewerTimeslotsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
-            ISendGridClient sendGridClient,
+            IEmailTransport emailTransport,
             IOptions<SuperUserOptions> superUserOptions,
             AccountInvitationService accountInvitationService)
         {
             _context = context;
             _userManager = userManager;
-            _sendGridClient = sendGridClient;
+            _emailTransport = emailTransport;
             _accountInvitationService = accountInvitationService;
             _superUserEmail = superUserOptions.Value.Email;
         }
@@ -1103,12 +1103,12 @@ namespace MockInterviews.Controllers
             }
 
             ASendAnEmail emailer = new InterviewerSignupConfirmation();
-            await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Interviewer Sign-Up Confirmation", email, fn, times, calendarEvents);
+            await emailer.SendEmailAsync(_emailTransport, _superUserEmail, "Interviewer Sign-Up Confirmation", email, fn, times, calendarEvents);
 
             string fullName = fn + " " + ln;
 
             ASendAnEmail emailNotification = new InterviewerSignupNotification();
-            await emailNotification.SendEmailAsync(_sendGridClient, _superUserEmail, "Interviewer Sign-Up Notification: " + fullName, _superUserEmail, fullName, times, null);
+            await emailNotification.SendEmailAsync(_emailTransport, _superUserEmail, "Interviewer Sign-Up Notification: " + fullName, _superUserEmail, fullName, times, null);
         }
 
         [Authorize(Roles = RolesConstants.InterviewerRole)]

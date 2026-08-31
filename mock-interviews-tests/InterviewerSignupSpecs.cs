@@ -39,8 +39,7 @@ public sealed class InterviewerSignupSpecs(MockInterviewsWebApplicationFactory f
         Assert.Equal(3, Factory.SentEmails.Count);
         Assert.Contains(
             Factory.SentEmails,
-            message => message.Contents?.Any(content =>
-                content.Type == "text/html" && content.Value.Contains("You have been invited to Mock Interviews.")) == true);
+            message => message.HtmlBody.Contains("You have been invited to Mock Interviews."));
     }
 
     [Fact]

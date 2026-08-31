@@ -17,7 +17,8 @@ namespace MockInterviews
             builder.Services.AddDatabases(builder.Configuration);
             builder.Services.AddIdentityAndAuth(builder.Environment);
             builder.Services.AddOptionalMicrosoftAuthentication(builder.Configuration);
-            builder.Services.AddSendGrid(builder.Configuration);
+            builder.Services.AddEmailOptions(builder.Configuration);
+            builder.Services.AddEmailTransport(builder.Configuration);
             builder.Services.AddSuperUserOptions(builder.Configuration);
             builder.Services.AddApplicationServices();
             builder.Services.AddExternalIntegrations(builder.Configuration);

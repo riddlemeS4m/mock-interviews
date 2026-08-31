@@ -11,13 +11,13 @@ using MockInterviews.Data.Access.Emails;
 using MockInterviews.Data.Access.Reports;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Email;
 using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Models.ViewModels.VolunteerEventsController;
 using MockInterviews.Options;
-using SendGrid;
 
 
 namespace MockInterviews.Controllers
@@ -26,19 +26,19 @@ namespace MockInterviews.Controllers
     {
         private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ISendGridClient _sendGridClient;
+        private readonly IEmailTransport _emailTransport;
         private readonly ILogger<VolunteerEventsController> _logger;
         private readonly string _superUserEmail;
 
         public VolunteerEventsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
-            ISendGridClient sendGridClient,
+            IEmailTransport emailTransport,
             IOptions<SuperUserOptions> superUserOptions,
             ILogger<VolunteerEventsController> logger)
         {
             _context = context;
             _userManager = userManager;
-            _sendGridClient = sendGridClient;
+            _emailTransport = emailTransport;
             _logger = logger;
             _superUserEmail = superUserOptions.Value.Email;
         }
@@ -331,7 +331,7 @@ namespace MockInterviews.Controllers
                 var fullName = user is null ? "Deleted user" : $"{user.FirstName} {user.LastName}";
 
                 ASendAnEmail emailNotification = new VolunteerCancellationNotification();
-                await emailNotification.SendEmailAsync(_sendGridClient, _superUserEmail, "Volunteer Cancellation Notification: " + fullName, _superUserEmail, fullName, volunteerEvent.ToString(), null);
+                await emailNotification.SendEmailAsync(_emailTransport, _superUserEmail, "Volunteer Cancellation Notification: " + fullName, _superUserEmail, fullName, volunteerEvent.ToString(), null);
 
                 _context.VolunteerTimeslots.Remove(volunteerEvent);
             }
@@ -375,12 +375,12 @@ namespace MockInterviews.Controllers
                 return;
             }
 
-            await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Volunteer Sign-Up Confirmation", user.Email, user.FirstName ?? "Deleted user", times, calendarEvents);
+            await emailer.SendEmailAsync(_emailTransport, _superUserEmail, "Volunteer Sign-Up Confirmation", user.Email, user.FirstName ?? "Deleted user", times, calendarEvents);
 
             string fullName = user.FirstName + " " + user.LastName;
 
             ASendAnEmail emailNotification = new VolunteerSignupNotification();
-            await emailNotification.SendEmailAsync(_sendGridClient, _superUserEmail, "Volunteer Sign-Up Notification: " + fullName, _superUserEmail, fullName, times, null);
+            await emailNotification.SendEmailAsync(_emailTransport, _superUserEmail, "Volunteer Sign-Up Notification: " + fullName, _superUserEmail, fullName, times, null);
         }
 
         [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.AdminRole)]
