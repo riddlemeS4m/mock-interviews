@@ -34,6 +34,7 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
 
     <!-- Third-party libs -->
+    <PackageReference Include="MailKit" />
     <PackageReference Include="SendGrid" />
     
     <!-- Serilog -->

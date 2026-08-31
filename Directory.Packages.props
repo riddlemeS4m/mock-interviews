@@ -20,6 +20,7 @@
     <PackageVersion Include="DotNetEnv" Version="3.2.0" />
 
     <!-- Third-party libs -->
+    <PackageVersion Include="MailKit" Version="4.17.0" />
     <PackageVersion Include="SendGrid" Version="9.29.3" />
     
     <!-- Serilog -->
