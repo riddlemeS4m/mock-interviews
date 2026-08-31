@@ -11,6 +11,14 @@
         <h2 class="font-semibold text-ink">Download your data</h2><p class="mt-1 text-sm text-muted">Get a machine-readable copy of the personal information stored with your account.</p>
         <form id="download-data" asp-page="DownloadPersonalData" method="post" class="mt-5"><button type="submit" ui-variant="Secondary">Download data</button></form>
     </div>
+    <div class="rounded-card border border-line bg-surface p-6 shadow-sm">
+        <h2 class="font-semibold text-ink">Privacy policy</h2>
+        <p class="mt-1 text-sm text-muted">Review how Mock Interviews collects, uses, and protects your personal information.</p>
+        <a asp-area="" asp-controller="Home" asp-action="Privacy" class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-ink hover:text-brand-700 hover:underline">
+            Privacy Policy
+            <ui-icon name="chevron-right" class="size-4" />
+        </a>
+    </div>
     <div class="border-t border-line pt-7">
         <h2 class="font-semibold text-ink">Close your account</h2><p class="mt-1 max-w-xl text-sm text-muted">Account deletion is permanent. Accounts connected to interview or signup records cannot be deleted until those records are resolved.</p>
         <a id="delete" asp-page="DeletePersonalData" ui-variant="Destructive" class="mt-5">Delete account</a>
