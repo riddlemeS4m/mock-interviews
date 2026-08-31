@@ -4,8 +4,12 @@
 1. Install .NET 10.
 2. Copy the template with `cp .env.example .env`
 3. Run `dotnet restore`, `./scripts/tailwind.sh build`, and `dotnet build`.
-4. Start the app with either `dotnet run --project mock-interviews` from the repository root or `dotnet run` from `mock-interviews`.
-5. Trust the development certificate with `dotnet dev-certs https --trust`.
+4. Install the local development inbox once with `brew install mailpit`.
+5. In one terminal run `mailpit`, then start the app with either `dotnet run --project mock-interviews` from the repository root or `dotnet run` from `mock-interviews`.
+6. Open Mailpit at http://127.0.0.1:8025 to inspect captured messages. Mailpit is a local capture-only inbox; messages never reach the addressed recipient.
+7. Trust the development certificate with `dotnet dev-certs https --trust`.
+
+In Conductor, start both `Mailpit` and `Run Server`. The Mailpit script prints that workspace's UI URL and configures SMTP on a workspace-specific port, so multiple workspaces can run independently.
 
 ## Tailwind CSS
 
@@ -54,7 +58,7 @@ Local ASP.NET Identity accounts are always available and new accounts must confi
 Set `mock_interview_manual` and `guest_parking_pass` to public HTTP(S) URLs in the admin Event Configuration screen. Unconfigured or invalid resource URLs are not shown to interviewers.
 
 ### Production
-The root `.env` file is loaded only for local Development runs. Process environment variables override `.env` values. Set `SuperUser__Email` to the seeded administrator and application sender address. Set `ASPNETCORE_ENVIRONMENT=Production` and `ASPNETCORE_URLS=http://+:${PORT}` as described in Railway's [ASP.NET Core deployment guide](https://docs.railway.com/guides/aspnet-core).
+The root `.env` file is loaded only for local Development runs. Process environment variables override `.env` values. Set `SuperUser__Email` to the seeded administrator and application sender address. Production requires `Email__Provider=SendGrid` (the base default) and `SendGrid__ApiKey`; it will not fall back to SMTP. Set `ASPNETCORE_ENVIRONMENT=Production` and `ASPNETCORE_URLS=http://+:${PORT}` as described in Railway's [ASP.NET Core deployment guide](https://docs.railway.com/guides/aspnet-core).
 
 ## Original Team Members:
 
