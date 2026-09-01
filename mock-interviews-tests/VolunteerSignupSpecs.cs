@@ -17,8 +17,8 @@ public sealed class VolunteerSignupSpecs(MockInterviewsWebApplicationFactory fac
 
         var response = await client.PostFormWithAntiforgeryAsync("/VolunteerEvents/Create", new[]
         {
-            new KeyValuePair<string, string>("SelectedEventIds1", slots[0].Id.ToString()),
-            new KeyValuePair<string, string>("SelectedEventIds1", slots[1].Id.ToString())
+            new KeyValuePair<string, string>("SelectedTimeslotIds", slots[0].Id.ToString()),
+            new KeyValuePair<string, string>("SelectedTimeslotIds", slots[1].Id.ToString())
         });
 
         Assert.True(response.StatusCode == HttpStatusCode.Redirect, await response.Content.ReadAsStringAsync());
@@ -52,11 +52,11 @@ public sealed class VolunteerSignupSpecs(MockInterviewsWebApplicationFactory fac
 
         var conflicting = await client.PostFormWithAntiforgeryAsync("/VolunteerEvents/Create", new[]
         {
-            new KeyValuePair<string, string>("SelectedEventIds1", slots[0].Id.ToString())
+            new KeyValuePair<string, string>("SelectedTimeslotIds", slots[0].Id.ToString())
         });
         var forged = await client.PostFormWithAntiforgeryAsync("/VolunteerEvents/Create", new[]
         {
-            new KeyValuePair<string, string>("SelectedEventIds1", "999999")
+            new KeyValuePair<string, string>("SelectedTimeslotIds", "999999")
         });
 
         Assert.Equal(HttpStatusCode.OK, conflicting.StatusCode);
@@ -74,26 +74,33 @@ public sealed class VolunteerSignupSpecs(MockInterviewsWebApplicationFactory fac
             await TestData.AddUserAsync(context, "student-1");
             var active = await TestData.AddEventWithTimeslotsAsync(context, For221.n);
             var inactive = await TestData.AddEventWithTimeslotsAsync(context, For221.n, active: false);
+            active.Timeslots[2].IsActive = false;
+            await context.SaveChangesAsync();
             return (active, inactive);
         });
         using var client = Factory.CreateAuthenticatedClient("student-1", RolesConstants.StudentRole);
 
         var initial = await client.PostFormWithAntiforgeryAsync("/VolunteerEvents/Create", new[]
         {
-            new KeyValuePair<string, string>("SelectedEventIds1", data.active.Timeslots[0].Id.ToString())
+            new KeyValuePair<string, string>("SelectedTimeslotIds", data.active.Timeslots[0].Id.ToString())
         });
         var duplicate = await client.PostFormWithAntiforgeryAsync("/VolunteerEvents/Create", new[]
         {
-            new KeyValuePair<string, string>("SelectedEventIds1", data.active.Timeslots[0].Id.ToString())
+            new KeyValuePair<string, string>("SelectedTimeslotIds", data.active.Timeslots[0].Id.ToString())
         });
         var inactive = await client.PostFormWithAntiforgeryAsync("/VolunteerEvents/Create", new[]
         {
-            new KeyValuePair<string, string>("SelectedEventIds1", data.inactive.Timeslots[0].Id.ToString())
+            new KeyValuePair<string, string>("SelectedTimeslotIds", data.inactive.Timeslots[0].Id.ToString())
+        });
+        var inactiveSlot = await client.PostFormWithAntiforgeryAsync("/VolunteerEvents/Create", new[]
+        {
+            new KeyValuePair<string, string>("SelectedTimeslotIds", data.active.Timeslots[2].Id.ToString())
         });
 
         Assert.Equal(HttpStatusCode.Redirect, initial.StatusCode);
         Assert.Equal(HttpStatusCode.OK, duplicate.StatusCode);
         Assert.Equal(HttpStatusCode.OK, inactive.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, inactiveSlot.StatusCode);
         Assert.Equal(1, await Factory.InDatabaseScopeAsync(context => context.VolunteerTimeslots.CountAsync()));
         Assert.Equal(2, Factory.SentEmails.Count);
     }

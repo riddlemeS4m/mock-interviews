@@ -7,6 +7,7 @@
 @source "../Views/Shared/_TailwindLoginPartial.cshtml";
 @source "../Views/Shared/Components/**/*.cshtml";
 @source "../Views/Shared/DesignSystem/**/*.cshtml";
+@source "../Views/Shared/ParticipantScheduling/**/*.cshtml";
 @source "../TagHelpers/**/*.cs";
 @source "../Areas/System/Views/**/*.cshtml";
 @source "../Views/Locations/**/*.cshtml";
@@ -15,6 +16,19 @@
 @source "../Views/Home/AccessPending.cshtml";
 @source "../Views/Home/Dashboard.cshtml";
 @source "../Views/Home/DashboardPartials/**/*.cshtml";
+@source "../wwwroot/js/ui-dialog.js";
+@source "../Views/InterviewEvents/FeedbackIndex.cshtml";
+@source "../Views/InterviewEvents/ProvideFeedback.cshtml";
+@source "../Views/InterviewEvents/UserDelete.cshtml";
+@source "../Views/InterviewEvents/SelfCheckIn.cshtml";
+@source "../Views/VolunteerEvents/UserDeleteRange.cshtml";
+@source "../Views/SignupInterviewerTimeslots/UserDeleteRange.cshtml";
+@source "../Views/InterviewEvents/Create.cshtml";
+@source "../Views/VolunteerEvents/Create.cshtml";
+@source "../wwwroot/js/timeslot-selection.js";
+@source "../Views/SignupInterviewerTimeslots/Create.cshtml";
+@source "../Views/SignupInterviewerTimeslots/Edit.cshtml";
+@source "../wwwroot/js/interviewer-availability.js";
 @source "../wwwroot/js/dashboard.js";
 @source "../Areas/Identity/Pages/**/*.cshtml";
 

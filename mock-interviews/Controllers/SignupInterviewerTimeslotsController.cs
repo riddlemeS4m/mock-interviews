@@ -30,18 +30,21 @@ namespace MockInterviews.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IEmailTransport _emailTransport;
         private readonly AccountInvitationService _accountInvitationService;
+        private readonly ParticipantSchedulingService _participantSchedulingService;
         private readonly string _superUserEmail;
 
         public SignupInterviewerTimeslotsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
             IEmailTransport emailTransport,
             IOptions<SuperUserOptions> superUserOptions,
-            AccountInvitationService accountInvitationService)
+            AccountInvitationService accountInvitationService,
+            ParticipantSchedulingService participantSchedulingService)
         {
             _context = context;
             _userManager = userManager;
             _emailTransport = emailTransport;
             _accountInvitationService = accountInvitationService;
+            _participantSchedulingService = participantSchedulingService;
             _superUserEmail = superUserOptions.Value.Email;
         }
 
@@ -178,22 +181,31 @@ namespace MockInterviews.Controllers
 
             if (string.IsNullOrEmpty(userId))
             {
-                timeslots = await _context.Timeslots
-                    .Where(x => x.IsInterviewer)
+                var eligibleStartTimeslots = await _context.Timeslots
+                    .Where(x => x.IsInterviewer && x.IsActive)
                     .Include(y => y.Event)
                     .Where(x => x.Event.IsActive && x.Event.For221 != For221.y)
                     .ToListAsync();
+                timeslots = (await _participantSchedulingService.ComposeEligibleInterviewerTimeslotsAsync(
+                    eligibleStartTimeslots)).ToList();
             }
             else
             {
                 var theirClass = GetClass(User.IsInRole(RolesConstants.StudentRole));
-                timeslots = await _context.Timeslots
-                    .Where(x => x.IsInterviewer)
+                var eligibleStartTimeslots = await _context.Timeslots
+                    .Where(x => x.IsInterviewer && x.IsActive)
                     .Include(y => y.Event)
-                    .Where(x => !_context.InterviewerTimeslots.Any(y => y.TimeslotId == x.Id && y.InterviewerSignup.InterviewerId == userId) &&
-                        x.Event.IsActive &&
+                    .Where(x => x.Event.IsActive &&
                         x.Event.For221 != theirClass)
                     .ToListAsync();
+                var existingTimeslotIds = await _context.InterviewerTimeslots
+                    .Where(x => x.InterviewerSignup.InterviewerId == userId)
+                    .Select(x => x.TimeslotId)
+                    .ToListAsync();
+                timeslots = (await _participantSchedulingService.ComposeEligibleInterviewerTimeslotsAsync(
+                        eligibleStartTimeslots))
+                    .Where(timeslot => !existingTimeslotIds.Contains(timeslot.Id))
+                    .ToList();
 
                 var user = await _userManager.FindByIdAsync(userId);
                 company = user?.Company ?? string.Empty;
@@ -211,6 +223,7 @@ namespace MockInterviews.Controllers
             SignupInterviewerTimeslotsViewModel volunteerEventsViewModel = new()
             {
                 Timeslots = timeslots,
+                EventDays = _participantSchedulingService.ComposeEventDays(timeslots),
                 SignupInterviewer = new InterviewerSignup
                 {
                     IsBehavioral = false,
@@ -245,33 +258,38 @@ namespace MockInterviews.Controllers
         [AllowAnonymous]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(int[] SelectedEventIds1, int[] SelectedEventIds2,
+        public async Task<IActionResult> Create(int[] SelectedTimeslotIds,
             [Bind("IsTechnical,IsBehavioral,IsCase,IsVirtual,InPerson")] InterviewerSignup signupInterviewer, bool Lunch,
             string Email, string Company, string FirstName, string LastName)
         {
-            int[] SelectedEventIds = SelectedEventIds1.Concat(SelectedEventIds2).ToArray();
+            SelectedTimeslotIds ??= [];
 
-            var timeslots = await _context.Timeslots
-                .Where(x => x.IsInterviewer)
+            var signedInUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var theirClass = GetClass(User.IsInRole(RolesConstants.StudentRole));
+            var eligibleStartTimeslots = await _context.Timeslots
+                .Where(x => x.IsInterviewer && x.IsActive)
                 .Include(y => y.Event)
-                .Where(x => x.Event.IsActive && x.Event.For221 != For221.y)
+                .Where(x => x.Event.IsActive && x.Event.For221 != theirClass)
                 .ToListAsync();
+            var timeslots = (await _participantSchedulingService.ComposeEligibleInterviewerTimeslotsAsync(
+                eligibleStartTimeslots)).ToList();
 
             //prepare vm in case of errors
             SignupInterviewerTimeslotsViewModel vm = new()
             {
                 Timeslots = timeslots,
-                SignupInterviewer = new InterviewerSignup
-                {
-                    IsBehavioral = false,
-                    IsTechnical = false,
-                    IsCase = false,
-                    IsVirtual = false,
-                    InPerson = false
-                },
+                EventDays = _participantSchedulingService.ComposeEventDays(timeslots, SelectedTimeslotIds),
+                SignupInterviewer = signupInterviewer,
                 EventDates = await _context.Events
                     .Where(x => x.IsActive)
-                    .ToListAsync()
+                    .ToListAsync(),
+                EventDateDictionary = timeslots.ToDictionary(timeslot => timeslot.Id, timeslot => SelectedTimeslotIds.Contains(timeslot.Id)),
+                SelectedTimeslotIds = SelectedTimeslotIds,
+                Lunch = Lunch,
+                FirstName = FirstName,
+                LastName = LastName,
+                Email = Email,
+                Company = Company
             };
 
             if (string.IsNullOrEmpty(FirstName))
@@ -301,9 +319,9 @@ namespace MockInterviews.Controllers
             }
 
             // Check whether at least one timeslot is selected
-            if (SelectedEventIds == null || SelectedEventIds.Length == 0)
+            if (SelectedTimeslotIds.Length == 0)
             {
-                ModelState.AddModelError("SelectedEventIds", "Please select at least one timeslot");
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "Please select at least one timeslot");
                 return View(vm);
             }
 
@@ -312,25 +330,37 @@ namespace MockInterviews.Controllers
                 return View(vm);
             }
 
-            var requestedTimeslotIds = SelectedEventIds
-                .SelectMany(id => new[] { id, id + 1 })
-                .Distinct()
-                .ToArray();
             var selectedTimeslotsById = timeslots
-                .Where(timeslot => requestedTimeslotIds.Contains(timeslot.Id))
+                .Where(timeslot => SelectedTimeslotIds.Contains(timeslot.Id))
                 .ToDictionary(timeslot => timeslot.Id);
-            var invalidSelections = SelectedEventIds
-                .Where(id => !selectedTimeslotsById.ContainsKey(id) || !selectedTimeslotsById.ContainsKey(id + 1))
+            var invalidSelections = SelectedTimeslotIds
+                .Where(id => !selectedTimeslotsById.ContainsKey(id))
                 .ToList();
 
             if (invalidSelections.Count > 0)
             {
-                ModelState.AddModelError("SelectedEventIds", "One or more selected timeslots are no longer available. Refresh the page and try again.");
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "One or more selected timeslots are no longer available. Refresh the page and try again.");
                 return View(vm);
             }
 
-            var user = await _userManager.FindByEmailAsync(Email);
-            if (user == null)
+            var requestedTimeslotIds = SelectedTimeslotIds
+                .Distinct()
+                .ToArray();
+
+            var existingUser = await _userManager.FindByEmailAsync(Email);
+            ApplicationUser user;
+            if (existingUser is not null && string.IsNullOrEmpty(signedInUserId))
+            {
+                ModelState.AddModelError(nameof(Email), "An account already exists for this email. Sign in to add interviewer availability.");
+                return View(vm);
+            }
+
+            if (!string.IsNullOrEmpty(signedInUserId))
+            {
+                user = await _userManager.FindByIdAsync(signedInUserId)
+                    ?? throw new InvalidOperationException("The signed-in account no longer exists.");
+            }
+            else
             {
                 user = new ApplicationUser { FirstName = FirstName, LastName = LastName, Email = Email, UserName = Email, Company = Company };
                 var result = await _accountInvitationService.CreateAndInviteAsync(user, RolesConstants.InterviewerRole);
@@ -344,7 +374,7 @@ namespace MockInterviews.Controllers
                     return View(vm);
                 }
             }
-            else if (!await _userManager.IsInRoleAsync(user, RolesConstants.InterviewerRole))
+            if (!await _userManager.IsInRoleAsync(user, RolesConstants.InterviewerRole))
             {
                 var roleResult = await _userManager.AddToRoleAsync(user, RolesConstants.InterviewerRole);
                 if (!roleResult.Succeeded)
@@ -363,7 +393,7 @@ namespace MockInterviews.Controllers
                     requestedTimeslotIds.Contains(timeslot.TimeslotId));
             if (alreadySelected)
             {
-                ModelState.AddModelError("SelectedEventIds", "One or more selected timeslots have already been selected.");
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "One or more selected timeslots have already been selected.");
                 return View(vm);
             }
 
@@ -378,17 +408,8 @@ namespace MockInterviews.Controllers
                 .Where(u => u.Id == userId)
                 .Select(u => new { u.FirstName, u.LastName, u.Email })
                 .FirstOrDefaultAsync();
-            var theirClass = GetClass(User.IsInRole(RolesConstants.StudentRole));
-            timeslots = await _context.Timeslots
-                .Where(x => x.IsInterviewer)
-                .Include(y => y.Event)
-                .Where(x => !_context.InterviewerTimeslots.Any(y => y.TimeslotId == x.Id && y.InterviewerSignup.InterviewerId == userId) &&
-                    x.Event.IsActive &&
-                    x.Event.For221 != theirClass)
-                .ToListAsync();
-            var dates = timeslots
-                .Where(x => x.Event.For221 != theirClass && SelectedEventIds.Contains(x.Id))
-                .Select(t => t.Event.Id)
+            var dates = selectedTimeslotsById.Values
+                .Select(timeslot => timeslot.EventId)
                 .Distinct()
                 .ToList();
 
@@ -436,7 +457,7 @@ namespace MockInterviews.Controllers
                     IsBehavioral = signupInterviewer.IsBehavioral,
                     IsTechnical = signupInterviewer.IsTechnical,
                     IsCase = signupInterviewer.IsCase,
-                    Lunch = Lunch,
+                    Lunch = signupInterviewer.InPerson && Lunch,
                     Type = interviewtype
                 };
 
@@ -463,35 +484,18 @@ namespace MockInterviews.Controllers
             var emailTimes = new List<InterviewerTimeslot>();
 
             //add sits
-            foreach (int id in SelectedEventIds ?? [])
+            foreach (int id in requestedTimeslotIds)
             {
-                var bothTimeslots = new List<InterviewerTimeslot>();
-
-                var firstTimeslot = selectedTimeslotsById[id];
-                var secondTimeslot = selectedTimeslotsById[id + 1];
-                var timeslotOne = new InterviewerTimeslot
+                var timeslot = new InterviewerTimeslot
                 {
                     TimeslotId = id,
-                    Timeslot = firstTimeslot,
+                    Timeslot = selectedTimeslotsById[id],
                     InterviewerSignupId = post.Id
                 };
-
-                var timeslotTwo = new InterviewerTimeslot
-                {
-                    TimeslotId = id + 1,
-                    Timeslot = secondTimeslot,
-                    InterviewerSignupId = post.Id
-                };
-
-                bothTimeslots.Add(timeslotOne);
-                bothTimeslots.Add(timeslotTwo);
-
-                _context.AddRange(bothTimeslots);
-                await _context.SaveChangesAsync();
-
-                emailTimes.Add(timeslotOne);
-                emailTimes.Add(timeslotTwo);
+                _context.Add(timeslot);
+                emailTimes.Add(timeslot);
             }
+            await _context.SaveChangesAsync();
 
             //prepare and send email
             var sortedTimes = emailTimes
@@ -541,11 +545,14 @@ namespace MockInterviews.Controllers
                 .Select(x => x.TimeslotId)
                 .ToListAsync();
 
-            var timeslots = await _context.Timeslots
+            var theirClass = GetClass(User.IsInRole(RolesConstants.StudentRole));
+            var eligibleStartTimeslots = await _context.Timeslots
                 .Include(y => y.Event)
-                .Where(x => x.IsInterviewer &&
-                    x.Event.IsActive)
+                .Where(x => x.IsInterviewer && x.IsActive &&
+                    x.Event.IsActive && x.Event.For221 != theirClass)
                 .ToListAsync();
+            var timeslots = (await _participantSchedulingService.ComposeEligibleInterviewerTimeslotsAsync(
+                eligibleStartTimeslots)).ToList();
 
             var dates = await _context.Events
                 .Where(x => x.IsActive)
@@ -561,9 +568,11 @@ namespace MockInterviews.Controllers
             var vm = new SignupInterviewerTimeslotsViewModel()
             {
                 Timeslots = timeslots,
+                EventDays = _participantSchedulingService.ComposeEventDays(timeslots, theirTimeslots),
                 EventDates = dates,
                 SignupInterviewer = signupInterviewer,
                 EventDateDictionary = shouldBeChecked,
+                Lunch = signupInterviewer.Lunch ?? false,
                 SignedUp = false
             };
 
@@ -577,72 +586,64 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.InterviewerRole + "," + RolesConstants.AdminRole)]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int[] SelectedEventIds1, int[] SelectedEventIds2, int[] SelectedEventIds3, int[] SelectedEventIds4,
+        public async Task<IActionResult> Edit(int[] SelectedTimeslotIds,
             [Bind("Id,InterviewerId,IsTechnical,IsBehavioral,IsCase,IsVirtual,InPerson")] InterviewerSignup signupInterviewer, bool Lunch)
         {
-            if ((SelectedEventIds1 == null && SelectedEventIds2 == null && SelectedEventIds3 == null && SelectedEventIds4 == null) || signupInterviewer == null)
+            if (signupInterviewer == null)
             {
                 return NotFound();
             }
 
-            if (!User.IsInRole(RolesConstants.AdminRole) && signupInterviewer.InterviewerId != _userManager.GetUserId(User))
+            SelectedTimeslotIds ??= [];
+            var existingSignupInterviewer = await _context.InterviewerSignups
+                .FirstOrDefaultAsync(x => x.Id == signupInterviewer.Id);
+            if (existingSignupInterviewer is null)
+            {
+                return Conflict("The interviewer signup was changed or deleted. Refresh the page and try again.");
+            }
+
+            if (!User.IsInRole(RolesConstants.AdminRole) && existingSignupInterviewer.InterviewerId != _userManager.GetUserId(User))
             {
                 return BadRequest(new ForbiddenException());
             }
 
-            int[] SelectedEventIds = (SelectedEventIds1 ?? [])
-                .Concat(SelectedEventIds2 ?? [])
-                .Concat(SelectedEventIds3 ?? [])
-                .Concat(SelectedEventIds4 ?? [])
-                .ToArray();
-            var user = await _userManager.FindByIdAsync(signupInterviewer.InterviewerId);
+            var user = await _userManager.FindByIdAsync(existingSignupInterviewer.InterviewerId);
             var theirClass = GetClass(User.IsInRole(RolesConstants.StudentRole));
-            var timeslots = await _context.Timeslots
-                .Where(x => x.IsInterviewer)
+            var eligibleStartTimeslots = await _context.Timeslots
+                .Where(x => x.IsInterviewer && x.IsActive)
                 .Include(y => y.Event)
-                .Where(x => _context.InterviewerTimeslots.Any(y => y.TimeslotId == x.Id && y.InterviewerSignup.InterviewerId == signupInterviewer.InterviewerId) &&
-                    x.Event.IsActive &&
-                    x.Event.For221 != theirClass)
+                .Where(x => x.Event.IsActive && x.Event.For221 != theirClass)
                 .ToListAsync();
-            var dates = timeslots
-                .Where(x => x.Event.For221 != theirClass && SelectedEventIds.Contains(x.Id))
-                .Select(t => t.Event.Id)
+            var eligibleTimeslots = (await _participantSchedulingService.ComposeEligibleInterviewerTimeslotsAsync(
+                eligibleStartTimeslots)).ToList();
+            var invalidSelections = SelectedTimeslotIds
+                .Where(id => eligibleTimeslots.All(timeslot => timeslot.Id != id))
+                .ToList();
+            if (invalidSelections.Count > 0)
+            {
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "One or more selected timeslots are no longer available. Refresh the page and try again.");
+            }
+
+            var selectedTimeslots = eligibleTimeslots
+                .Where(timeslot => SelectedTimeslotIds.Contains(timeslot.Id))
+                .ToList();
+            var dates = selectedTimeslots
+                .Select(timeslot => (int?)timeslot.EventId)
                 .Distinct()
                 .ToList();
 
-            //eventdate dictionary setup
-            var timeslotsED = await _context.Timeslots
-                .Include(y => y.Event)
-                .Where(x => x.IsInterviewer &&
-                    x.Event.IsActive)
-                .ToListAsync();
-
-            var shouldBeChecked = new Dictionary<int, bool>();
-
-            foreach (var timeslot in timeslotsED)
-            {
-                shouldBeChecked.Add(timeslot.Id, timeslots.Contains(timeslot));
-            }
-
             SignupInterviewerTimeslotsViewModel vm = new()
             {
-                Timeslots = timeslotsED,
-                SignupInterviewer = new InterviewerSignup
-                {
-                    InterviewerId = signupInterviewer.InterviewerId,
-                    FirstName = user?.FirstName ?? "Deleted user",
-                    LastName = user?.LastName ?? string.Empty,
-                    IsBehavioral = false,
-                    IsTechnical = false,
-                    IsCase = false,
-                    IsVirtual = false,
-                    InPerson = false
-                },
+                Timeslots = eligibleTimeslots,
+                EventDays = _participantSchedulingService.ComposeEventDays(eligibleTimeslots, SelectedTimeslotIds),
+                SignupInterviewer = signupInterviewer,
                 EventDates = await _context.Events
                     .Where(x => x.IsActive)
                     .ToListAsync(),
-                EventDateDictionary = shouldBeChecked,
-                SignedUp = false
+                EventDateDictionary = eligibleTimeslots.ToDictionary(timeslot => timeslot.Id, timeslot => SelectedTimeslotIds.Contains(timeslot.Id)),
+                SelectedTimeslotIds = SelectedTimeslotIds,
+                SignedUp = false,
+                Lunch = Lunch
             };
 
             // Check whether at least one checkbox is selected
@@ -653,17 +654,15 @@ namespace MockInterviews.Controllers
             }
 
             // Check whether at least one timeslot is selected
-            if (SelectedEventIds == null || SelectedEventIds.Length == 0)
+            if (SelectedTimeslotIds.Length == 0)
             {
-                ModelState.AddModelError("SelectedEventIds", "Please select at least one timeslot");
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "Please select at least one timeslot");
                 return View(vm);
             }
 
-            //Get old interviewer signup
-            var existingSignupInterviewer = await _context.InterviewerSignups.FirstOrDefaultAsync(x => x.Id == signupInterviewer.Id);
-            if (existingSignupInterviewer is null)
+            if (!ModelState.IsValid)
             {
-                return Conflict("The interviewer signup was changed or deleted. Refresh the page and try again.");
+                return View(vm);
             }
 
             var interviewtype = GetType(signupInterviewer.IsBehavioral, signupInterviewer.IsTechnical, signupInterviewer.IsCase);
@@ -671,7 +670,6 @@ namespace MockInterviews.Controllers
 
             _context.Entry(existingSignupInterviewer).CurrentValues.SetValues(new
             {
-                InterviewerId = signupInterviewer.InterviewerId,
                 FirstName = user?.FirstName ?? "Deleted user",
                 LastName = user?.LastName ?? string.Empty,
                 InPerson = signupInterviewer.InPerson,
@@ -679,70 +677,73 @@ namespace MockInterviews.Controllers
                 IsBehavioral = signupInterviewer.IsBehavioral,
                 IsTechnical = signupInterviewer.IsTechnical,
                 IsCase = signupInterviewer.IsCase,
-                Lunch = Lunch,
+                Lunch = signupInterviewer.InPerson && Lunch,
                 InterviewType = interviewtype
             });
 
             await _context.SaveChangesAsync();
 
-            //make sure new locations aren't needed
-            foreach (int date in dates)
-            {
-                if (!_context.InterviewerLocations.Any(x => x.InterviewerId == existingSignupInterviewer.InterviewerId &&
-                    x.EventId == date))
-                {
-                    _context.Add(new InterviewerLocation
-                    {
-                        LocationId = null,
-                        InterviewerId = signupInterviewer.InterviewerId,
-                        Preference = interviewerPreference,
-                        EventId = date
-                    });
-                    await _context.SaveChangesAsync();
-                }
-            }
-
             var existingSits = await _context.InterviewerTimeslots
-                .Where(x => x.InterviewerSignupId == signupInterviewer.Id)
+                .Where(x => x.InterviewerSignupId == existingSignupInterviewer.Id)
                 .ToListAsync();
+            var requestedTimeslotIds = SelectedTimeslotIds.ToHashSet();
 
             //add any new timeslots that were checked
-            foreach (int id in SelectedEventIds)
+            foreach (int id in requestedTimeslotIds)
             {
-                var bothTimeslots = new List<InterviewerTimeslot>();
-                var timeslotOne = new InterviewerTimeslot
+                if (existingSits.Any(sit => sit.TimeslotId == id))
+                {
+                    continue;
+                }
+
+                _context.Add(new InterviewerTimeslot
                 {
                     TimeslotId = id,
-                    InterviewerSignupId = signupInterviewer.Id
-                };
-                var timeslotTwo = new InterviewerTimeslot
-                {
-                    TimeslotId = id + 1,
-                    InterviewerSignupId = signupInterviewer.Id
-                };
-
-                bothTimeslots.Add(timeslotOne);
-                bothTimeslots.Add(timeslotTwo);
-
-                foreach (var timeslot in bothTimeslots)
-                {
-                    if (!existingSits.Contains(timeslot))
-                    {
-                        _context.Add(timeslot);
-                    }
-                    await _context.SaveChangesAsync();
-                }
+                    InterviewerSignupId = existingSignupInterviewer.Id
+                });
             }
 
             //remove any timeslots that were unchecked
             foreach (InterviewerTimeslot sit in existingSits)
             {
-                if (!SelectedEventIds.Contains(sit.Id))
+                if (!requestedTimeslotIds.Contains(sit.TimeslotId))
                 {
                     _context.Remove(sit);
                 }
-                await _context.SaveChangesAsync();
             }
+
+            var existingLocations = await _context.InterviewerLocations
+                .Where(location => location.InterviewerId == existingSignupInterviewer.InterviewerId)
+                .ToListAsync();
+            var otherAvailabilityEventIds = await _context.InterviewerTimeslots
+                .Where(timeslot => timeslot.InterviewerSignup.InterviewerId == existingSignupInterviewer.InterviewerId &&
+                    timeslot.InterviewerSignupId != existingSignupInterviewer.Id)
+                .Select(timeslot => timeslot.Timeslot.EventId)
+                .Distinct()
+                .ToListAsync();
+            foreach (var location in existingLocations)
+            {
+                if (dates.Contains(location.EventId))
+                {
+                    location.Preference = interviewerPreference;
+                }
+                else if (location.EventId is null || !otherAvailabilityEventIds.Contains(location.EventId.Value))
+                {
+                    _context.Remove(location);
+                }
+            }
+
+            foreach (var date in dates.Where(date => existingLocations.All(location => location.EventId != date)))
+            {
+                _context.Add(new InterviewerLocation
+                {
+                    LocationId = null,
+                    InterviewerId = existingSignupInterviewer.InterviewerId,
+                    Preference = interviewerPreference,
+                    EventId = date
+                });
+            }
+            await _context.SaveChangesAsync();
 
             if (User.IsInRole(RolesConstants.AdminRole))
             {
@@ -757,7 +758,7 @@ namespace MockInterviews.Controllers
         public async Task<IActionResult> CreateForInterviewer()
         {
             var timeslots = await _context.Timeslots
-                   .Where(x => x.IsInterviewer)
+                   .Where(x => x.IsInterviewer && x.IsActive)
                    .Include(y => y.Event)
                    .Where(x => x.Event.IsActive)
                    .ToListAsync();
@@ -821,7 +822,7 @@ namespace MockInterviews.Controllers
                 .ToArray();
 
             var timeslots = await _context.Timeslots
-                   .Where(x => x.IsInterviewer)
+                   .Where(x => x.IsInterviewer && x.IsActive)
                    .Include(y => y.Event)
                    .Where(x => x.Event.IsActive)
                    .ToListAsync();
@@ -1199,6 +1200,8 @@ namespace MockInterviews.Controllers
         }
 
         [Authorize(Roles = RolesConstants.InterviewerRole + "," + RolesConstants.AdminRole)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UserDeleteRangeConfirmed(int id)
         {
             if (id == 0)
@@ -1251,6 +1254,7 @@ namespace MockInterviews.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                TempData["StatusMessage"] = "Your interviewer availability was cancelled.";
 
                 if (User.IsInRole(RolesConstants.AdminRole))
                 {

@@ -18,6 +18,7 @@ using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Models.ViewModels.VolunteerEventsController;
 using MockInterviews.Options;
+using MockInterviews.Services;
 
 
 namespace MockInterviews.Controllers
@@ -27,18 +28,21 @@ namespace MockInterviews.Controllers
         private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IEmailTransport _emailTransport;
+        private readonly ParticipantSchedulingService _participantSchedulingService;
         private readonly ILogger<VolunteerEventsController> _logger;
         private readonly string _superUserEmail;
 
         public VolunteerEventsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
             IEmailTransport emailTransport,
+            ParticipantSchedulingService participantSchedulingService,
             IOptions<SuperUserOptions> superUserOptions,
             ILogger<VolunteerEventsController> logger)
         {
             _context = context;
             _userManager = userManager;
             _emailTransport = emailTransport;
+            _participantSchedulingService = participantSchedulingService;
             _logger = logger;
             _superUserEmail = superUserOptions.Value.Email;
         }
@@ -102,7 +106,7 @@ namespace MockInterviews.Controllers
             }
 
             var timeslots = await _context.Timeslots
-                .Where(x => x.IsVolunteer == true)
+                .Where(x => x.IsVolunteer && x.IsActive)
                 .Include(y => y.Event)
                 .Where(x => !_context.VolunteerTimeslots.Any(y => y.TimeslotId == x.Id && y.StudentId == userId))
                 .Where(x => !_context.Interviews.Any(y => y.TimeslotId == x.Id && y.StudentId == userId))
@@ -118,8 +122,7 @@ namespace MockInterviews.Controllers
 
             VolunteerEventSignupViewModel volunteerEventsViewModel = new()
             {
-                Timeslots = timeslots,
-                EventDates = eventdates
+                EventDays = _participantSchedulingService.ComposeEventDays(timeslots)
             };
 
             if (timeslots.Count == 0)
@@ -140,12 +143,9 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.StudentRole)]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(int[] SelectedEventIds1, int[] SelectedEventIds2)
+        public async Task<IActionResult> Create(int[] SelectedTimeslotIds)
         {
-            int[] SelectedEventIds = (SelectedEventIds1 ?? [])
-                .Concat(SelectedEventIds2 ?? [])
-                .Distinct()
-                .ToArray();
+            SelectedTimeslotIds ??= [];
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId is null)
@@ -173,7 +173,7 @@ namespace MockInterviews.Controllers
 
             //handle bad input
             var timeslots = await _context.Timeslots
-                .Where(x => x.IsVolunteer == true)
+                .Where(x => x.IsVolunteer && x.IsActive)
                 .Include(y => y.Event)
                 .Where(x => !_context.VolunteerTimeslots.Any(y => y.TimeslotId == x.Id && y.StudentId == userId))
                 .Where(x => !_context.Interviews.Any(y => y.TimeslotId == x.Id && y.StudentId == userId))
@@ -189,23 +189,23 @@ namespace MockInterviews.Controllers
 
             VolunteerEventSignupViewModel volunteerEventsViewModel = new()
             {
-                Timeslots = timeslots,
-                EventDates = eventdates
+                EventDays = _participantSchedulingService.ComposeEventDays(timeslots, SelectedTimeslotIds),
+                SelectedTimeslotIds = SelectedTimeslotIds
             };
 
-            if (SelectedEventIds.Length == 0)
+            if (SelectedTimeslotIds.Length == 0)
             {
-                ModelState.AddModelError("SelectedEventIds1", "Please select at least one checkbox");
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "Please select at least one checkbox");
                 return View(volunteerEventsViewModel);
             }
 
-            if (SelectedEventIds.Any(id => timeslots.All(timeslot => timeslot.Id != id)))
+            if (SelectedTimeslotIds.Any(id => timeslots.All(timeslot => timeslot.Id != id)))
             {
-                ModelState.AddModelError("SelectedEventIds1", "One or more selected timeslots are no longer available. Refresh the page and try again.");
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "One or more selected timeslots are no longer available. Refresh the page and try again.");
                 return View(volunteerEventsViewModel);
             }
 
-            _context.VolunteerTimeslots.AddRange(SelectedEventIds.Select(id => new VolunteerTimeslot
+            _context.VolunteerTimeslots.AddRange(SelectedTimeslotIds.Distinct().Select(id => new VolunteerTimeslot
             {
                 TimeslotId = id,
                 StudentId = userId
@@ -223,7 +223,7 @@ namespace MockInterviews.Controllers
                 .Include(volunteerTimeslot => volunteerTimeslot.Timeslot)
                 .ThenInclude(timeslot => timeslot.Event)
                 .Where(volunteerTimeslot => volunteerTimeslot.StudentId == userId &&
-                    SelectedEventIds.Contains(volunteerTimeslot.TimeslotId))
+                    SelectedTimeslotIds.Contains(volunteerTimeslot.TimeslotId))
                 .ToListAsync();
 
             var sortedEvents = volEvents
@@ -431,6 +431,8 @@ namespace MockInterviews.Controllers
         }
 
         [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.AdminRole)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UserDeleteRangeConfirmed(int[] timeslots)
         {
 
@@ -448,6 +450,7 @@ namespace MockInterviews.Controllers
             // Delete the timeslots
             _context.VolunteerTimeslots.RemoveRange(timeslotsToDelete);
             await _context.SaveChangesAsync();
+            TempData["StatusMessage"] = "Your volunteer shift was cancelled.";
 
             if (User.IsInRole(RolesConstants.AdminRole))
             {

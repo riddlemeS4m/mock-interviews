@@ -164,6 +164,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<InterviewService>();
+        services.AddScoped<ParticipantSchedulingService>();
         services.AddScoped<DashboardService>();
         services.AddScoped<SettingsService>();
         services.AddScoped<TimeslotService>();

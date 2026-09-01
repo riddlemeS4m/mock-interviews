@@ -54,8 +54,8 @@ public static class TestData
                 EventId = @event.Id,
                 Time = @event.Date.AddHours(9).AddMinutes(index * 30),
                 IsActive = true,
-                IsStudent = student && index < 2,
-                IsInterviewer = interviewer,
+                IsStudent = student && index % 2 == 0,
+                IsInterviewer = interviewer && index % 2 == 0,
                 IsVolunteer = volunteer,
                 MaxSignUps = maxSignups
             })

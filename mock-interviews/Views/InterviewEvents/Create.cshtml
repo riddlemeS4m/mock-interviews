@@ -1,91 +1,36 @@
-﻿@using MockInterviews.Data.Constants;
+@using MockInterviews.Data.Constants
 @model MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventSignupViewModel
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Schedule interviews";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Sign up for an Interview!</h1>
+<section class="mx-auto max-w-5xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Schedule interviews", "Choose a start time. Your two interviews will be scheduled as separate 30-minute appointments.")' />
 
-<hr />
-<div class="row">
-    <div class="col-md-2"></div>
-    <div class="col-md-8" id="center-everything">
-        @if (Model.ApplicationUser.Class == Classes.NotEnrolled)
-        {
-            <div class="alert alert-danger" role="alert">
-                You must specify which class you are in before you can sign up for an interview.
-                Go to your profile, select your class, save your profile, and then come back here.
-            </div>
-        }
-        else if (Model.SignedUp)
-        {
-            <div class="alert alert-danger" role="alert" style="text-align:center;">
-                You have already signed up for an interview.
-            </div>
-        }
-        @*else if((!Model.For221 && Model.ApplicationUser.Class == ClassConstants.FirstSemester) || (Model.For221 && Model.ApplicationUser.Class != ClassConstants.FirstSemester))
-        {
-            <div class="alert alert-danger" role="alert">
-                Your class (@Model.ApplicationUser.Class) does not match the class for which this event is intended. Please sign up for the event that is intended for your class.
-            </div>
-        }*@
-        else if(Model.Timeslots.Count > 0)
-        {
-            <form asp-action="Create">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <div class="row" id="center-everything">
-                    <div class="col-md-6">
-                        <h3>@Model.Timeslots[0].Event.Name</h3>
-                        <h4 class="date-column">@Model.Timeslots[0].Event.Date</h4>
-                        @foreach (var timeslot in Model.Timeslots)
-                        {
-                            if (timeslot.EventId == Model.Timeslots[0].EventId)
-                            {
-                                <div>
-                                    <input type="radio" id="@timeslot.Id" name="SelectedEventIds" value="@timeslot.Id">
-                                    <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
-                                </div>
-                            }
-                        }
-                    </div>
-                    @if (Model.Timeslots[0].EventId != Model.Timeslots[^1].EventId)
-                    {
-                        <div class="col-md-6">
-                            <h3>@Model.Timeslots[^1].Event.Name</h3>
-                            <h4 class="date-column">@Model.Timeslots[^1].Event.Date</h4>
-                            @foreach (var timeslot in Model.Timeslots)
-                            {
-                                if (timeslot.EventId == Model.Timeslots[^1].EventId)
-                                {
-                                    <div>
-                                        <input type="radio" id="@timeslot.Id" name="SelectedEventIds" value="@timeslot.Id">
-                                        <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
-                                    </div>
-                                }
-                            }
-                        </div>
-                    }
-                </div>
-                <div class="form-group" id="center-everything">
-                    <input type="hidden" name="SelectedEventIds" id="SelectedEventIds">
-                    <input type="submit" value="Sign Up!" class="btn btn-primary" />
-                </div>
-            </form>
+    @if (Model.StudentClass == Classes.NotEnrolled)
+    {
+        <partial name="DesignSystem/_Feedback" model='new UiFeedbackViewModel(UiFeedbackKind.Warning, "Update your profile first", "Choose your class in your profile before scheduling an interview.")' />
+    }
+    else if (Model.SignedUp)
+    {
+        <partial name="DesignSystem/_Feedback" model='new UiFeedbackViewModel(UiFeedbackKind.Warning, "You are already scheduled", "Your current interview appointments are available on your schedule.")' />
+    }
+    else if (Model.EventDays.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState" model='new UiEmptyStateViewModel("calendar-days", "No interview times available", "Please check back later for newly available interview times.")' />
+    }
+    else
+    {
+        <form asp-action="Create" class="space-y-6">
+            <div asp-validation-summary="All" class="border-l-4 border-l-negative pl-4 text-sm text-negative"></div>
+            <partial name="ParticipantScheduling/_EventDayTimeslotSelector"
+                     model='new TimeslotSelectorViewModel(Model.EventDays, "SelectedTimeslotIds", false, false, "interview-timeslot")' />
+            <button type="submit" ui-variant="Primary">Schedule interviews</button>
+        </form>
+    }
+</section>
 
-        }
-        else
-        {
-            <div class="alert alert-danger" role="alert" style="text-align:center;">
-                We're sorry, but all available timeslots are currently booked. We are actively in the process of adding more interviewers to expand our availability. Please come back later for updated timeslot options.
-            </div>
-        }
-
-    </div>
-    <div class="col-md-2"></div>
-</div>
-
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
