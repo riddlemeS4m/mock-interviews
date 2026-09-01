@@ -358,52 +358,39 @@ namespace MockInterviews.Controllers
                 return Challenge();
             }
 
-            var userFull = await _userManager.FindByIdAsync(userId);
+            var interviews = await _context.Interviews
+                .Include(v => v.InterviewerTimeslot)
+                .ThenInclude(v => v!.InterviewerSignup)
+                .Include(v => v.Timeslot)
+                .ThenInclude(v => v.Event)
+                .Where(v => v.StudentId == userId && v.Status == StatusConstants.Completed)
+                .OrderBy(v => v.Timeslot.Event.Date)
+                .ThenBy(v => v.Timeslot.Time)
+                .ToListAsync();
 
-            var model = new IndexViewModel();
-            model.StudentScheduledInterviews = new List<InterviewEventViewModel>();
-            if (User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.StudentRole))
-            {
-                var interviewEvents = await _context.Interviews
-                    .Include(v => v.InterviewerTimeslot)
-                    .ThenInclude(v => v!.InterviewerSignup)
-                    .Include(v => v.Location)
-                    .Include(v => v.Timeslot)
-                    .ThenInclude(v => v.Event)
-                    .Where(v => v.StudentId == userId && v.Status == StatusConstants.Completed)
-                    .ToListAsync();
+            var interviewerIds = interviews
+                .Where(interview => interview.InterviewerTimeslot is not null)
+                .Select(interview => interview.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
+                .Distinct()
+                .ToList();
+            var interviewerNames = await _userManager.Users
+                .Where(user => interviewerIds.Contains(user.Id))
+                .Select(user => new { user.Id, Name = user.FirstName + " " + user.LastName })
+                .ToDictionaryAsync(user => user.Id, user => user.Name);
 
-                if (interviewEvents != null)
-                {
-                    foreach (Interview interviewEvent in interviewEvents)
-                    {
-                        if (interviewEvent.InterviewerTimeslot != null)
-                        {
-                            var interviewer = await _userManager.FindByIdAsync(interviewEvent.InterviewerTimeslot.InterviewerSignup.InterviewerId);
+            var model = new FeedbackListViewModel(interviews.Select(interview => new FeedbackListItemViewModel(
+                interview.Id,
+                interview.Timeslot.Event.Date,
+                interview.Timeslot.Time,
+                interview.InterviewerTimeslot is null
+                    ? "Not assigned"
+                    : interviewerNames.GetValueOrDefault(interview.InterviewerTimeslot.InterviewerSignup.InterviewerId, "Deleted user"),
+                interview.Type ?? "Not specified",
+                interview.InterviewerRating,
+                interview.InterviewerFeedback,
+                interview.ProcessFeedback)).ToList());
 
-                            model.StudentScheduledInterviews.Add(new InterviewEventViewModel()
-                            {
-                                InterviewEvent = interviewEvent,
-                                StudentName = GetDisplayName(userFull),
-                                Class = userFull is null ? string.Empty : ClassConstants.GetClassText(userFull.Class),
-                                InterviewerName = GetDisplayName(interviewer)
-                            });
-                        }
-                        else
-                        {
-                            model.StudentScheduledInterviews.Add(new InterviewEventViewModel()
-                            {
-                                InterviewEvent = interviewEvent,
-                                StudentName = GetDisplayName(userFull),
-                                Class = userFull is null ? string.Empty : ClassConstants.GetClassText(userFull.Class),
-                                InterviewerName = "Not Assigned"
-                            });
-                        }
-                    }
-                }
-            }
-
-            return View("FeedbackIndex", model);
+            return View(model);
         }
 
         [Authorize(Roles = RolesConstants.StudentRole)]
@@ -427,24 +414,15 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            var interviewer = interviewEvent.InterviewerTimeslot is null
-                ? null
-                : await _userManager.FindByIdAsync(interviewEvent.InterviewerTimeslot.InterviewerSignup.InterviewerId);
-            var model = new InterviewEventViewModel()
-            {
-                InterviewEvent = interviewEvent,
-                InterviewerName = interviewer is null ? "Not Assigned" : GetDisplayName(interviewer)
-            };
-
-            return View("ProvideFeedback", model);
+            return View(await BuildFeedbackFormAsync(interviewEvent));
         }
 
         [Authorize(Roles = RolesConstants.StudentRole)]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ProvideFeedback(int id, [Bind("Id,InterviewerRating,InterviewerFeedback,ProcessFeedback")] Interview interviewEvent)
+        public async Task<IActionResult> ProvideFeedback(int id, [Bind("Id,InterviewerRating,InterviewerFeedback,ProcessFeedback")] FeedbackFormViewModel model)
         {
-            if (id != interviewEvent.Id)
+            if (id != model.Id)
             {
                 return NotFound();
             }
@@ -1421,14 +1399,16 @@ namespace MockInterviews.Controllers
             return View(interviewEvent);
         }
 
-        // POST: InterviewEvents/Delete/5
         [Authorize(Roles = RolesConstants.StudentRole)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UserDeleteConfirmed(int id)
         {
             var interviewEvent = await _context.Interviews.FindAsync(id);
             if (interviewEvent != null && interviewEvent.StudentId == User.FindFirstValue(ClaimTypes.NameIdentifier))
             {
                 _context.Interviews.Remove(interviewEvent);
+                TempData["StatusMessage"] = "Your interview was cancelled.";
             }
 
             await _context.SaveChangesAsync();
@@ -1935,49 +1915,82 @@ namespace MockInterviews.Controllers
             return View(eventslist);
         }
 
-        [Authorize]
+        [Authorize(Roles = RolesConstants.StudentRole)]
         public async Task<IActionResult> StudentSelfCheckIn()
         {
-            if (User.IsInRole(RolesConstants.StudentRole))
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId is null)
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (userId is null)
-                {
-                    return Challenge();
-                }
-                var ie = await _context.Interviews
-                    .Include(x => x.Timeslot)
-                    .ThenInclude(x => x.Event)
-                    .Where(x => x.StudentId == userId &&
-                        x.Timeslot.Event.IsActive &&
-                        x.Status == StatusConstants.Default)
-                    .FirstOrDefaultAsync();
-
-                var vm = new SelfCheckInViewModel()
-                {
-                    IsCheckedIn = false,
-                    CheckInMessage = "You couldn't be checked in automatically. Please alert event staff."
-                };
-
-                if (ie == null)
-                {
-                    return View("SelfCheckIn", vm);
-                }
-
-                vm.IsCheckedIn = true;
-                vm.CheckInMessage = "You have been checked in automatically! Please take a seat until event staff calls you.";
-
-                ie.Status = StatusConstants.CheckedIn;
-                ie.CheckedInAt = DateTime.UtcNow;
-                _context.Update(ie);
-                await _context.SaveChangesAsync();
-
-                await UpdateHub(ie.Id);
-
-                return View("SelfCheckIn", vm);
+                return Challenge();
             }
 
-            return RedirectToAction("Index", "Home");
+            var alreadyCheckedIn = await _context.Interviews
+                .Include(x => x.Timeslot)
+                .ThenInclude(x => x.Event)
+                .AnyAsync(x => x.StudentId == userId && x.Timeslot.Event.IsActive && x.Status == StatusConstants.CheckedIn);
+            var hasEligibleInterview = !alreadyCheckedIn && await _context.Interviews
+                .Include(x => x.Timeslot)
+                .ThenInclude(x => x.Event)
+                .AnyAsync(x => x.StudentId == userId && x.Timeslot.Event.IsActive && x.Status == StatusConstants.Default);
+
+            return View("SelfCheckIn", new SelfCheckInViewModel
+            {
+                IsCheckedIn = alreadyCheckedIn,
+                CheckInMessage = hasEligibleInterview
+                    ? "Confirm when you are ready to check in for your interview."
+                    : alreadyCheckedIn
+                        ? "You are already checked in. Please take a seat until event staff calls you."
+                        : "There is no interview ready for check-in. Please alert event staff if you need help."
+            });
+        }
+
+        [Authorize(Roles = RolesConstants.StudentRole)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> StudentSelfCheckInConfirmed()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId is null)
+            {
+                return Challenge();
+            }
+
+            var alreadyCheckedIn = await _context.Interviews
+                .Include(x => x.Timeslot)
+                .ThenInclude(x => x.Event)
+                .AnyAsync(x => x.StudentId == userId && x.Timeslot.Event.IsActive && x.Status == StatusConstants.CheckedIn);
+            if (alreadyCheckedIn)
+            {
+                return View("SelfCheckIn", new SelfCheckInViewModel
+                {
+                    IsCheckedIn = true,
+                    CheckInMessage = "You are already checked in. Please take a seat until event staff calls you."
+                });
+            }
+
+            var interview = await _context.Interviews
+                .Include(x => x.Timeslot)
+                .ThenInclude(x => x.Event)
+                .FirstOrDefaultAsync(x => x.StudentId == userId && x.Timeslot.Event.IsActive && x.Status == StatusConstants.Default);
+            if (interview is null)
+            {
+                return View("SelfCheckIn", new SelfCheckInViewModel
+                {
+                    IsCheckedIn = false,
+                    CheckInMessage = "There is no interview ready for check-in. Please alert event staff if you need help."
+                });
+            }
+
+            interview.Status = StatusConstants.CheckedIn;
+            interview.CheckedInAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            await UpdateHub(interview.Id);
+
+            return View("SelfCheckIn", new SelfCheckInViewModel
+            {
+                IsCheckedIn = true,
+                CheckInMessage = "You are checked in. Please take a seat until event staff calls you."
+            });
         }
 
         [Authorize]

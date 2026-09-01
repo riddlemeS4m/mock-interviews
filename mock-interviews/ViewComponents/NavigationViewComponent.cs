@@ -47,6 +47,7 @@ public sealed class NavigationViewComponent : ViewComponent
             {
                 signupItems.Add(Item("Student interviews", "InterviewEvents", "Create"));
                 signupItems.Add(Item("Volunteer events", "VolunteerEvents", "Create"));
+                signupItems.Add(Item("Interview feedback", "InterviewEvents", "FeedbackIndex"));
             }
 
             if (isInterviewer)
