@@ -1,36 +1,96 @@
-﻿@using MockInterviews.Models.ViewModels.UserRolesController;
-@model List<UserRolesViewModel>
+@model List<MockInterviews.Models.ViewModels.UserRolesController.UserRolesViewModel>
+
 @{
-    ViewData["Title"] = "User Roles";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "People and roles";
 }
-<h1>User Roles</h1>
-<p>
-    <a asp-controller="Users" asp-action="CreateProvisionaryUser">Create New User</a>
-</p>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Email</th>
-            <th>Microsoft Id</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var user in Model)
-        {
-            <tr>
-                <td>@user.FirstName</td>
-                <td>@user.LastName</td>
-                <td>@user.Email</td>
-                <td>@user.UserId</td><td>
-                    <a asp-controller="UserRoles" asp-action="Manage" asp-route-userId="@user.UserId">Manage Roles</a> | 
-                    <a asp-controller="Users" asp-action="ResetUserPassword" asp-route-userId="@user.UserId">Reset Password</a> | 
-                    <a asp-controller="Users" asp-action="DeleteUser" asp-route-userId="@user.UserId">Delete</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+
+<section class="space-y-8">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("People and roles", "Invite interviewers, manage fixed application roles, and send password reset emails.")' />
+
+        <a asp-controller="Users" asp-action="CreateProvisionaryUser" ui-variant="Primary">
+            <ui-icon name="plus" class="size-4" />
+            Invite interviewer
+        </a>
+    </div>
+
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new MockInterviews.Models.ViewModels.Shared.UiFeedbackViewModel(MockInterviews.Models.ViewModels.Shared.UiFeedbackKind.Success, statusMessage, string.Empty)" />
+    }
+
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new MockInterviews.Models.ViewModels.Shared.UiFeedbackViewModel(MockInterviews.Models.ViewModels.Shared.UiFeedbackKind.Error, errorMessage, string.Empty)" />
+    }
+
+    <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+        <div class="border-b border-line p-5">
+            <label for="people-search" class="sr-only">Search people</label>
+            <div class="relative max-w-sm">
+                <ui-icon name="search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                <input id="people-search"
+                       type="search"
+                       class="block min-h-11 w-full rounded-md border border-line bg-surface py-2 pr-3 pl-10 text-ink shadow-sm placeholder:text-muted focus:border-ink focus:outline-none focus:ring-3 focus:ring-ink/10"
+                       placeholder="Search people"
+                       autocomplete="off"
+                       data-people-search />
+            </div>
+            <p class="sr-only" aria-live="polite" data-people-result-count>@Model.Count people shown</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-left">
+                <thead class="border-b border-line bg-soft text-sm text-muted">
+                    <tr>
+                        <th class="px-5 py-3 font-semibold">Person</th>
+                        <th class="px-5 py-3 font-semibold">Roles</th>
+                        <th class="px-5 py-3 text-right font-semibold"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    @foreach (var user in Model)
+                    {
+                        <tr data-people-row data-search-text="@($"{user.FirstName} {user.LastName} {user.Email} {string.Join(" ", user.Roles)}")">
+                            <th scope="row" class="px-5 py-4">
+                                <span class="block font-semibold text-ink">@user.FirstName @user.LastName</span>
+                                <span class="block text-sm text-muted">@user.Email</span>
+                            </th>
+                            <td class="px-5 py-4 text-sm text-muted">
+                                @(user.Roles.Any() ? string.Join(", ", user.Roles) : "No application roles")
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-4 text-right">
+                                <div class="inline-flex gap-4">
+                                    <a asp-action="Manage" asp-route-userId="@user.UserId" class="text-sm font-semibold text-ink hover:underline">Roles</a>
+                                    <a asp-controller="Users" asp-action="ResetUserPassword" asp-route-userId="@user.UserId" class="text-sm font-semibold text-ink hover:underline">Reset password</a>
+                                    <a asp-controller="Users"
+                                       asp-action="DeleteUser"
+                                       asp-route-userId="@user.UserId"
+                                       class="text-sm font-semibold text-negative hover:underline"
+                                       data-dialog-target="person-delete-dialog"
+                                       data-dialog-value-id="@user.UserId"
+                                       data-dialog-value-name="@($"{user.FirstName} {user.LastName}")"
+                                       data-dialog-value-email="@user.Email">Delete</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="hidden py-8 text-center" data-people-search-empty>
+        <ui-icon name="search" class="mx-auto size-8 text-muted" />
+        <p class="mt-3 font-semibold text-ink">No matching people</p>
+        <p class="mt-1 text-sm text-muted">Try a different name, email, or role.</p>
+    </div>
+</section>
+
+<partial name="_Dialogs" />
+
+@section Scripts {
+    <script src="~/js/people.js" asp-append-version="true"></script>
+}

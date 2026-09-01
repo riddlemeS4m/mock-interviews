@@ -85,7 +85,6 @@ public sealed class NavigationViewComponent : ViewComponent
                 "users",
                 Item("Program roster", "MSTeamsStudentUploads", "Index"),
                 Item("User roles and deletion", "UserRoles", "Index"),
-                Item("Add interviewer roles", "UserRoles", "MassAssign"),
                 Item("Upload program roster", "MSTeamsStudentUploads", "Create"),
                 Item("Upload MIS 221 roster", "MSTeamsStudentUploads", "Upload221Students")));
 

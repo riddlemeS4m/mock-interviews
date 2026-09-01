@@ -1,6 +1,10 @@
+using System.Text;
+using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
@@ -15,25 +19,29 @@ namespace MockInterviews.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly MockInterviewsDbContext _context;
         private readonly AccountInvitationService _accountInvitationService;
+        private readonly IEmailSender _emailSender;
+        private readonly LinkGenerator _linkGenerator;
 
         public UsersController(
             UserManager<ApplicationUser> userManager,
             MockInterviewsDbContext context,
-            AccountInvitationService accountInvitationService)
+            AccountInvitationService accountInvitationService,
+            IEmailSender emailSender,
+            LinkGenerator linkGenerator)
         {
             _userManager = userManager;
             _context = context;
             _accountInvitationService = accountInvitationService;
+            _emailSender = emailSender;
+            _linkGenerator = linkGenerator;
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Index()
         {
-            var users = await _userManager.Users.ToListAsync();
-            return View();
+            return RedirectToAction("Index", "UserRoles");
         }
 
-        //[HttpGet]
         [Authorize(Roles = RolesConstants.InterviewerRole)]
         public async Task<IActionResult> ExternalUserProfileView(string userId)
         {
@@ -53,7 +61,7 @@ namespace MockInterviews.Controllers
             return View(viewModel);
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> DeleteUser(string userId)
         {
             if (userId == null)
@@ -70,34 +78,52 @@ namespace MockInterviews.Controllers
             return View("DeleteUser", user);
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> DeleteUserConfirmed(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
-                return Problem("User not found.");
+                TempData["ErrorMessage"] = "The account could not be found.";
+                return RedirectToAction("Index", "UserRoles");
+            }
+
+            if (string.Equals(user.Id, _userManager.GetUserId(User), StringComparison.Ordinal))
+            {
+                TempData["ErrorMessage"] = "You cannot delete your own account from administration.";
+                return RedirectToAction("Index", "UserRoles");
+            }
+
+            var targetRoles = await _userManager.GetRolesAsync(user);
+            if (targetRoles.Contains(RolesConstants.SystemAdminRole, StringComparer.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "System Admin accounts cannot be deleted from the people workspace.";
+                return RedirectToAction("Index", "UserRoles");
+            }
+
+            if (!User.IsInRole(RolesConstants.SystemAdminRole)
+                && targetRoles.Contains(RolesConstants.AdminRole, StringComparer.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Only a System Admin can delete an Admin account.";
+                return RedirectToAction("Index", "UserRoles");
             }
 
             if (await HasRelatedDomainRecordsAsync(user.Id))
             {
-                ModelState.AddModelError(string.Empty, "This account cannot be deleted because it has related interview or signup records.");
-                return View("DeleteUser", user);
+                TempData["ErrorMessage"] = "This account cannot be deleted because it has related interview or signup records.";
+                return RedirectToAction("Index", "UserRoles");
             }
 
             var result = await _userManager.DeleteAsync(user);
             if (!result.Succeeded)
             {
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
-
-                return View("DeleteUser", user);
+                TempData["ErrorMessage"] = string.Join(" ", result.Errors.Select(error => error.Description));
+                return RedirectToAction("Index", "UserRoles");
             }
 
+            TempData["StatusMessage"] = "Account deleted.";
             return RedirectToAction("Index", "UserRoles");
         }
 
@@ -110,14 +136,15 @@ namespace MockInterviews.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public IActionResult CreateProvisionaryUser()
         {
             return View();
         }
 
         [HttpPost]
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> CreateProvisionaryUser(CreateUserViewModel model)
         {
             if (ModelState.IsValid)
@@ -149,7 +176,7 @@ namespace MockInterviews.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> ResetUserPassword(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
@@ -163,8 +190,8 @@ namespace MockInterviews.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = RolesConstants.AdminRole)]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> ResetUserPassword(ResetPasswordViewModel model)
         {
             if (!ModelState.IsValid)
@@ -177,24 +204,22 @@ namespace MockInterviews.Controllers
                 return View(model);
             }
 
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-            if (!string.IsNullOrWhiteSpace(model.NewPassword))
+            if (string.IsNullOrWhiteSpace(user.Email))
             {
-                var result = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
-
-                if (result.Succeeded)
-                {
-                    return RedirectToAction("Index", "UserRoles");
-                }
-
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError("", error.Description);
-                }
+                ModelState.AddModelError(string.Empty, "This account does not have an email address for password reset delivery.");
+                return View(model);
             }
 
-            return View(model);
+            var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(await _userManager.GeneratePasswordResetTokenAsync(user)));
+            var callbackUrl = _linkGenerator.GetUriByPage(HttpContext, "/Account/ResetPassword", values: new { area = "Identity", code });
+            if (callbackUrl is null)
+            {
+                ModelState.AddModelError(string.Empty, "Unable to create a password reset link.");
+                return View(model);
+            }
+            await _emailSender.SendEmailAsync(user.Email, "Reset your Mock Interviews password", $"<a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>Reset your password</a>.");
+            TempData["StatusMessage"] = "Password reset email sent.";
+            return RedirectToAction("Index", "UserRoles");
         }
     }
 }

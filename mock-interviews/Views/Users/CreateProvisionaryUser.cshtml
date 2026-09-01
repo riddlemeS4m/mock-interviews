@@ -1,34 +1,32 @@
-﻿@model MockInterviews.Models.ViewModels.UsersController.CreateUserViewModel;
+@model MockInterviews.Models.ViewModels.UsersController.CreateUserViewModel
 
 @{
-    ViewData["Title"] = "Create Provisionary User";
+    ViewData["Title"] = "Invite interviewer";
 }
 
-<h1>Create Provisionary User</h1>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="CreateProvisionaryUser">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="FirstName" class="control-label"></label>
-                <input asp-for="FirstName" class="form-control" />
-                <span asp-validation-for="FirstName" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="LastName" class="control-label"></label>
-                <input asp-for="LastName" class="form-control" />
-                <span asp-validation-for="LastName" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Email" class="control-label"></label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
-            
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
+<section class="max-w-xl space-y-6">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Invite interviewer", "Create an interviewer account and deliver a password-setup invitation.")' />
+
+    <form asp-action="CreateProvisionaryUser" method="post" class="space-y-5 rounded-card border border-line bg-surface p-6 shadow-card">
+        <div asp-validation-summary="ModelOnly" class="border-l-4 border-negative pl-4 text-sm text-negative"></div>
+
+        <div>
+            <label asp-for="FirstName" class="block text-sm font-semibold text-ink"></label>
+            <input asp-for="FirstName" class="mt-2 block min-h-11 w-full rounded-md border border-line px-3 py-2" />
+        </div>
+        <div>
+            <label asp-for="LastName" class="block text-sm font-semibold text-ink"></label>
+            <input asp-for="LastName" class="mt-2 block min-h-11 w-full rounded-md border border-line px-3 py-2" />
+        </div>
+        <div>
+            <label asp-for="Email" class="block text-sm font-semibold text-ink"></label>
+            <input asp-for="Email" class="mt-2 block min-h-11 w-full rounded-md border border-line px-3 py-2" />
+        </div>
+
+        <div class="flex gap-3">
+            <a asp-controller="UserRoles" asp-action="Index" ui-variant="Secondary">Cancel</a>
+            <button type="submit" ui-variant="Primary">Send invitation</button>
+        </div>
+    </form>
+</section>

@@ -1,0 +1,13 @@
+<p class="leading-6 text-muted">
+    Delete <strong class="font-semibold text-ink" data-dialog-field="name"></strong>
+    (<span data-dialog-field="email"></span>)? Accounts with related interview, signup, or assignment records cannot be deleted.
+</p>
+
+<form asp-controller="Users" asp-action="DeleteUserConfirmed" method="post" class="mt-7 flex flex-wrap justify-end gap-3">
+    <input type="hidden" name="id" data-dialog-field="id" />
+    <button type="button" ui-variant="Secondary" data-dialog-close>Cancel</button>
+    <button type="submit" ui-variant="Destructive">
+        <ui-icon name="trash-2" class="size-4" />
+        Delete account
+    </button>
+</form>

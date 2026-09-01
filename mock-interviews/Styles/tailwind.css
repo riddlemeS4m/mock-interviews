@@ -35,6 +35,12 @@
 @source "../Views/MSTeamsStudentUploads/Edit.cshtml";
 @source "../Views/MSTeamsStudentUploads/Details.cshtml";
 @source "../Views/MSTeamsStudentUploads/Delete.cshtml";
+@source "../Views/UserRoles/Index.cshtml";
+@source "../Views/UserRoles/Manage.cshtml";
+@source "../Views/UserRoles/_DeleteDialogContent.cshtml";
+@source "../Views/Users/CreateProvisionaryUser.cshtml";
+@source "../Views/Users/ResetUserPassword.cshtml";
+@source "../Views/Users/DeleteUser.cshtml";
 @source "../Views/Home/Index.cshtml";
 @source "../Views/Home/Admin.cshtml";
 @source "../Views/Home/AccessPending.cshtml";

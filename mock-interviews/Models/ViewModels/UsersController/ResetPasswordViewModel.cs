@@ -7,11 +7,5 @@ namespace MockInterviews.Models.ViewModels.UsersController
         [Required]
         public string UserId { get; set; } = string.Empty;
 
-        [DataType(DataType.Password)]
-        public string NewPassword { get; set; } = string.Empty;
-
-        [DataType(DataType.Password)]
-        [Compare("NewPassword", ErrorMessage = "Passwords do not match.")]
-        public string ConfirmPassword { get; set; } = string.Empty;
     }
 }
