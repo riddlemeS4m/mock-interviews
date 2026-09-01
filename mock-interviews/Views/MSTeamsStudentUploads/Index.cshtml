@@ -1,53 +1,74 @@
-﻿@model IEnumerable<MockInterviews.Models.Entities.RosteredStudent>
+@using MockInterviews.Models.ViewModels.MSTeamsStudentUploadsController
+@using MockInterviews.Models.ViewModels.Shared
+@model RosterIndexViewModel
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Program roster";
 }
 
-<h1>MIS Program Roster</h1>
+<section class="space-y-8">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader"
+                 model='new UiPageHeaderViewModel("Program roster", "Replace the program roster or add MIS 221 membership from validated CSV uploads.")' />
+        <div class="flex flex-wrap gap-3">
+            <a asp-action="Upload221Students" ui-variant="Secondary">Import MIS 221 roster</a>
+            <a asp-action="Create" ui-variant="Primary">Replace program roster</a>
+        </div>
+    </div>
 
-@*<p>
-    <a asp-action="Create">Create New</a>
-</p>*@
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Email)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.In221)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.InMasters)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.In221)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.InMasters)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new UiFeedbackViewModel(UiFeedbackKind.Success, statusMessage, string.Empty)" />
+    }
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new UiFeedbackViewModel(UiFeedbackKind.Error, errorMessage, string.Empty)" />
+    }
+
+    @if (Model.Students.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("users", "No rostered students", "Import the current program roster to begin provisioning student access.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="border-b border-line bg-soft text-sm text-muted">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">Student</th>
+                            <th class="px-5 py-3 font-semibold">Email</th>
+                            <th class="px-5 py-3 font-semibold">MIS 221</th>
+                            <th class="px-5 py-3 text-right font-semibold"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var student in Model.Students)
+                        {
+                            <tr>
+                                <th scope="row" class="px-5 py-4 font-semibold text-ink">@student.Name</th>
+                                <td class="px-5 py-4 text-muted">@student.Email</td>
+                                <td class="px-5 py-4">
+                                    <span class="inline-flex items-center gap-2 text-sm text-ink">
+                                        <span class="size-2 rounded-full @(student.In221 ? "bg-positive" : "bg-muted")"></span>
+                                        @(student.In221 ? "Included" : "Not included")
+                                    </span>
+                                </td>
+                                <td class="whitespace-nowrap px-5 py-4 text-right">
+                                    <div class="inline-flex gap-4">
+                                        <a asp-action="Details" asp-route-id="@student.Id" class="text-sm font-semibold text-ink hover:underline">View</a>
+                                        <a asp-action="Edit" asp-route-id="@student.Id" class="text-sm font-semibold text-ink hover:underline">Edit</a>
+                                        <a asp-action="Delete" asp-route-id="@student.Id" class="text-sm font-semibold text-negative hover:underline">Delete</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>

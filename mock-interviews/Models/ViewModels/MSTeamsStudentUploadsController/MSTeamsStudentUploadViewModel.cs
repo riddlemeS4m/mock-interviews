@@ -4,7 +4,7 @@ namespace MockInterviews.Models.ViewModels.MSTeamsStudentUploadsController
 {
     public class MSTeamsStudentUploadViewModel
     {
-        [Display(Name = "RosteredStudent Data")]
+        [Display(Name = "CSV roster file")]
         public IFormFile? RosterData { get; set; }
     }
 }

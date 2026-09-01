@@ -29,6 +29,12 @@
 @source "../Views/FAQs/_CreateDialogContent.cshtml";
 @source "../Views/FAQs/_DetailsDialogContent.cshtml";
 @source "../Views/FAQs/_DeleteDialogContent.cshtml";
+@source "../Views/MSTeamsStudentUploads/Index.cshtml";
+@source "../Views/MSTeamsStudentUploads/Create.cshtml";
+@source "../Views/MSTeamsStudentUploads/Upload221Students.cshtml";
+@source "../Views/MSTeamsStudentUploads/Edit.cshtml";
+@source "../Views/MSTeamsStudentUploads/Details.cshtml";
+@source "../Views/MSTeamsStudentUploads/Delete.cshtml";
 @source "../Views/Home/Index.cshtml";
 @source "../Views/Home/Admin.cshtml";
 @source "../Views/Home/AccessPending.cshtml";
