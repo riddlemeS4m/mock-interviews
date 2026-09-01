@@ -1,36 +1,4 @@
-﻿@model MockInterviews.Models.Entities.Event
-
-@{
-    ViewData["Title"] = "Details";
-}
-
-<h1>Details</h1>
-
-<div>
-    <h4>EventDate</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Date)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Date)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Name)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Name)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.For221)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.For221)
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-controller="Timeslots" asp-action="Index">Back to List</a>
-</div>
+@using MockInterviews.Data.Constants
+@model MockInterviews.Models.Entities.Event
+@{ ViewData["Title"] = "Event details"; var groups = Model.For221 == For221.b ? "MIS 221 and MIS 321+" : Model.For221 == For221.y ? "MIS 221" : "MIS 321+"; }
+<section class="max-w-2xl space-y-6"><partial name="DesignSystem/_PageHeader" model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Event details", "Review this event date and its availability.")' /><dl class="divide-y divide-line rounded-card border border-line bg-surface shadow-card"><div class="p-5"><dt class="text-sm text-muted">Event</dt><dd class="mt-1 font-semibold text-ink">@Model.Name</dd></div><div class="p-5"><dt class="text-sm text-muted">Date</dt><dd class="mt-1 text-ink">@Model.Date.ToString("MMMM d, yyyy")</dd></div><div class="p-5"><dt class="text-sm text-muted">Eligible students</dt><dd class="mt-1 text-ink">@groups</dd></div></dl><div class="flex gap-3"><a asp-action="Index" ui-variant="Secondary">Back</a><a asp-action="Edit" asp-route-id="@Model.Id" ui-variant="Primary">Edit event</a></div></section>

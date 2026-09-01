@@ -1,0 +1,6 @@
+@using MockInterviews.Models.ViewModels.EventDatesController
+@using MockInterviews.Models.ViewModels.Shared
+@model EventDateIndexViewModel
+<partial name="DesignSystem/_Dialog" model='new UiDialogViewModel("event-create-dialog", "Add event date", "This creates the standard schedule of 18 independent half-hour blocks.", "/Views/EventDates/_CreateDialogContent.cshtml", Model.Editor, Model.ActiveDialog == "event-create-dialog")' />
+<partial name="DesignSystem/_Dialog" model='new UiDialogViewModel("event-details-dialog", "Event details", null, "/Views/EventDates/_DetailsDialogContent.cshtml")' />
+<partial name="DesignSystem/_Dialog" model='new UiDialogViewModel("event-delete-dialog", "Delete event date?", null, "/Views/EventDates/_DeleteDialogContent.cshtml")' />

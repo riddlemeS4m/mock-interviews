@@ -8,7 +8,6 @@ namespace MockInterviews.Data.Seeds
     //probably should have a seed directory
     public class TimeslotSeed
     {
-        public static int MaxSignups { get; set; } = 0;
         public static readonly string[] Times = {
             "8:00 AM",
             "8:30 AM",
@@ -52,14 +51,14 @@ namespace MockInterviews.Data.Seeds
             }
         }
 
-        public static async Task SeedTimeslots(TimeslotService timeslotService, Event theEvent)
+        public static async Task SeedTimeslots(TimeslotService timeslotService, Event theEvent, int maxSignups = 0)
         {
-            var timeslots = SeedTimeslots(new List<Event> { theEvent });
+            var timeslots = SeedTimeslots(new List<Event> { theEvent }, maxSignups);
 
             await timeslotService.AddRange(timeslots);
         }
 
-        private static List<Timeslot> SeedTimeslots(IEnumerable<Event> dates)
+        private static List<Timeslot> SeedTimeslots(IEnumerable<Event> dates, int maxSignups = 0)
         {
             var timeslots = new List<Timeslot>();
 
@@ -78,7 +77,7 @@ namespace MockInterviews.Data.Seeds
                         IsVolunteer = true,
                         IsInterviewer = Interviewer[i],
                         IsStudent = Student[i],
-                        MaxSignUps = MaxSignups
+                        MaxSignUps = maxSignups
                     };
                     timeslots.Add(timeslot);
                 }

@@ -11,6 +11,8 @@
 @source "../TagHelpers/**/*.cs";
 @source "../Areas/System/Views/**/*.cshtml";
 @source "../Views/Locations/**/*.cshtml";
+@source "../Views/EventDates/**/*.cshtml";
+@source "../Views/Timeslots/**/*.cshtml";
 @source "../Views/Home/Index.cshtml";
 @source "../Views/Home/Admin.cshtml";
 @source "../Views/Home/AccessPending.cshtml";
