@@ -12,6 +12,7 @@ namespace MockInterviews.Data.Constants
         public const string StudentRole = "student";
         public const string InterviewerRole = "interviewer";
         public const string AdministrationRoles = AdminRole + "," + SystemAdminRole;
+        public const string ParticipantOrAdministrationRoles = AdministrationRoles + "," + StudentRole + "," + InterviewerRole;
         //public const string DesignateStudent = "crimson.ua.edu"; //this DOES need to be update-able
 
         public static List<SelectListItem> GetRoleOptions()

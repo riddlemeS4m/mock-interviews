@@ -1,95 +1,77 @@
-﻿@using MockInterviews.Models.Entities
-@using MockInterviews.Data;
-@using MockInterviews.Data.Constants;
-@model IEnumerable<Question>
+@using MockInterviews.Data.Constants
+@model MockInterviews.Models.ViewModels.FAQsController.ResourcesViewModel
 
 @{
     ViewData["Title"] = "Resources";
-    var manualUrl = ViewData["ManualUrl"] as string;
-    var parkingPassUrl = ViewData["ParkingPassUrl"] as string;
+    Layout = User.Identity?.IsAuthenticated == true
+        ? "/Views/Shared/_TailwindLayout.cshtml"
+        : "/Views/Shared/_TailwindPublicLayout.cshtml";
+    var canAsk = User.IsInRole(RolesConstants.StudentRole) || User.IsInRole(RolesConstants.InterviewerRole);
+    var isInterviewer = User.IsInRole(RolesConstants.InterviewerRole);
 }
 
-<div id="center-everything" class="row">
-    <h1>Resources</h1>
+<section class="space-y-10">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Resources", "Frequently asked questions and materials for mock interview participants.")' />
 
-    <div class="col-md-2"></div>
-    <div id="center-everything" class="col-md-8">
-        @if(Model.Any() && Model.Count() > 0)
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new MockInterviews.Models.ViewModels.Shared.UiFeedbackViewModel(MockInterviews.Models.ViewModels.Shared.UiFeedbackKind.Success, statusMessage, string.Empty)" />
+    }
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new MockInterviews.Models.ViewModels.Shared.UiFeedbackViewModel(MockInterviews.Models.ViewModels.Shared.UiFeedbackKind.Warning, errorMessage, string.Empty)" />
+    }
+
+    <div class="grid gap-4 md:grid-cols-2">
+        @foreach (var faq in Model.Questions)
         {
-            <hr style="width:100px;margin:auto;"/>
-            <br />
-            <div id="center-everything">
-                <h3>FAQs</h3>
-                <div class="row">
-                    @for(int i = 0; i < Model.Count(); i++)
-                    {
-                        var faq = Model.ElementAt(i);
-
-                        <div class="card shadow-sm p-3 m-3 border-1 rounded col">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3">@faq.Q</h5>
-                                <p class="card-text">@faq.A</p>
-                            </div>
-                        </div>
-
-                        if(i % 2 != 0)
-                        {
-                            <div class="w-100"></div>
-                        }
-                    }
-                </div>
-            </div>
+            <article class="rounded-card border border-line bg-surface p-6 shadow-card">
+                <h2 class="text-lg font-semibold text-ink">@faq.Q</h2>
+                <p class="mt-3 leading-6 text-muted">@faq.A</p>
+            </article>
         }
-
-        <br />
-
-        @if (User.IsInRole(RolesConstants.StudentRole) || User.IsInRole(RolesConstants.InterviewerRole))
-        {
-            <hr style="width:100px;margin:auto;"/>
-            <br />
-            <div id="center-everything">
-                <h3>
-                    Ask a Question!
-                </h3>
-            
-                <div>
-                    <h4 style="text-align: center;">
-                        <a asp-action="Create" class="btn btn-primary">Question Form</a>
-                    </h4>
-                </div>
-            </div>
-        }
-
-        <br />
-
-        @if (User.IsInRole(RolesConstants.InterviewerRole)
-            && (manualUrl != null || parkingPassUrl != null))
-        {
-            <hr style="width:100px;margin:auto;"/>
-            <br />
-            <div id="center-everything">
-                <h3>
-                    Resources for Interviewers
-                </h3>
-                <div style="text-align:center">
-                    @if (manualUrl != null)
-                    {
-                        <a id="manual-button" class="btn btn-primary" href="@manualUrl" target="_blank" rel="noopener">View Mock Interview Manual</a>
-                    }
-                    @if (parkingPassUrl != null)
-                    {
-                        <a id="parking-button" class="btn btn-secondary" href="@parkingPassUrl" target="_blank" rel="noopener">View Parking Pass</a>
-                    }
-                </div>
-            </div>
-        }
-
     </div>
-    <div class="col-md-2"></div>
-</div>
 
-@section Scripts {
-    <script>
-        displayResources();
-    </script>
-}
+    @if (Model.Questions.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiEmptyStateViewModel("book-open", "Resources are being prepared", "Published questions and answers will appear here.")' />
+    }
+
+    @if (canAsk)
+    {
+        <section class="flex flex-col gap-4 rounded-card border border-line bg-surface p-6 shadow-card sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="font-semibold text-ink">Have a question?</h2>
+                <p class="mt-1 text-sm text-muted">Send it to the mock interviews team for review.</p>
+            </div>
+            <a asp-action="Create" ui-variant="Primary">Ask a question</a>
+        </section>
+    }
+
+    @if (isInterviewer && (Model.ManualUrl is not null || Model.ParkingPassUrl is not null))
+    {
+        <section class="rounded-card border border-line bg-surface p-6 shadow-card">
+            <h2 class="font-semibold text-ink">Interviewer materials</h2>
+            <div class="mt-4 flex flex-wrap gap-3">
+                @if (Model.ManualUrl is not null)
+                {
+                    <a href="@Model.ManualUrl" target="_blank" rel="noopener" ui-variant="Primary">
+                        View mock interview manual
+                        <ui-icon name="external-link" class="size-4" />
+                    </a>
+                }
+                @if (Model.ParkingPassUrl is not null)
+                {
+                    <a href="@Model.ParkingPassUrl" target="_blank" rel="noopener" ui-variant="Secondary">
+                        View parking pass
+                        <ui-icon name="external-link" class="size-4" />
+                    </a>
+                }
+            </div>
+        </section>
+    }
+</section>

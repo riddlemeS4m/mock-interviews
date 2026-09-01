@@ -1,0 +1,17 @@
+@model MockInterviews.Models.ViewModels.FAQsController.FaqIndexViewModel
+
+@{
+    var createDialog = new MockInterviews.Models.ViewModels.Shared.UiDialogViewModel(
+        "faq-create-dialog",
+        "Add FAQ",
+        "Publish a question and answer, or save a question to answer later.",
+        "/Views/FAQs/_CreateDialogContent.cshtml",
+        Model.Editor,
+        Model.ActiveDialog == "faq-create-dialog");
+}
+
+<partial name="DesignSystem/_Dialog" model="createDialog" />
+<partial name="DesignSystem/_Dialog"
+         model='new MockInterviews.Models.ViewModels.Shared.UiDialogViewModel("faq-details-dialog", "FAQ details", null, "/Views/FAQs/_DetailsDialogContent.cshtml")' />
+<partial name="DesignSystem/_Dialog"
+         model='new MockInterviews.Models.ViewModels.Shared.UiDialogViewModel("faq-delete-dialog", "Delete FAQ?", null, "/Views/FAQs/_DeleteDialogContent.cshtml")' />

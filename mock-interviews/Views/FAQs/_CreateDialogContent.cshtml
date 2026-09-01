@@ -1,0 +1,9 @@
+@model MockInterviews.Models.Entities.Question
+
+<form asp-action="Create" method="post">
+    <partial name="_FormFields" model="Model" />
+    <div class="mt-7 flex flex-wrap justify-end gap-3">
+        <button type="button" ui-variant="Secondary" data-dialog-close>Cancel</button>
+        <button type="submit" ui-variant="Primary">Save FAQ</button>
+    </div>
+</form>
