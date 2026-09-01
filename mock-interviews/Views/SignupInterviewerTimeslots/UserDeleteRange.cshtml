@@ -1,21 +1,20 @@
-﻿@model MockInterviews.Models.ViewModels.Shared.TimeRangeViewModel
+@model MockInterviews.Models.ViewModels.Shared.TimeRangeViewModel
 
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Cancel interviewer availability";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Confirmation</h1>
-<hr />
-@*<h3>Are you sure you want to cancel this?</h3>
-*@
-<div id="center-everything">
-    <h4>Are you sure that you'd like to cancel all your availability?</h4>
-    <br />
-    <form asp-action="UserDeleteRangeConfirmed" asp-controller="SignupInterviewerTimeslots">
+<section class="mx-auto max-w-xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Cancel interviewer availability", "This permanently removes all availability in this signup.")' />
+
+    <partial name="DesignSystem/_Feedback"
+             model='new UiFeedbackViewModel(UiFeedbackKind.Warning, "Confirm cancellation", "This action cannot be undone.")' />
+
+    <form asp-action="UserDeleteRangeConfirmed" class="flex flex-wrap items-center gap-4">
         <input type="hidden" name="id" value="@Model.SignupInterviewerId" />
-        <div>
-            <input type="submit" value="Yes, Cancel" class="btn btn-primary" /> |
-            <button asp-action="Index" asp-controller="Home" class="btn btn-secondary">No, Go Back</button>
-        </div>
+        <button type="submit" ui-variant="Primary" class="bg-negative hover:bg-negative/90 focus-visible:outline-negative">Cancel availability</button>
+        <a asp-controller="Home" asp-action="Index" class="text-sm font-semibold text-ink hover:underline">Keep availability</a>
     </form>
-</div>
+</section>

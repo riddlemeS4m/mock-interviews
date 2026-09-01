@@ -31,7 +31,9 @@
                                asp-action="UserDeleteRange"
                                asp-route-id="@group.SignupId"
                                ui-variant="Quiet"
-                               class="text-negative">Cancel</a>
+                               class="text-negative"
+                               data-dialog-target="dashboard-cancel-interviewer"
+                               data-dialog-value-id="@group.SignupId">Cancel</a>
                         </div>
                     </div>
                     <ul class="divide-y divide-line">

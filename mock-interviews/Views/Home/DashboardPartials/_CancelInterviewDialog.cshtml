@@ -1,0 +1,6 @@
+<p class="leading-6 text-muted">This permanently removes the selected interview from your schedule.</p>
+<form asp-controller="InterviewEvents" asp-action="UserDeleteConfirmed" method="post" class="mt-7 flex flex-wrap justify-end gap-3">
+    <input type="hidden" name="id" data-dialog-field="id" />
+    <button type="button" ui-variant="Secondary" data-dialog-close>Keep interview</button>
+    <button type="submit" ui-variant="Destructive"><ui-icon name="trash-2" class="size-4" />Cancel interview</button>
+</form>

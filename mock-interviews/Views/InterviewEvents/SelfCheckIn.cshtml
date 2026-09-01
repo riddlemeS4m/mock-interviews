@@ -1,20 +1,26 @@
-﻿@using MockInterviews.Models.ViewModels
+@using MockInterviews.Models.ViewModels
 @model SelfCheckInViewModel
 
 @{
-    ViewData["Title"] = "Self Check In";
+    ViewData["Title"] = "Interview check-in";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
+    var kind = Model.IsCheckedIn ? UiFeedbackKind.Success : UiFeedbackKind.Warning;
+    var title = Model.IsCheckedIn ? "You are checked in" : "Interview check-in";
 }
 
-@if(Model.IsCheckedIn)
-{
-    <h1 style="color:green;font-weight:bold;">Success!</h1>
-}
-else
-{
-    <h1 style="color:red;font-weight:bold;">Uh oh!</h1>
-}
-<div id="center-everything">
-    <p>
-        @Model.CheckInMessage
-    </p>
-</div>
+<section class="mx-auto max-w-xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Interview check-in", "Check in when you have arrived for your scheduled interview.")' />
+    <partial name="DesignSystem/_Feedback" model="new UiFeedbackViewModel(kind, title, Model.CheckInMessage)" />
+
+    @if (!Model.IsCheckedIn && Model.CheckInMessage.StartsWith("Confirm", StringComparison.Ordinal))
+    {
+        <form asp-action="StudentSelfCheckInConfirmed">
+            <button type="submit" ui-variant="Primary">Confirm check-in</button>
+        </form>
+    }
+    else
+    {
+        <a asp-controller="Home" asp-action="Index" ui-variant="Quiet">Return to schedule</a>
+    }
+</section>

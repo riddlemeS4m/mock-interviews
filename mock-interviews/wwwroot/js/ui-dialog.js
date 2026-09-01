@@ -14,6 +14,14 @@
 
       if (field instanceof HTMLInputElement && field.type === "checkbox") {
         field.checked = value === "true";
+      } else if (field.dataset.dialogSplit && field.dataset.dialogInputName) {
+        field.replaceChildren(...value.split(field.dataset.dialogSplit).filter(Boolean).map((item) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = field.dataset.dialogInputName;
+          input.value = item;
+          return input;
+        }));
       } else if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) {
         field.value = value;
       } else {

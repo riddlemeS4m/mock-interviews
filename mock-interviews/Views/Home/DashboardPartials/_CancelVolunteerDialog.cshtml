@@ -1,0 +1,6 @@
+<p class="leading-6 text-muted">This permanently removes the selected volunteer shift from your schedule.</p>
+<form asp-controller="VolunteerEvents" asp-action="UserDeleteRangeConfirmed" method="post" class="mt-7 flex flex-wrap justify-end gap-3">
+    <div data-dialog-field="timeslots" data-dialog-split="," data-dialog-input-name="timeslots"></div>
+    <button type="button" ui-variant="Secondary" data-dialog-close>Keep shift</button>
+    <button type="submit" ui-variant="Destructive"><ui-icon name="trash-2" class="size-4" />Cancel shift</button>
+</form>

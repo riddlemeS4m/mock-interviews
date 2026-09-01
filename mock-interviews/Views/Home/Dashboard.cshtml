@@ -15,6 +15,12 @@
                  model='new UiFeedbackViewModel(UiFeedbackKind.Warning, "Service disruption", "Some Mock Interviews features are temporarily unavailable. Please try again shortly.")' />
     }
 
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new UiFeedbackViewModel(UiFeedbackKind.Success, statusMessage, string.Empty)" />
+    }
+
     @if (Model.Meeting is not null)
     {
         <aside class="rounded-card border border-line bg-surface p-5 shadow-card sm:flex sm:items-center sm:justify-between sm:gap-6">
@@ -48,6 +54,8 @@
         <partial name="DashboardPartials/_InterviewerSchedule" model="Model.Interviewer.ScheduleGroups" />
         <partial name="DashboardPartials/_CompletedInterviews" model="Model.Interviewer.CompletedInterviews" />
     }
+
+    <partial name="DashboardPartials/_ParticipantDialogs" />
 </div>
 
 @section Scripts {
