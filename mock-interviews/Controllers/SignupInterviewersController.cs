@@ -32,7 +32,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: SignupInterviewers
-        [Authorize(Roles = RolesConstants.AdminRole + "," + RolesConstants.InterviewerRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Index()
         {
             var sits = await _context.InterviewerTimeslots
@@ -190,7 +190,9 @@ namespace MockInterviews.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CheckInInterviewer(int id)
         {
             if (_context.InterviewerSignups == null || id == 0)
@@ -213,7 +215,7 @@ namespace MockInterviews.Controllers
 
                 await UpdateHub();
 
-                //return NoContent();
+                TempData["StatusMessage"] = si.CheckedIn ? "Interviewer checked in." : "Interviewer checked out.";
                 return RedirectToAction(nameof(Index));
             }
             catch

@@ -1,66 +1,63 @@
-﻿@using MockInterviews.Data.Constants
+@using MockInterviews.Data.Constants
 @model IEnumerable<MockInterviews.Models.Entities.InterviewerSignup>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Interviewer check-in";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Interviewers Signed Up</h1>
-<div id="center-everything">
-    <p>
-        <a class="btn btn-primary" asp-controller="SignupInterviewerTimeslots" asp-action="CreateForInterviewer">Manually Signup Interviewer</a>
-        <a asp-area="" asp-controller="Home" asp-action="EmailInterviewers"> | Send Interviewers Email Reminder</a>
-    </p>
-</div>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>In Person?</th>
-            <th>Checked In?</th>
-            <th></th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) 
-{
-        <tr>
-            <td>@item.FirstName @item.LastName</td>
-            @if(item.InPerson)
-            {
-                <td>@InterviewLocationConstants.InPerson</td>
-            }
-            else
-            {
-                <td>@InterviewLocationConstants.IsVirtual</td>
-            }
-            @if(item.CheckedIn)
-            {
-                <td style="color:green; font-weight:bold;">Yes</td>
-            }
-            else
-            {
-                <td style="color:red;">No</td>
-            }
-            <td>
-                <a asp-controller="SignupInterviewerTimeslots" asp-action="Edit" asp-route-id="@item.Id">Reschedule</a> |
-                <a asp-controller="SignupInterviewers" asp-action="Details" asp-route-id="@item.Id">Details</a> | 
-                <a asp-controller="SignupInterviewerTimeslots" asp-action="UserDeleteRange" asp-route-id="@item.Id">Delete</a>
-            </td>
-            @if(!item.CheckedIn)
-            {
-                <td>
-                    <a class="btn btn-primary" asp-action="CheckInInterviewer" asp-route-id="@item.Id">Check In</a>
-                </td>
-            }
-            else
-            {
-                <td>
-                    <a class="btn btn-secondary" asp-action="CheckInInterviewer" asp-route-id="@item.Id">Check Out</a>
-                </td>
-            }
-        </tr>
-}
-    </tbody>
-</table>
+<section class="space-y-8">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Interviewer check-in", "Review active interviewer availability and update check-in status for event staff.")' />
+        <a asp-controller="SignupInterviewerTimeslots" asp-action="CreateForInterviewer" ui-variant="Primary">
+            <ui-icon name="plus" class="size-4" />
+            Add interviewer availability
+        </a>
+    </div>
+
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new MockInterviews.Models.ViewModels.Shared.UiFeedbackViewModel(MockInterviews.Models.ViewModels.Shared.UiFeedbackKind.Success, statusMessage, string.Empty)" />
+    }
+
+    @if (!Model.Any())
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiEmptyStateViewModel("users", "No active interviewers", "Interviewer availability for active events will appear here.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="border-b border-line bg-soft text-sm text-muted">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">Interviewer</th>
+                            <th class="px-5 py-3 font-semibold">Preference</th>
+                            <th class="px-5 py-3 font-semibold">Checked in</th>
+                            <th class="px-5 py-3 text-right font-semibold"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <th scope="row" class="px-5 py-4 font-semibold text-ink">@item.FirstName @item.LastName</th>
+                                <td class="px-5 py-4 text-muted">@(item.InPerson ? InterviewLocationConstants.InPerson : InterviewLocationConstants.IsVirtual)</td>
+                                <td class="px-5 py-4"><span class="text-sm font-semibold @(item.CheckedIn ? "text-positive" : "text-muted")">@(item.CheckedIn ? "Checked in" : "Not checked in")</span></td>
+                                <td class="px-5 py-4 text-right">
+                                    <div class="inline-flex items-center gap-4">
+                                        <a asp-controller="SignupInterviewerTimeslots" asp-action="Edit" asp-route-id="@item.Id" class="text-sm font-semibold text-ink hover:underline">Availability</a>
+                                        <form asp-action="CheckInInterviewer" method="post" class="inline"><input type="hidden" name="id" value="@item.Id" /><button type="submit" class="text-sm font-semibold text-ink hover:underline">@(item.CheckedIn ? "Check out" : "Check in")</button></form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>
