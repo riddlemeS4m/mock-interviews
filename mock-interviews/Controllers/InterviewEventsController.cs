@@ -219,7 +219,7 @@ namespace MockInterviews.Controllers
             return View(model);
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> AttendanceReport()
         {
             //can't find my other attendance report method for some reason
@@ -227,11 +227,6 @@ namespace MockInterviews.Controllers
                 .Select(e => e.StudentId)
                 .Distinct()
                 .ToListAsync();
-
-            if (uniqueStudentIds.Count == 0 || uniqueStudentIds == null)
-            {
-                return BadRequest("There are no students signed up yet.");
-            }
 
             var students = await _userManager.Users
                 .Where(u => uniqueStudentIds.Contains(u.Id))
@@ -274,8 +269,8 @@ namespace MockInterviews.Controllers
             var entireProgram = await _context.RosteredStudents.CountAsync();
             var entire221 = await _context.RosteredStudents.Where(x => x.In221 == true).CountAsync();
 
-            double percentEntireProgram = (double)total / entireProgram;
-            double percentEntire221 = (double)signedup221 / entire221;
+            double percentEntireProgram = entireProgram == 0 ? 0 : (double)total / entireProgram;
+            double percentEntire221 = entire221 == 0 ? 0 : (double)signedup221 / entire221;
 
             // Round to two decimal places
             percentEntireProgram = Math.Round(percentEntireProgram, 2) * 100;
@@ -302,7 +297,7 @@ namespace MockInterviews.Controllers
             return View("AttendanceReport", viewModel);
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> AssessFeedback()
         {
             var interviewEvents = await _context.Interviews
@@ -311,40 +306,29 @@ namespace MockInterviews.Controllers
                 .ThenInclude(i => i!.InterviewerSignup)
                 .Include(i => i.Timeslot)
                 .ThenInclude(j => j.Event)
+                .Where(interview => interview.InterviewerRating != null)
                 .ToListAsync();
 
-            var model = new List<InterviewEventViewModel>();
-            var interviewEventViewModel = new InterviewEventViewModel();
-            foreach (Interview interviewEvent in interviewEvents)
+            var userIds = interviewEvents.Select(interview => interview.StudentId)
+                .Concat(interviewEvents.Where(interview => interview.InterviewerTimeslot is not null)
+                    .Select(interview => interview.InterviewerTimeslot!.InterviewerSignup.InterviewerId))
+                .Distinct()
+                .ToArray();
+            var users = await _userManager.Users
+                .Where(user => userIds.Contains(user.Id))
+                .Select(user => new { user.Id, Name = user.FirstName + " " + user.LastName, user.Class })
+                .ToDictionaryAsync(user => user.Id);
+            var model = interviewEvents.Select(interview => new InterviewEventViewModel
             {
-                var student = await _userManager.FindByIdAsync(interviewEvent.StudentId);
-
-                if (interviewEvent.InterviewerTimeslot != null)
-                {
-                    var interviewer = await _userManager.FindByIdAsync(interviewEvent.InterviewerTimeslot.InterviewerSignup.InterviewerId);
-
-                    interviewEventViewModel = new InterviewEventViewModel
-                    {
-                        InterviewEvent = interviewEvent,
-                        StudentName = GetDisplayName(student),
-                        InterviewerName = GetDisplayName(interviewer)
-                    };
-
-                    model.Add(interviewEventViewModel);
-                }
-                else
-                {
-                    interviewEventViewModel = new InterviewEventViewModel
-                    {
-                        InterviewEvent = interviewEvent,
-                        StudentName = GetDisplayName(student),
-                        Class = student is null ? string.Empty : ClassConstants.GetClassText(student.Class),
-                        InterviewerName = "Not Assigned"
-                    };
-
-                    model.Add(interviewEventViewModel);
-                }
-            }
+                InterviewEvent = interview,
+                StudentName = users.GetValueOrDefault(interview.StudentId)?.Name ?? "Deleted user",
+                Class = users.TryGetValue(interview.StudentId, out var student)
+                    ? ClassConstants.GetClassText(student.Class)
+                    : string.Empty,
+                InterviewerName = interview.InterviewerTimeslot is { } interviewerTimeslot
+                    ? users.GetValueOrDefault(interviewerTimeslot.InterviewerSignup.InterviewerId)?.Name ?? "Deleted user"
+                    : "Not assigned"
+            }).ToList();
 
             return View("Feedback", model);
         }
@@ -1828,7 +1812,7 @@ namespace MockInterviews.Controllers
             return vm;
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> GetCompletedInterviews()
         {
             var interviewEvents = await _context.Interviews

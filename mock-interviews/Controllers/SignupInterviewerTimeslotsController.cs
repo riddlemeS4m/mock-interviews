@@ -68,7 +68,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: SignupInterviewerTimeslots
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> LunchReport()
         {
             var uniqueSignupInterviewerTimeslots = await _context.InterviewerTimeslots
@@ -87,58 +87,25 @@ namespace MockInterviews.Controllers
                 .ThenBy(ve => ve.TimeslotId)
                 .ToList();
 
-            var lunchReport = new LunchReportViewModel();
-
-            if (groupedSignupInterviewerTimeslots.Count != 0)
+            var lunchReports = groupedSignupInterviewerTimeslots.Select(timeslot => new LunchReport
             {
-                var lunchReports = new List<LunchReport>();
-
-                foreach (var uniqueSignupInterviewerTimeslot in groupedSignupInterviewerTimeslots)
-                {
-                    var signupInterviewer = uniqueSignupInterviewerTimeslot.InterviewerSignup;
-
-                    lunchReports.Add(new LunchReport
-                    {
-                        Name = signupInterviewer.FirstName + " " + signupInterviewer.LastName,
-                        LunchDesire = signupInterviewer.Lunch ?? false,
-                        ForDate = uniqueSignupInterviewerTimeslot.Timeslot.Event.Date
-                    });
-                }
-
-                var lunchReportData = groupedSignupInterviewerTimeslots
-                    .GroupBy(s => s.Timeslot.EventId)
-                    .Select(g => new
-                    {
-                        EventDateId = g.Key,
-                        EventDateDate = g.First().Timeslot.Event.Date,
-                        EventDateName = g.First().Timeslot.Event.Name,
-                        LunchCount = g.Count(s => s.InterviewerSignup.Lunch == true)
-                    })
-                    .OrderBy(g => g.EventDateId)
-                    .ToList();
-
-                lunchReport = new LunchReportViewModel
-                {
-                    LunchReports = lunchReports,
-                    Day1TotalLunchCount = lunchReportData[0].LunchCount,
-                    Day1Name = $"{lunchReportData[0].EventDateName} ({lunchReportData[0].EventDateDate:M/dd/yyyy})",
-                    AnyLunches = true
-                };
-
-                if (lunchReportData.Count > 1)
-                {
-                    lunchReport.Day2TotalLunchCount = lunchReportData[1].LunchCount;
-                    lunchReport.Day2Name = $"{lunchReportData[1].EventDateName} ({lunchReportData[1].EventDateDate:M/dd/yyyy})";
-                }
-            }
-            else
+                Name = timeslot.InterviewerSignup.FirstName + " " + timeslot.InterviewerSignup.LastName,
+                LunchDesire = timeslot.InterviewerSignup.Lunch ?? false,
+                ForDate = timeslot.Timeslot.Event.Date
+            }).ToList();
+            var lunchTotals = groupedSignupInterviewerTimeslots
+                .GroupBy(timeslot => timeslot.Timeslot.EventId)
+                .Select(group => new LunchTotalViewModel(
+                    group.First().Timeslot.Event.Name,
+                    group.First().Timeslot.Event.Date,
+                    group.Count(timeslot => timeslot.InterviewerSignup.Lunch == true)))
+                .OrderBy(total => total.Date)
+                .ToList();
+            var lunchReport = new LunchReportViewModel
             {
-                lunchReport = new LunchReportViewModel
-                {
-                    LunchReports = new List<LunchReport>(),
-                    Day1Name = "No Lunches"
-                };
-            }
+                LunchReports = lunchReports,
+                LunchTotals = lunchTotals
+            };
 
             return View("LunchReport", lunchReport);
         }

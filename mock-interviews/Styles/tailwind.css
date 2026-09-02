@@ -61,6 +61,10 @@
 @source "../Views/VolunteerEvents/Create.cshtml";
 @source "../wwwroot/js/timeslot-selection.js";
 @source "../Views/SignupInterviewerTimeslots/Create.cshtml";
+@source "../Views/SignupInterviewerTimeslots/LunchReport.cshtml";
+@source "../Views/InterviewEvents/AttendanceReport.cshtml";
+@source "../Views/InterviewEvents/GetCompletedInterviews.cshtml";
+@source "../Views/InterviewEvents/Feedback.cshtml";
 @source "../Views/SignupInterviewerTimeslots/Edit.cshtml";
 @source "../wwwroot/js/interviewer-availability.js";
 @source "../wwwroot/js/dashboard.js";

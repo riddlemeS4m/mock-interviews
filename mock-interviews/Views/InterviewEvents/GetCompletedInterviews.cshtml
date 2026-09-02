@@ -1,43 +1,47 @@
-﻿@using MockInterviews.Data.Constants
 @model IEnumerable<MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventViewModel>
 
 @{
-    ViewData["Title"] = "Completed Interviews";
+    ViewData["Title"] = "Completed interviews";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Completed Interviews</h1>
-<hr/>
-<table class="table">
-    <thead>
-        <tr>
-            <th></th>
-            <th>Student</th>
-            <th>Class</th>
-            <th>Status</th>
-            <th>Scheduled Start</th>
-            <th>Date</th>
-            <th>Interview Type</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody id="upcoming">
-        @foreach (var item in Model)
-        {
-            if (item.InterviewEvent.Status != StatusConstants.Ongoing && item.InterviewEvent.Status != StatusConstants.CheckedIn)
-            {
-                <tr id="@item.InterviewEvent.Id">
-                    <td style="color:white;">@Html.DisplayFor(modelItem => item.InterviewEvent.TimeslotId)</td>
-                    <td>@Html.DisplayFor(modelItem => item.StudentName)</td>
-                    <td>@Html.DisplayFor(modelItem => item.Class)</td>
-                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Status)</td>
-                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Timeslot.Time)</td>
-                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Timeslot.Event.Date)</td>
-                    <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Type)</td>
-                    <td>
-                        <a asp-action="Override" asp-route-id="@item.InterviewEvent.Id">Override</a>
-                    </td>
-                </tr>
-            }
-        }
-    </tbody>
-</table>
+<section class="space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Completed interviews", "Read-only record of completed, excused, and no-show interviews for active events.")' />
+
+    @if (!Model.Any())
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiEmptyStateViewModel("clipboard-check", "No completed interviews", "Completed interviews will appear here as event staff update their status.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="border-b border-line bg-soft text-sm text-muted">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">Student</th>
+                            <th class="px-5 py-3 font-semibold">Class</th>
+                            <th class="px-5 py-3 font-semibold">Status</th>
+                            <th class="px-5 py-3 font-semibold">Scheduled time</th>
+                            <th class="px-5 py-3 font-semibold">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <th scope="row" class="px-5 py-4 font-semibold text-ink">@item.StudentName</th>
+                                <td class="px-5 py-4 text-muted">@item.Class</td>
+                                <td class="px-5 py-4 text-muted">@item.InterviewEvent.Status</td>
+                                <td class="whitespace-nowrap px-5 py-4 text-muted">@item.InterviewEvent.Timeslot.Event.Date.ToString("MMM d, yyyy") · @item.InterviewEvent.Timeslot.Time.ToString("h:mm tt")</td>
+                                <td class="px-5 py-4 text-muted">@item.InterviewEvent.Type</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>
