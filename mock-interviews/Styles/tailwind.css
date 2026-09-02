@@ -65,6 +65,7 @@
 @source "../Views/InterviewEvents/AttendanceReport.cshtml";
 @source "../Views/InterviewEvents/GetCompletedInterviews.cshtml";
 @source "../Views/InterviewEvents/Feedback.cshtml";
+@source "../Views/LocationInterviewers/**/*.cshtml";
 @source "../Views/SignupInterviewerTimeslots/Edit.cshtml";
 @source "../wwwroot/js/interviewer-availability.js";
 @source "../wwwroot/js/dashboard.js";

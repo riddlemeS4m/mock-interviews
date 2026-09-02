@@ -1,30 +1,3 @@
-﻿@model MockInterviews.Models.ViewModels.LocationInterviewersController.LocationInterviewerWithName
-
-@{
-    ViewData["Title"] = "Details";
-}
-
-<h1>Details</h1>
-
-<div>
-    <h4>Interviewer Location</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            Interviewer
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.InterviewerName)
-        </dd>
-        <dt class = "col-sm-2">
-            Room
-        </dt>
-        <dd class = "col-sm-10">
-            @(Model.LocationInterviewer.Location?.Room ?? "Not assigned")
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?LocationInterviewer.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
-</div>
+@model MockInterviews.Models.ViewModels.LocationInterviewersController.LocationInterviewerWithName
+@{ ViewData["Title"] = "Room assignment details"; }
+<section class="max-w-xl space-y-6"><partial name="DesignSystem/_PageHeader" model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Room assignment details", "Current interviewer location assignment.")' /><dl class="rounded-card border border-line bg-surface p-6 shadow-card"><div class="grid gap-1 border-b border-line pb-4 sm:grid-cols-2"><dt class="font-semibold text-ink">Interviewer</dt><dd class="text-muted">@Model.InterviewerName</dd></div><div class="mt-4 grid gap-1 sm:grid-cols-2"><dt class="font-semibold text-ink">Room</dt><dd class="text-muted">@(Model.LocationInterviewer.Location?.Room ?? "Unassigned")</dd></div></dl><a asp-action="Index" ui-variant="Secondary">Back to assignments</a></section>

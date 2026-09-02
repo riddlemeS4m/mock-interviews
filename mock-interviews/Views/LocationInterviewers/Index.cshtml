@@ -1,104 +1,65 @@
-﻿@model MockInterviews.Models.ViewModels.LocationInterviewersController.LocationInterviewerViewModel
+@model MockInterviews.Models.ViewModels.LocationInterviewersController.LocationInterviewerViewModel
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Assign rooms";
 }
 
-<h1>Assign Rooms</h1>
+<section class="space-y-8">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Assign rooms", "Set the room or virtual location for interviewers with active availability.")' />
+        <a asp-action="Create" ui-variant="Primary">
+            <ui-icon name="plus" class="size-4" />
+            Assign room
+        </a>
+    </div>
 
-<p>
-    <a asp-action="Create">Reassign Location (Create New Location Assignment)</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                Interviewer
-            </th>
-            <th>
-                For Date
-            </th>
-            <th>
-                In Person/Virtual
-            </th>
-            <th>
-                Room Location
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model.LocationInterviewerWithNames) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.InterviewerName)
-            </td>
-            <td>
-                @(item.LocationInterviewer.Event?.Date.ToString("d") ?? "Not assigned")
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.InterviewerPreference)
-            </td>
-            @if(item.LocationInterviewer.Location == null)
-            {
-                <td>Not Assigned</td>
-            }
-            else
-            {
-                <td>@Html.DisplayFor(modelItem => item.LocationInterviewer.Location.Room)</td>
-            }
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.LocationInterviewer.Id">Edit</a> | 
-@*                <a asp-action="Details" asp-route-id="@item.LocationInterviewer.Id">Details</a> |
-*@                <a asp-action="Delete" asp-route-id="@item.LocationInterviewer.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new MockInterviews.Models.ViewModels.Shared.UiFeedbackViewModel(MockInterviews.Models.ViewModels.Shared.UiFeedbackKind.Success, statusMessage, string.Empty)" />
+    }
 
-@*<div>
-    <h1>Room Locations</h1>
-
-    <p>
-        <a asp-controller="Locations" asp-action="Create">Create New</a>
-    </p>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>
-                    @Html.DisplayNameFor(model => model.Locations[0].Room)
-                </th>
-                <th>
-                    Virtual?
-                </th>
-                <th>
-                    In Person?
-                </th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model.Locations)
-            {
-                <tr>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.Room)
-                    </td>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.IsVirtual)
-                    </td>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.InPerson)
-                    </td>
-                    <td>
-                        <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                        <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                        <a asp-controller="Locations" asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-</div>*@
+    @if (!Model.LocationInterviewerWithNames.Any())
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiEmptyStateViewModel("map-pin", "No room assignments", "Active interviewer availability is required before a room can be assigned.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="border-b border-line bg-soft text-sm text-muted">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">Interviewer</th>
+                            <th class="px-5 py-3 font-semibold">Event</th>
+                            <th class="px-5 py-3 font-semibold">Preference</th>
+                            <th class="px-5 py-3 font-semibold">Room</th>
+                            <th class="px-5 py-3 text-right font-semibold"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var item in Model.LocationInterviewerWithNames)
+                        {
+                            var eventLabel = item.LocationInterviewer.Event is { } assignedEvent
+                                ? $"{assignedEvent.Name} ({assignedEvent.Date:MMM d, yyyy})"
+                                : "Not assigned";
+                            <tr>
+                                <th scope="row" class="px-5 py-4 font-semibold text-ink">@item.InterviewerName</th>
+                                <td class="px-5 py-4 text-muted">@eventLabel</td>
+                                <td class="px-5 py-4 text-muted">@item.InterviewerPreference</td>
+                                <td class="px-5 py-4 text-muted">@(item.LocationInterviewer.Location?.Room ?? "Unassigned")</td>
+                                <td class="px-5 py-4 text-right">
+                                    <a asp-action="Edit" asp-route-id="@item.LocationInterviewer.Id" class="text-sm font-semibold text-ink hover:underline">Edit</a>
+                                    <span class="px-2 text-muted">·</span>
+                                    <a asp-action="Delete" asp-route-id="@item.LocationInterviewer.Id" class="text-sm font-semibold text-negative hover:underline">Delete</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>
