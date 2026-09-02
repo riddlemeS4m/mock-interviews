@@ -15,7 +15,6 @@ namespace MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsController
         public List<SelectListItem> Interviewers { get; set; } = [];
         [DisplayName("Interviewer Name")]
         public string InterviewerId { get; set; } = string.Empty;
-        public int[] SelectedEventIds { get; set; } = [];
         public int[] SelectedTimeslotIds { get; set; } = [];
         public bool SignedUp { get; set; }
         public bool Lunch { get; set; }

@@ -721,292 +721,179 @@ namespace MockInterviews.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> CreateForInterviewer()
         {
-            var timeslots = await _context.Timeslots
-                   .Where(x => x.IsInterviewer && x.IsActive)
-                   .Include(y => y.Event)
-                   .Where(x => x.Event.IsActive)
-                   .ToListAsync();
-
-            var eventdates = await _context.Events
-                .Where(x => x.IsActive)
-                .ToListAsync();
-
-            var users = await _userManager.GetUsersInRoleAsync(RolesConstants.InterviewerRole);
-
-            var interviewers = users
-                .Select(x => new SelectListItem
-                {
-                    Value = x.Id,
-                    Text = x.FirstName + " " + x.LastName
-                })
-                .OrderBy(x => x.Text)
-                .ToList();
-
-            SignupInterviewerTimeslotsViewModel vm = new()
-            {
-                Timeslots = timeslots,
-                SignupInterviewer = new InterviewerSignup
-                {
-                    InterviewerId = "",
-                    FirstName = "",
-                    LastName = "",
-                    IsBehavioral = false,
-                    IsTechnical = false,
-                    IsCase = false,
-                    IsVirtual = false,
-                    InPerson = false
-                },
-                EventDates = eventdates,
-                Interviewers = interviewers,
-                SignedUp = false
-            };
-
-            return View(vm);
+            return View(await BuildManualInterviewerSignupViewModelAsync());
         }
 
         [HttpPost]
-        [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> CreateForInterviewer(int[] SelectedEventIds1, int[] SelectedEventIds2, int[] SelectedEventIds3, int[] SelectedEventIds4,
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        public async Task<IActionResult> CreateForInterviewer(int[] SelectedTimeslotIds,
             [Bind("IsTechnical,IsBehavioral,IsCase,IsVirtual,InPerson")] InterviewerSignup signupInterviewer, bool Lunch, string InterviewerId)
         {
-            if ((SelectedEventIds1 == null && SelectedEventIds2 == null && SelectedEventIds3 == null && SelectedEventIds4 == null) || signupInterviewer == null)
-            {
-                return NotFound();
-            }
-
-            if (InterviewerId == null || InterviewerId == "")
-            {
-                throw new Exception("Interviewer Id was not provided.");
-            }
-
-            int[] SelectedEventIds = (SelectedEventIds1 ?? [])
-                .Concat(SelectedEventIds2 ?? [])
-                .Concat(SelectedEventIds3 ?? [])
-                .Concat(SelectedEventIds4 ?? [])
-                .ToArray();
-
-            var timeslots = await _context.Timeslots
-                   .Where(x => x.IsInterviewer && x.IsActive)
-                   .Include(y => y.Event)
-                   .Where(x => x.Event.IsActive)
-                   .ToListAsync();
-
-            var eventdates = await _context.Events
-                .Where(x => x.IsActive)
-                .ToListAsync();
-
-            var users = await _userManager.GetUsersInRoleAsync(RolesConstants.InterviewerRole);
-
-            var interviewers = users
-                .Select(x => new SelectListItem
-                {
-                    Value = x.Id,
-                    Text = x.FirstName + x.LastName
-                })
-                .OrderBy(x => x.Text)
-                .ToList();
-
-            var dates = timeslots
-                .Where(x => SelectedEventIds.Contains(x.Id))
-                .Select(t => t.Event.Id)
-                .Distinct()
-                .ToList();
-
-            var user = await _userManager.Users
-                .Where(x => x.Id == InterviewerId)
-                .FirstOrDefaultAsync();
-
-            SignupInterviewerTimeslotsViewModel vm = new()
-            {
-                Timeslots = timeslots,
-                SignupInterviewer = new InterviewerSignup
-                {
-                    InterviewerId = "",
-                    FirstName = "",
-                    LastName = "",
-                    IsBehavioral = false,
-                    IsTechnical = false,
-                    IsCase = false,
-                    IsVirtual = false,
-                    InPerson = false
-                },
-                EventDates = eventdates,
-                Interviewers = interviewers,
-                SignedUp = false
-            };
+            SelectedTimeslotIds ??= [];
+            signupInterviewer ??= new InterviewerSignup();
 
             if (!signupInterviewer.IsTechnical && !signupInterviewer.IsBehavioral && !signupInterviewer.IsCase)
             {
                 ModelState.AddModelError("InterviewerSignup.IsTechnical", "Please select at least one checkbox");
-                return View(vm);
             }
 
-            // Check whether at least one timeslot is selected
-            if (SelectedEventIds == null || SelectedEventIds.Length == 0)
+            if (SelectedTimeslotIds.Length == 0)
             {
-                ModelState.AddModelError("SelectedEventIds", "Please select at least one timeslot");
-                return View(vm);
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "Please select at least one timeslot.");
             }
 
+            if (string.IsNullOrWhiteSpace(InterviewerId))
+            {
+                ModelState.AddModelError(nameof(InterviewerId), "Please select an interviewer.");
+            }
+
+            var user = string.IsNullOrWhiteSpace(InterviewerId)
+                ? null
+                : await _userManager.FindByIdAsync(InterviewerId);
+            if (user is null || !await _userManager.IsInRoleAsync(user, RolesConstants.InterviewerRole))
+            {
+                ModelState.AddModelError(nameof(InterviewerId), "The selected account is not an interviewer.");
+            }
+
+            var selectedIds = SelectedTimeslotIds.Distinct().ToArray();
+            var timeslots = await _context.Timeslots
+                .Include(timeslot => timeslot.Event)
+                .Where(timeslot => selectedIds.Contains(timeslot.Id) && timeslot.IsInterviewer && timeslot.IsActive && timeslot.Event.IsActive)
+                .OrderBy(timeslot => timeslot.Event.Date)
+                .ThenBy(timeslot => timeslot.Time)
+                .ToListAsync();
+            if (timeslots.Count != selectedIds.Length)
+            {
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "One or more selected timeslots are no longer available. Refresh the page and try again.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View(await BuildManualInterviewerSignupViewModelAsync(
+                    InterviewerId,
+                    selectedIds,
+                    signupInterviewer,
+                    Lunch));
+            }
+
+            var existingTimeslot = await _context.InterviewerTimeslots
+                .AnyAsync(timeslot => timeslot.InterviewerSignup.InterviewerId == InterviewerId && selectedIds.Contains(timeslot.TimeslotId));
+            if (existingTimeslot)
+            {
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "One or more selected timeslots have already been selected for this interviewer.");
+                return View(await BuildManualInterviewerSignupViewModelAsync(
+                    InterviewerId,
+                    selectedIds,
+                    signupInterviewer,
+                    Lunch));
+            }
+
+            var inPerson = signupInterviewer.InPerson;
             var existingSignupInterviewer = await _context.InterviewerSignups.FirstOrDefaultAsync(si =>
-                    si.IsVirtual == signupInterviewer.IsVirtual &&
-                    si.InPerson == signupInterviewer.InPerson &&
-                    si.InterviewerId == InterviewerId);
+                si.InterviewerId == InterviewerId && si.InPerson == inPerson);
 
             InterviewerSignup post;
-            if (existingSignupInterviewer != null)
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                post = existingSignupInterviewer;
-                foreach (int date in dates)
+                if (existingSignupInterviewer is not null)
                 {
-                    if (!_context.InterviewerLocations.Any(x => x.InterviewerId == existingSignupInterviewer.InterviewerId && x.EventId == date))
+                    post = existingSignupInterviewer;
+                }
+                else
+                {
+                    post = new InterviewerSignup
                     {
-                        var interviewerPreference = "";
-                        if (existingSignupInterviewer.InPerson && existingSignupInterviewer.IsVirtual)
-                        {
-                            interviewerPreference = InterviewLocationConstants.InPerson + "/" + InterviewLocationConstants.IsVirtual;
-                        }
-                        else if (existingSignupInterviewer.InPerson)
-                        {
-                            interviewerPreference = InterviewLocationConstants.InPerson;
-                        }
-                        else if (existingSignupInterviewer.IsVirtual)
-                        {
-                            interviewerPreference = InterviewLocationConstants.IsVirtual;
-                        }
-
-                        _context.Add(new InterviewerLocation
-                        {
-                            LocationId = null,
-                            InterviewerId = InterviewerId,
-                            Preference = interviewerPreference,
-                            EventId = date
-                        });
-
-                        await _context.SaveChangesAsync();
-                    }
-                }
-            }
-            else
-            {
-                var interviewtype = "";
-                if (signupInterviewer.IsBehavioral && signupInterviewer.IsTechnical && signupInterviewer.IsCase)
-                {
-                    interviewtype = InterviewTypeConstants.Behavioral + ", " + InterviewTypeConstants.Technical + ", " + InterviewTypeConstants.Case;
-                }
-                else if (signupInterviewer.IsBehavioral && signupInterviewer.IsTechnical)
-                {
-                    interviewtype = InterviewTypeConstants.Behavioral + ", " + InterviewTypeConstants.Technical;
-                }
-                else if (signupInterviewer.IsBehavioral && signupInterviewer.IsCase)
-                {
-                    interviewtype = InterviewTypeConstants.Behavioral + ", " + InterviewTypeConstants.Case;
-                }
-                else if (signupInterviewer.IsTechnical && signupInterviewer.IsCase)
-                {
-                    interviewtype = InterviewTypeConstants.Technical + ", " + InterviewTypeConstants.Case;
-                }
-                else if (signupInterviewer.IsBehavioral)
-                {
-                    interviewtype = InterviewTypeConstants.Behavioral;
-                }
-                else if (signupInterviewer.IsTechnical)
-                {
-                    interviewtype = InterviewTypeConstants.Technical;
-                }
-                else if (signupInterviewer.IsCase)
-                {
-                    interviewtype = InterviewTypeConstants.Case;
-                }
-
-                post = new InterviewerSignup
-                {
-                    InterviewerId = InterviewerId,
-                    FirstName = user?.FirstName ?? "Deleted user",
-                    LastName = user?.LastName ?? string.Empty,
-                    InPerson = signupInterviewer.InPerson,
-                    IsVirtual = signupInterviewer.IsVirtual,
-                    IsBehavioral = signupInterviewer.IsBehavioral,
-                    IsTechnical = signupInterviewer.IsTechnical,
-                    IsCase = signupInterviewer.IsCase,
-                    Lunch = Lunch,
-                    Type = interviewtype
-                };
-
-                var interviewerPreference = "";
-                if (signupInterviewer.InPerson && signupInterviewer.IsVirtual)
-                {
-                    interviewerPreference = InterviewLocationConstants.InPerson + "/" + InterviewLocationConstants.IsVirtual;
-                }
-                else if (signupInterviewer.InPerson)
-                {
-                    interviewerPreference = InterviewLocationConstants.InPerson;
-                }
-                else if (signupInterviewer.IsVirtual)
-                {
-                    interviewerPreference = InterviewLocationConstants.IsVirtual;
-                }
-
-                if (ModelState.IsValid)
-                {
-                    _context.Add(post);
-                    await _context.SaveChangesAsync();
-
-                    foreach (int date in dates)
-                    {
-                        _context.Add(new InterviewerLocation
-                        {
-                            LocationId = null,
-                            InterviewerId = InterviewerId,
-                            Preference = interviewerPreference,
-                            EventId = date
-                        });
-                        await _context.SaveChangesAsync();
-                    }
-                }
-            }
-
-            var emailTimes = new List<InterviewerTimeslot>();
-            foreach (int id in SelectedEventIds)
-            {
-                var bothTimeslots = new List<InterviewerTimeslot>();
-
-                var timeslotOne = new InterviewerTimeslot
-                {
-                    TimeslotId = id,
-                    InterviewerSignupId = post.Id
-                };
-
-                var timeslotTwo = new InterviewerTimeslot
-                {
-                    TimeslotId = id + 1,
-                    InterviewerSignupId = post.Id
-                };
-
-                bothTimeslots.Add(timeslotOne);
-                bothTimeslots.Add(timeslotTwo);
-
-                if (ModelState.IsValid)
-                {
-                    _context.AddRange(bothTimeslots);
+                        InterviewerId = InterviewerId,
+                        FirstName = user!.FirstName ?? "Deleted user",
+                        LastName = user.LastName ?? string.Empty,
+                        InPerson = inPerson,
+                        IsVirtual = !inPerson,
+                        IsBehavioral = signupInterviewer.IsBehavioral,
+                        IsTechnical = signupInterviewer.IsTechnical,
+                        IsCase = signupInterviewer.IsCase,
+                        Lunch = inPerson && Lunch,
+                        Type = GetType(signupInterviewer.IsBehavioral, signupInterviewer.IsTechnical, signupInterviewer.IsCase)
+                    };
+                    _context.InterviewerSignups.Add(post);
                     await _context.SaveChangesAsync();
                 }
 
-                emailTimes.Add(timeslotOne);
-                emailTimes.Add(timeslotTwo);
+                var selectedEventIds = timeslots.Select(timeslot => timeslot.EventId).Distinct().ToArray();
+                var existingLocationEventIds = await _context.InterviewerLocations
+                    .Where(location => location.InterviewerId == InterviewerId &&
+                        location.EventId.HasValue && selectedEventIds.Contains(location.EventId.Value))
+                    .Select(location => location.EventId!.Value)
+                    .ToListAsync();
+                _context.InterviewerLocations.AddRange(selectedEventIds
+                    .Except(existingLocationEventIds)
+                    .Select(eventId => new InterviewerLocation
+                    {
+                        LocationId = null,
+                        InterviewerId = InterviewerId,
+                        Preference = GetLocation(inPerson),
+                        EventId = eventId
+                    }));
+                _context.InterviewerTimeslots.AddRange(timeslots.Select(timeslot => new InterviewerTimeslot
+                {
+                    TimeslotId = timeslot.Id,
+                    InterviewerSignupId = post.Id
+                }));
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
             }
-
-            //probably need to conditionally email if user is being signed up for first time
-            //var sortedTimes = emailTimes
-            //    .OrderBy(ve => ve.TimeslotId)
-            //    .ToList();
-
-            //ComposeEmail(user, sortedTimes);
+            catch (DbUpdateException)
+            {
+                await transaction.RollbackAsync();
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "The interviewer availability could not be saved. Refresh the page and try again.");
+                return View(await BuildManualInterviewerSignupViewModelAsync(
+                    InterviewerId,
+                    selectedIds,
+                    signupInterviewer,
+                    Lunch));
+            }
 
             return RedirectToAction("Index", "SignupInterviewers");
+        }
+
+        private async Task<SignupInterviewerTimeslotsViewModel> BuildManualInterviewerSignupViewModelAsync(
+            string? interviewerId = null,
+            IEnumerable<int>? selectedTimeslotIds = null,
+            InterviewerSignup? signupInterviewer = null,
+            bool lunch = false)
+        {
+            var timeslots = await _context.Timeslots
+                .Include(timeslot => timeslot.Event)
+                .Where(timeslot => timeslot.IsInterviewer && timeslot.IsActive && timeslot.Event.IsActive)
+                .OrderBy(timeslot => timeslot.Event.Date)
+                .ThenBy(timeslot => timeslot.Time)
+                .ToListAsync();
+            var users = await _userManager.GetUsersInRoleAsync(RolesConstants.InterviewerRole);
+
+            return new SignupInterviewerTimeslotsViewModel
+            {
+                Timeslots = timeslots,
+                EventDays = _participantSchedulingService.ComposeEventDays(timeslots, selectedTimeslotIds),
+                EventDates = timeslots.Select(timeslot => timeslot.Event).Distinct().ToList(),
+                Interviewers = users
+                    .Select(user => new SelectListItem
+                    {
+                        Value = user.Id,
+                        Text = $"{user.FirstName} {user.LastName}",
+                        Selected = user.Id == interviewerId
+                    })
+                    .OrderBy(interviewer => interviewer.Text)
+                    .ToList(),
+                InterviewerId = interviewerId ?? string.Empty,
+                SelectedTimeslotIds = selectedTimeslotIds?.ToArray() ?? [],
+                SignupInterviewer = signupInterviewer ?? new InterviewerSignup(),
+                Lunch = lunch,
+                SignedUp = false
+            };
         }
 
         // GET: SignupInterviewerTimeslots/Delete/5

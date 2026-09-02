@@ -29,8 +29,6 @@ namespace MockInterviews.Controllers
     {
         private readonly IManageInterviews _manager;
         private readonly MockInterviewsDbContext _context;
-        private readonly TimeslotService _timeslotService;
-        private readonly InterviewService _interviewService;
         private readonly ParticipantSchedulingService _participantSchedulingService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly UserService _userService;
@@ -42,8 +40,6 @@ namespace MockInterviews.Controllers
 
         public InterviewEventsController(IManageInterviews manager,
             MockInterviewsDbContext context,
-            TimeslotService timeslotService,
-            InterviewService interviewService,
             ParticipantSchedulingService participantSchedulingService,
             UserManager<ApplicationUser> userManager,
             UserService userService,
@@ -55,8 +51,6 @@ namespace MockInterviews.Controllers
         {
             _manager = manager;
             _context = context;
-            _timeslotService = timeslotService;
-            _interviewService = interviewService;
             _participantSchedulingService = participantSchedulingService;
             _userManager = userManager;
             _userService = userService;
@@ -1399,107 +1393,148 @@ namespace MockInterviews.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> CreateForStudent()
         {
-            var students = await _userService.GetUsersByRole(RolesConstants.StudentRole);
-            var studentList = new List<SelectListItem>();
-            foreach (var student in students)
-            {
-                studentList.Add(new SelectListItem
-                {
-                    Value = student.Id,
-                    Text = student.FirstName + " " + student.LastName
-                });
-            }
-
-            studentList.Sort((x, y) => string.Compare(x.Text, y.Text));
-
-            var timeslots = await _timeslotService.GetActiveTimeslotsByRole(true, false);
-            var timeslotsList = timeslots.ToList();
-
-            InterviewSignupByAdminViewModel model = new()
-            {
-                Timeslots = timeslotsList,
-                Events = timeslotsList.Select(x => x.Event).Distinct().ToList(),
-                Students = studentList,
-            };
-
-            return View(model);
+            return View(await BuildAdminStudentSignupViewModelAsync());
         }
 
         [HttpPost]
-        [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> CreateForStudent(int SelectedEventIds, string StudentId)
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        public async Task<IActionResult> CreateForStudent(int[] SelectedTimeslotIds, string StudentId)
         {
-            var students = await _userService.GetUsersByRole(RolesConstants.StudentRole);
-            var studentList = new List<SelectListItem>();
-            foreach (var student in students)
+            SelectedTimeslotIds ??= [];
+            if (SelectedTimeslotIds.Length != 1)
             {
-                studentList.Add(new SelectListItem
-                {
-                    Value = student.Id,
-                    Text = student.FirstName + " " + student.LastName
-                });
-            }
-
-            studentList.Sort((x, y) => string.Compare(x.Text, y.Text));
-
-            var timeslots = await _timeslotService.GetActiveTimeslotsByRole(true, false);
-            var timeslotsList = timeslots.ToList();
-
-            int days = timeslotsList.Select(x => x.EventId)
-                .Distinct()
-                .Count();
-
-            var vm = new InterviewSignupByAdminViewModel()
-            {
-                Timeslots = timeslotsList,
-                Events = timeslotsList.Select(x => x.Event).Distinct().ToList(),
-                Students = studentList
-            };
-
-            if (SelectedEventIds == 0)
-            {
-                ModelState.AddModelError("StudentId", "Please select a timeslot");
-                return View(vm);
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "Select one interview start time.");
             }
 
             if (string.IsNullOrEmpty(StudentId))
             {
                 ModelState.AddModelError("StudentId", "Please select a student");
-                return View(vm);
             }
 
-            var user = await _userService.GetByIdAsync(StudentId);
-
-            var interviewTypeTwo = InterviewTypeConstants.Technical;
-            if (user.Class == Classes.NotYetMIS || user.Class == Classes.FirstSem)
+            var user = string.IsNullOrEmpty(StudentId)
+                ? null
+                : await _userManager.FindByIdAsync(StudentId);
+            if (user is not null && !await _userManager.IsInRoleAsync(user, RolesConstants.StudentRole))
             {
-                interviewTypeTwo = InterviewTypeConstants.Behavioral;
+                ModelState.AddModelError(nameof(StudentId), "The selected account is not an active student.");
             }
+
+            if (!ModelState.IsValid || user is null)
+            {
+                return View(await BuildAdminStudentSignupViewModelAsync(StudentId, SelectedTimeslotIds));
+            }
+
+            var selectedTimeslot = await _context.Timeslots
+                .Include(timeslot => timeslot.Event)
+                .SingleOrDefaultAsync(timeslot => timeslot.Id == SelectedTimeslotIds[0]);
+            var pairedTimeslot = selectedTimeslot is null
+                ? null
+                : await _participantSchedulingService.FindAdjacentStudentInterviewTimeslotAsync(selectedTimeslot);
+
+            var isFirstSemesterStudent = user.Class == Classes.NotYetMIS || user.Class == Classes.FirstSem;
+            var isEligible = selectedTimeslot is not null &&
+                pairedTimeslot is not null &&
+                selectedTimeslot.IsStudent &&
+                selectedTimeslot.IsActive &&
+                pairedTimeslot.IsActive &&
+                selectedTimeslot.Event.IsActive &&
+                (isFirstSemesterStudent
+                    ? selectedTimeslot.Event.For221 != For221.n
+                    : selectedTimeslot.Event.For221 != For221.y) &&
+                await _context.Interviews.CountAsync(interview => interview.TimeslotId == selectedTimeslot.Id) < selectedTimeslot.MaxSignUps &&
+                await _context.Interviews.CountAsync(interview => interview.TimeslotId == pairedTimeslot.Id) < pairedTimeslot.MaxSignUps &&
+                !await _context.Interviews
+                    .Include(interview => interview.Timeslot)
+                    .ThenInclude(timeslot => timeslot.Event)
+                    .AnyAsync(interview => interview.StudentId == StudentId && interview.Timeslot.Event.IsActive);
+
+            if (!isEligible)
+            {
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "The requested interview timeslot is not available. Refresh the page and try again.");
+                return View(await BuildAdminStudentSignupViewModelAsync(StudentId, SelectedTimeslotIds));
+            }
+
+            var interviewTypeTwo = isFirstSemesterStudent ? InterviewTypeConstants.Behavioral : InterviewTypeConstants.Technical;
 
             var interviewEvents = new List<Interview>
             {
                 new()
                 {
-                    TimeslotId = SelectedEventIds,
+                    TimeslotId = selectedTimeslot!.Id,
                     StudentId = StudentId,
                     Status = StatusConstants.Default,
                     Type = InterviewTypeConstants.Behavioral
                 },
                 new()
                 {
-                    TimeslotId = SelectedEventIds + 1,
+                    TimeslotId = pairedTimeslot!.Id,
                     StudentId = StudentId,
                     Status = StatusConstants.Default,
                     Type= interviewTypeTwo
                 }
             };
 
-            await _interviewService.AddRange(interviewEvents);
+            _context.Interviews.AddRange(interviewEvents);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "The requested interview timeslot is no longer available. Refresh the page and try again.");
+                return View(await BuildAdminStudentSignupViewModelAsync(StudentId, SelectedTimeslotIds));
+            }
 
             return RedirectToAction("Index", "InterviewEvents");
+        }
+
+        private async Task<InterviewSignupByAdminViewModel> BuildAdminStudentSignupViewModelAsync(
+            string? studentId = null,
+            IEnumerable<int>? selectedTimeslotIds = null)
+        {
+            var students = await _userService.GetUsersByRole(RolesConstants.StudentRole);
+            var activeTimeslots = await _context.Timeslots
+                .Include(timeslot => timeslot.Event)
+                .Where(timeslot => timeslot.IsActive && timeslot.Event.IsActive)
+                .OrderBy(timeslot => timeslot.Event.Date)
+                .ThenBy(timeslot => timeslot.Time)
+                .ToListAsync();
+            var signupCounts = await _context.Interviews
+                .GroupBy(interview => interview.TimeslotId)
+                .ToDictionaryAsync(group => group.Key, group => group.Count());
+
+            var availableStarts = new List<Timeslot>();
+            foreach (var timeslot in activeTimeslots.Where(timeslot => timeslot.IsStudent &&
+                         signupCounts.GetValueOrDefault(timeslot.Id) < timeslot.MaxSignUps))
+            {
+                var adjacent = activeTimeslots.SingleOrDefault(candidate =>
+                    candidate.EventId == timeslot.EventId &&
+                    candidate.Time == timeslot.Time.AddMinutes(30));
+                if (adjacent is not null && signupCounts.GetValueOrDefault(adjacent.Id) < adjacent.MaxSignUps)
+                {
+                    availableStarts.Add(timeslot);
+                }
+            }
+
+            return new InterviewSignupByAdminViewModel
+            {
+                Students = students
+                    .Select(student => new SelectListItem
+                    {
+                        Value = student.Id,
+                        Text = $"{student.FirstName} {student.LastName}",
+                        Selected = student.Id == studentId
+                    })
+                    .OrderBy(student => student.Text)
+                    .ToList(),
+                EventDays = _participantSchedulingService.ComposeEventDays(availableStarts, selectedTimeslotIds),
+                SelectedTimeslotIds = selectedTimeslotIds?.ToArray() ?? [],
+                StudentId = studentId ?? string.Empty
+            };
         }
 
         [Authorize(Roles = RolesConstants.AdminRole)]

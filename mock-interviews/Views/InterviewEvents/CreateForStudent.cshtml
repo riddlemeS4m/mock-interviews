@@ -1,63 +1,43 @@
-﻿@using MockInterviews.Data.Constants;
-@model MockInterviews.Models.ViewModels.InterviewEventsController.InterviewSignupByAdminViewModel;
+@model MockInterviews.Models.ViewModels.InterviewEventsController.InterviewSignupByAdminViewModel
 
 @{
-    ViewData["Title"] = "Create For Student";
-    Layout = "~/Views/Shared/_Layout.cshtml";
-
-    var days = Model.Events.Count;
-    string result = Math.Floor(12.0 / days).ToString();
+    ViewData["Title"] = "Add student interview";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Sign up for an Interview!</h1>
+<section class="mx-auto max-w-5xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Add student interview", "Choose a student and one 30-minute start time. The established two-interview schedule is created from the adjacent time block.")' />
 
-<hr />
-<div class="row">
-    <div class="col-md-2"></div>
-    <div class="col-md-8" id="center-everything">
-        <form asp-action="CreateForStudent">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="StudentId" class="control-label"></label>
-                <select asp-for="StudentId" class="form-control" asp-items='@Model.Students'>
+    @if (Model.EventDays.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("calendar-days", "No interview times available", "There are no active consecutive interview times with remaining capacity.")' />
+    }
+    else
+    {
+        <form asp-action="CreateForStudent" method="post" class="space-y-8">
+            <div asp-validation-summary="All" class="border-l-4 border-l-negative pl-4 text-sm text-negative"></div>
+
+            <div class="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
+                <label asp-for="StudentId" class="block text-sm font-semibold text-ink">Student</label>
+                <select asp-for="StudentId" asp-items="Model.Students" class="mt-2 block min-h-11 w-full rounded-md border border-line bg-surface px-3 py-2 text-ink shadow-sm sm:max-w-xl">
+                    <option value="">Select a student</option>
                 </select>
-                <span asp-validation-for="StudentId" class="text-danger"></span>
+                <span asp-validation-for="StudentId" class="mt-1 block text-sm text-negative"></span>
             </div>
-            <br />
-            <div class="row" id="center-everything">
-                @for (int i = 0; i < days; i++)
-                {
-                    <div class="@("col-md-"+result)">
-                        <h3>@Model.Events[i].Name</h3>
-                        <h4 class="date-column">@Model.Events[i].Date</h4>
-                        @foreach (var timeslot in Model.Timeslots)
-                        {
-                            if (timeslot.EventId == Model.Events[i].Id)
-                            {
-                                <div>
-                                    <input type="radio" id="@timeslot.Id" name="SelectedEventIds" value="@timeslot.Id">
-                                    <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
-                                </div>
-                            }
-                        }
-                    </div>
-                }
-                <br /><br />
-                <div>
-                    <span asp-validation-for="SelectedEventIds" class="text-danger"></span>
-                </div>
-            </div>
-            <br />
-            <div class="form-group" id="center-everything">
-                <input type="hidden" name="SelectedEventIds" id="SelectedEventIds">
-                <input type="submit" value="Sign Up!" class="btn btn-primary" />
+
+            <partial name="ParticipantScheduling/_EventDayTimeslotSelector"
+                     model='new TimeslotSelectorViewModel(Model.EventDays, "SelectedTimeslotIds", false, false, "admin-student-timeslot")' />
+
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="submit" ui-variant="Primary">Add interview schedule</button>
+                <a asp-action="Index" ui-variant="Quiet">Back to assignment board</a>
             </div>
         </form>
-    </div>
-    <div class="col-md-2"></div>
-</div>
-
+    }
+</section>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
 }
