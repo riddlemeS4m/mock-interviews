@@ -41,6 +41,7 @@
 @source "../Views/Users/CreateProvisionaryUser.cshtml";
 @source "../Views/Users/ResetUserPassword.cshtml";
 @source "../Views/Users/DeleteUser.cshtml";
+@source "../Views/Reports/**/*.cshtml";
 @source "../Views/Home/Index.cshtml";
 @source "../Views/Home/Admin.cshtml";
 @source "../Views/Home/AccessPending.cshtml";
