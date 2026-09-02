@@ -52,6 +52,9 @@
 @source "../Views/InterviewEvents/UserDelete.cshtml";
 @source "../Views/InterviewEvents/SelfCheckIn.cshtml";
 @source "../Views/VolunteerEvents/UserDeleteRange.cshtml";
+@source "../Views/VolunteerEvents/Index.cshtml";
+@source "../Views/VolunteerEvents/DeleteRange.cshtml";
+@source "../Views/VolunteerEvents/_CancelDialogContent.cshtml";
 @source "../Views/SignupInterviewerTimeslots/UserDeleteRange.cshtml";
 @source "../Views/InterviewEvents/Create.cshtml";
 @source "../Views/VolunteerEvents/Create.cshtml";

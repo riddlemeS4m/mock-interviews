@@ -48,7 +48,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: VolunteerEvents
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Index()
         {
             var volunteerEvents = await _context.VolunteerTimeslots
@@ -56,7 +56,8 @@ namespace MockInterviews.Controllers
                 .ThenInclude(y => y.Event)
                 .Where(y => y.Timeslot.Event.IsActive == true)
                 .OrderBy(ve => ve.StudentId)
-                .ThenBy(x => x.TimeslotId)
+                .ThenBy(ve => ve.Timeslot.EventId)
+                .ThenBy(ve => ve.Timeslot.Time)
                 .ToListAsync();
 
             var timeRanges = new ControlBreakVolunteer(_userManager);
@@ -462,7 +463,7 @@ namespace MockInterviews.Controllers
             }
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> DeleteRange(int[] timeslots)
         {
             // Check if the timeslotIds array is empty or null
@@ -472,53 +473,79 @@ namespace MockInterviews.Controllers
             }
 
             // Get the timeslots to delete
+            var requestedTimeslotIds = timeslots.Distinct().ToArray();
             var timeslotsToDelete = await _context.VolunteerTimeslots
                 .Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
-                .Where(t => timeslots.Contains(t.Id))
+                .Where(t => requestedTimeslotIds.Contains(t.Id))
+                .OrderBy(t => t.Timeslot.Time)
                 .ToListAsync();
 
-            // Check if any of the timeslots to delete are null
-            if (timeslotsToDelete == null || timeslotsToDelete.Count == 0)
+            if (timeslotsToDelete.Count != requestedTimeslotIds.Length
+                || !IsSingleVolunteerRange(timeslotsToDelete))
             {
                 return NotFound();
             }
 
             var date = timeslotsToDelete.First().Timeslot.Event.Date;
-            if (timeslotsToDelete.Any(t => t.Timeslot.Event.Date != date))
-            {
-                return NotFound();
-            }
-
-            var timeslotslist = timeslots.ToList();
 
             var viewModel = new TimeRangeViewModel
             {
                 Date = date,
                 StartTime = timeslotsToDelete.First().Timeslot.Time.ToString(@"h\:mm tt"),
                 EndTime = timeslotsToDelete.Last().Timeslot.Time.AddMinutes(30).ToString(@"h\:mm tt"),
-                TimeslotIds = timeslotslist
+                Name = (await _userManager.FindByIdAsync(timeslotsToDelete[0].StudentId)) is { } user
+                    ? $"{user.FirstName} {user.LastName}"
+                    : "Deleted user",
+                TimeslotIds = requestedTimeslotIds.ToList()
             };
 
 
             return View(viewModel);
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteRangeConfirmed(int[] timeslots)
         {
+            if (timeslots is null || timeslots.Length == 0)
+            {
+                return NotFound();
+            }
 
-            // Get the timeslots to delete
+            var requestedTimeslotIds = timeslots.Distinct().ToArray();
             var timeslotsToDelete = await _context.VolunteerTimeslots
-
-                .Where(t => timeslots.Contains(t.Id))
+                .Include(t => t.Timeslot)
+                .Where(t => requestedTimeslotIds.Contains(t.Id))
+                .OrderBy(t => t.Timeslot.Time)
                 .ToListAsync();
 
-            // Delete the timeslots
+            if (timeslotsToDelete.Count != requestedTimeslotIds.Length
+                || !IsSingleVolunteerRange(timeslotsToDelete))
+            {
+                return NotFound();
+            }
+
             _context.VolunteerTimeslots.RemoveRange(timeslotsToDelete);
             await _context.SaveChangesAsync();
+            TempData["StatusMessage"] = "Volunteer availability cancelled.";
 
             return RedirectToAction("Index", "VolunteerEvents");
+        }
+
+        private static bool IsSingleVolunteerRange(List<VolunteerTimeslot> volunteerTimeslots)
+        {
+            if (volunteerTimeslots.Count == 0)
+            {
+                return false;
+            }
+
+            var first = volunteerTimeslots[0];
+            return volunteerTimeslots.All(volunteerTimeslot => volunteerTimeslot.StudentId == first.StudentId
+                && volunteerTimeslot.Timeslot.EventId == first.Timeslot.EventId)
+                && volunteerTimeslots.Zip(volunteerTimeslots.Skip(1), (current, next) =>
+                    next.Timeslot.Time == current.Timeslot.Time.AddMinutes(30)).All(isAdjacent => isAdjacent);
         }
         private static DateTime CombineDateWithTimeString(DateTime date, string timeString)
         {
