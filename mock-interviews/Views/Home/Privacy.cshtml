@@ -1,21 +1,24 @@
 ﻿@{
     ViewData["Title"] = "Privacy Policy";
+    Layout = User.Identity?.IsAuthenticated == true
+        ? "/Views/Shared/_TailwindLayout.cshtml"
+        : "/Views/Shared/_TailwindPublicLayout.cshtml";
 }
 
-<body>
-    <h1>Privacy Policy</h1>
+<article class="mx-auto max-w-3xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Privacy policy", "Effective April 16, 2023")' />
 
-    <p>Effective as of: <strong>April 16, 2023</strong></p>
+    <p class="leading-7 text-muted">Mock Interviews (“we,” “us,” “our,” or “Company”) is committed to protecting your privacy. This Privacy Policy describes our policies and procedures for collecting, using, and disclosing your information when you use our website (the “Site”) or mock interview services (the “Services”). By using our Site or Services, you consent to our collection, use, and disclosure of your information in accordance with this Privacy Policy.</p>
 
-    <p>Mock Interviews (“we,” “us,” “our,” or “Company”) is committed to protecting your privacy. This Privacy Policy describes our policies and procedures for collecting, using, and disclosing your information when you use our website (the “Site”) or mock interview services (the “Services”). By using our Site or Services, you consent to our collection, use, and disclosure of your information in accordance with this Privacy Policy.</p>
+    <section class="space-y-4">
+    <h2 class="text-xl font-semibold text-ink">Information we collect</h2>
 
-    <h2>Information We Collect</h2>
+    <p class="leading-7 text-muted">We collect personal information about interviewers, students, and volunteers who use our Site or Services. This information may include your name, email address, phone number, and other contact details. We may also collect information about your education, work experience, and other details relevant to the mock interview process.</p>
 
-    <p>We collect personal information about interviewers, students, and volunteers who use our Site or Services. This information may include your name, email address, phone number, and other contact details. We may also collect information about your education, work experience, and other details relevant to the mock interview process.</p>
+    <p class="leading-7 text-muted">When you use our Site or Services, we may automatically collect certain information about your device and usage patterns, including:</p>
 
-    <p>When you use our Site or Services, we may automatically collect certain information about your device and usage patterns, including:</p>
-
-    <ul>
+    <ul class="list-disc space-y-1 pl-6 text-muted">
         <li>Your IP address</li>
         <li>Your browser type and version</li>
         <li>Your operating system and platform</li>
@@ -25,14 +28,16 @@
         <li>The referring website or application</li>
         <li>Other usage statistics</li>
     </ul>
+    </section>
 
-    <h2>How We Use Your Information</h2>
+    <section class="space-y-4">
+    <h2 class="text-xl font-semibold text-ink">How we use your information</h2>
 
-    <p>We use your information to provide mock interview services to you. This includes communicating with you about interview scheduling, conducting interviews, and providing feedback. We may also use your information for research and analysis to improve our Services.</p>
+    <p class="leading-7 text-muted">We use your information to provide mock interview services to you. This includes communicating with you about interview scheduling, conducting interviews, and providing feedback. We may also use your information for research and analysis to improve our Services.</p>
 
-    <p>We may use your information to:</p>
+    <p class="leading-7 text-muted">We may use your information to:</p>
 
-    <ul>
+    <ul class="list-disc space-y-1 pl-6 text-muted">
         <li>Confirm your identity</li>
         <li>Process payments</li>
         <li>Provide customer support</li>
@@ -42,30 +47,40 @@
         <li>Comply with legal obligations</li>
         <li>Protect our rights and interests</li>
     </ul>
+    </section>
 
-    <h2>Sharing Your Information</h2>
+    <section class="space-y-4">
+    <h2 class="text-xl font-semibold text-ink">Sharing your information</h2>
 
-    <p>We do not share your information with third parties except as necessary to provide our Services to you. We may share your information with:</p>
+    <p class="leading-7 text-muted">We do not share your information with third parties except as necessary to provide our Services to you. We may share your information with:</p>
 
-    <ul>
+    <ul class="list-disc space-y-1 pl-6 text-muted">
         <li>Our employees, contractors, and agents who need the information to perform their duties</li>
         <li>Our payment processing partners who help us process your payments</li>
         <li>Our email marketing partners who help us send you newsletters or marketing emails</li>
         <li>Our legal and regulatory advisors, if required by law or to protect our rights and interests</li>
     </ul>
+    </section>
 
-    <h2>Security</h2>
+    <section class="space-y-4">
+    <h2 class="text-xl font-semibold text-ink">Security</h2>
 
-    <p>We take reasonable steps to protect your information from unauthorized access, use, or disclosure. However, no method of transmission over the internet or method of electronic storage is completely secure. Therefore, we cannot guarantee the absolute security of your information.</p>
+    <p class="leading-7 text-muted">We take reasonable steps to protect your information from unauthorized access, use, or disclosure. However, no method of transmission over the internet or method of electronic storage is completely secure. Therefore, we cannot guarantee the absolute security of your information.</p>
+    </section>
 
-    <h2>Children’s Privacy</h2>
+    <section class="space-y-4">
+    <h2 class="text-xl font-semibold text-ink">Children’s privacy</h2>
 
-    <p>Our Site and Services are not directed to children under the age of 13, and we do not knowingly collect personal information from children under the age of 13. If we become aware that we have collected personal information from a child under the age of 13, we will take steps to delete the information as soon as possible.</p>
+    <p class="leading-7 text-muted">Our Site and Services are not directed to children under the age of 13, and we do not knowingly collect personal information from children under the age of 13. If we become aware that we have collected personal information from a child under the age of 13, we will take steps to delete the information as soon as possible.</p>
+    </section>
 
-  <h2>Links to Third-Party Websites</h2>
-  <p>Our Site or Services may contain links to third-party websites or services that are not owned or controlled by us. We have no control over and assume no responsibility for the content, privacy policies, or practices of any third-party websites or services.</p>
-  <h2>Changes to this Privacy Policy</h2>
-  <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page. You are advised to review this Privacy Policy periodically for any changes.</p>
-</body>
-
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-ink">Links to third-party websites</h2>
+        <p class="leading-7 text-muted">Our Site or Services may contain links to third-party websites or services that are not owned or controlled by us. We have no control over and assume no responsibility for the content, privacy policies, or practices of any third-party websites or services.</p>
+    </section>
+    <section class="space-y-4">
+        <h2 class="text-xl font-semibold text-ink">Changes to this privacy policy</h2>
+        <p class="leading-7 text-muted">We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page. You are advised to review this Privacy Policy periodically for any changes.</p>
+    </section>
+</article>
 

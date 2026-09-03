@@ -19,7 +19,7 @@ Tailwind uses its pinned standalone CLI, so Node.js and a JavaScript package man
 - Run `./scripts/tailwind.sh watch` while editing Tailwind views.
 - In Conductor, use the `Tailwind CSS` run script alongside `Run Server`.
 
-The generated `mock-interviews/wwwroot/css/tailwind.css` file is gitignored and is rebuilt by workspace setup, CI, and Docker publish. Add migrated view directories as `@source` entries in `mock-interviews/Styles/tailwind.css`.
+The generated `mock-interviews/wwwroot/css/tailwind.css` file is gitignored and is rebuilt by workspace setup, CI, and Docker publish. Tailwind scans all Razor views, areas, UI helpers, view components, and application JavaScript configured in `mock-interviews/Styles/tailwind.css`.
 
 ## Db setup
 1. `psql postgres`
