@@ -569,51 +569,14 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (_context.Interviews == null)
+            if (id is null)
             {
                 return NotFound();
             }
 
-            var interviewEvent = await _context.Interviews
-                .Include(x => x.Timeslot)
-                .ThenInclude(x => x.Event)
-                .Where(x => x.Id == id)
-                .FirstOrDefaultAsync();
-
-            if (interviewEvent == null)
-            {
-                return NotFound();
-            }
-
-            var all = await OutsourceQuery2024(interviewEvent);
-            var behavioralInterviewers = OutsourceQueryBehavioral2024(all);
-            var technicalInterviewers = OutsourceQueryTechnical2024(all);
-
-            var requestedInterviewers = new List<SelectListItem>();
-            if (interviewEvent.Type == InterviewTypeConstants.Technical)
-            {
-                requestedInterviewers = technicalInterviewers;
-            }
-            else
-            {
-                requestedInterviewers = behavioralInterviewers;
-            }
-
-            var studentname = await _userManager.Users
-                .Where(x => x.Id == interviewEvent.StudentId)
-                .Select(x => x.FirstName + " " + x.LastName)
-                .FirstOrDefaultAsync();
-
-            var interviewEventManageViewModel = new InterviewEventManageViewModel
-            {
-                InterviewEvent = interviewEvent,
-                BehavioralInterviewers = behavioralInterviewers,
-                TechnicalInterviewers = technicalInterviewers,
-                RequestedInterviewers = requestedInterviewers,
-                StudentName = studentname ?? "Deleted user"
-            };
-
-            return View(interviewEventManageViewModel);
+            var board = await _assignmentBoardQuery.BuildAsync();
+            var interview = board.CheckedIn.SingleOrDefault(item => item.InterviewId == id.Value);
+            return interview is null ? NotFound() : View(interview);
         }
 
         // Direct assignment fallback. The board is the primary workflow, but this
@@ -632,109 +595,14 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Override(int? id)
         {
-            if (_context.Interviews == null)
+            if (id is null)
             {
                 return NotFound();
             }
 
-            var interviewEvent = await _context.Interviews.FindAsync(id);
-            if (interviewEvent == null)
-            {
-                return NotFound();
-            }
-
-            interviewEvent = await _context.Interviews
-                .Include(x => x.Timeslot)
-                .ThenInclude(x => x.Event)
-                .Where(x => x.Id == id)
-                .FirstOrDefaultAsync();
-            if (interviewEvent is null)
-            {
-                return NotFound();
-            }
-
-            //var selectedInterviewers = await _userManager.GetUsersInRoleAsync(RolesConstants.InterviewerRole);
-            //var interviewers = selectedInterviewers.ToList();
-
-            var selectedInterviewers = await _context.InterviewerTimeslots
-                .Include(x => x.InterviewerSignup)
-                .Include(x => x.Timeslot)
-                .ThenInclude(x => x.Event)
-                .Where(x => x.Timeslot.EventId == interviewEvent.Timeslot.EventId &&
-                    x.Timeslot.Event.IsActive)
-                .Select(x => x.InterviewerSignup.InterviewerId)
-                .Distinct()
-                .ToListAsync();
-
-            var selectedInterviewersNames = new List<SelectListItem>();
-            if (selectedInterviewers.Count == 0)
-            {
-                if (interviewEvent.InterviewerTimeslot != null)
-                {
-                    selectedInterviewersNames.Add(new SelectListItem
-                    {
-                        Value = interviewEvent.InterviewerTimeslot.InterviewerSignup.InterviewerId,
-                        Text = interviewEvent.InterviewerTimeslot.InterviewerSignup.FirstName + " " + interviewEvent.InterviewerTimeslot.InterviewerSignup.LastName
-                    });
-                }
-                else
-                {
-                    selectedInterviewersNames.Add(new SelectListItem
-                    {
-                        Value = "0",
-                        Text = "--Unassigned--"
-                    });
-                }
-            }
-            else
-            {
-                if (interviewEvent.InterviewerTimeslot != null)
-                {
-                    selectedInterviewersNames.Add(new SelectListItem
-                    {
-                        Value = interviewEvent.InterviewerTimeslot.InterviewerSignup.InterviewerId,
-                        Text = interviewEvent.InterviewerTimeslot.InterviewerSignup.FirstName + " " + interviewEvent.InterviewerTimeslot.InterviewerSignup.LastName
-                    });
-                }
-                foreach (string sit in selectedInterviewers)
-                {
-                    var user = await _userManager.Users
-                        .Where(u => u.Id == sit)
-                        .Select(u => new { u.Id, u.FirstName, u.LastName })
-                        .FirstOrDefaultAsync();
-                    if (interviewEvent is null)
-                    {
-                        return NotFound();
-                    }
-
-                    if (user != null)
-                    {
-                        selectedInterviewersNames.Add(new SelectListItem
-                        {
-                            Value = user.Id,
-                            Text = user.FirstName + " " + user.LastName
-                        });
-                    }
-                }
-                selectedInterviewersNames = selectedInterviewersNames.OrderBy(item => item.Text).ToList();
-                selectedInterviewersNames.Insert(0, new SelectListItem
-                {
-                    Value = "0",
-                    Text = "--Unassigned--"
-                });
-
-            }
-
-
-            var interviewEventManageViewModel = new InterviewEventManageViewModel
-            {
-                InterviewEvent = interviewEvent,
-                RequestedInterviewers = selectedInterviewersNames,
-                BehavioralInterviewers = selectedInterviewersNames,
-                TechnicalInterviewers = selectedInterviewersNames
-            };
-
-            return View(interviewEventManageViewModel);
+            var board = await _assignmentBoardQuery.BuildAsync();
+            var interview = board.CheckedIn.Concat(board.Ongoing).SingleOrDefault(item => item.InterviewId == id.Value);
+            return interview is null ? NotFound() : View(interview);
         }
 
         [Authorize(Roles = RolesConstants.AdministrationRoles)]
@@ -1183,13 +1051,13 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> StudentCheckIn(int id)
-            => ToAssignmentResult(await _assignmentLifecycle.CheckInAsync(id));
+        public async Task<IActionResult> StudentCheckIn(int id, string? returnUrl = null)
+            => ToBoardCommandResult(await _assignmentLifecycle.CheckInAsync(id), returnUrl, "Student checked in.");
 
         [Authorize(Roles = RolesConstants.AdministrationRoles + "," + RolesConstants.InterviewerRole)]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> StudentComplete(int id)
+        public async Task<IActionResult> StudentComplete(int id, string? returnUrl = null)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId is null)
@@ -1197,10 +1065,10 @@ namespace MockInterviews.Controllers
                 return Challenge();
             }
 
-            return ToAssignmentResult(await _assignmentLifecycle.CompleteAsync(
+            return ToBoardCommandResult(await _assignmentLifecycle.CompleteAsync(
                 id,
                 userId,
-                User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.SystemAdminRole)));
+                User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.SystemAdminRole)), returnUrl, "Interview completed.");
         }
 
         [HttpPost]
@@ -1226,8 +1094,8 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> StudentNoShow(int id)
-            => ToAssignmentResult(await _assignmentLifecycle.MarkNoShowAsync(id));
+        public async Task<IActionResult> StudentNoShow(int id, string? returnUrl = null)
+            => ToBoardCommandResult(await _assignmentLifecycle.MarkNoShowAsync(id), returnUrl, "Student marked as no-show.");
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -1589,6 +1457,17 @@ namespace MockInterviews.Controllers
             AssignmentCommandStatus.Forbidden => Forbid(),
             _ => StatusCode(StatusCodes.Status500InternalServerError)
         };
+
+        private IActionResult ToBoardCommandResult(AssignmentCommandResult result, string? returnUrl, string successMessage)
+        {
+            if (result.Status == AssignmentCommandStatus.Success && !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                TempData["StatusMessage"] = successMessage;
+                return LocalRedirect(returnUrl);
+            }
+
+            return ToAssignmentResult(result);
+        }
 
         private static DateTime CombineDateWithTimeString(DateTime date, string timeString)
         {

@@ -1,33 +1,31 @@
-﻿@using MockInterviews.Data;
-@using MockInterviews.Data.Constants;
-@model MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventManageViewModel
+@using MockInterviews.Models.ViewModels.Shared
+@model MockInterviews.Models.ViewModels.InterviewEventsController.AssignmentBoardInterviewViewModel
 
 @{
-    ViewData["Title"] = "Manual Override";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
+    ViewData["Title"] = "Override assignment";
 }
 
-<h1>Manual Override</h1>
-
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Override" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<section class="mx-auto max-w-xl space-y-6">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Override assignment", $"{Model.StudentName} · {Model.EventDate:MMM d} at {Model.ScheduledTime:h:mm tt}")' />
+    <partial name="DesignSystem/_Feedback"
+             model='new UiFeedbackViewModel(UiFeedbackKind.Warning, "Use only for an intentional exception", "An override may bypass exact-timeslot availability, interviewer check-in, interview type, or a current assignment. The selected interviewer must still have real availability for this event.")' />
+    <div class="rounded-card border border-line bg-surface p-6 shadow-card">
+        <form asp-action="Override" method="post" class="space-y-5">
             @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@Model.InterviewEvent.Id" />
-            <p>This intentional override can bypass interviewer check-in, current assignment, interview type, and exact-timeslot availability. The assignment is still linked to a real volunteered availability row for this event.</p>
-            <div class="form-group">
-                <label asp-for="InterviewerId" class="control-label"></label>
-                <select asp-for="InterviewerId" class="form-control" asp-items="@Model.RequestedInterviewers"></select>
-                <span asp-validation-for="InterviewerId" class="text-danger"></span>
+            <input type="hidden" name="id" value="@Model.InterviewId" />
+            <div>
+                <label for="interviewerId" ui-label>Interviewer</label>
+                <select id="interviewerId" name="interviewerId" ui-control>
+                    <option value="">Select an interviewer</option>
+                    @foreach (var candidate in Model.OverrideCandidates)
+                    {
+                        <option value="@candidate.InterviewerId">@candidate.Name@(candidate.Bypasses.Count > 0 ? $" — bypasses {string.Join(", ", candidate.Bypasses)}" : string.Empty)</option>
+                    }
+                </select>
             </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" /> | <a asp-action="Index">Back to List</a>
-            </div>
+            <div class="flex flex-wrap justify-end gap-3"><a asp-action="Index" ui-variant="Secondary">Cancel</a><button type="submit" ui-variant="Primary">Confirm override</button></div>
         </form>
     </div>
-</div>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+</section>

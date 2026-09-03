@@ -1,13 +1,38 @@
+@using MockInterviews.Models.ViewModels.Shared
 @model MockInterviews.Models.ViewModels.InterviewEventsController.AssignmentBoardViewModel
 
 @{
-    ViewData["Title"] = "Assign Interviews";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
+    ViewData["Title"] = "Assignment board";
 }
 
-<h1>Assign Interviews</h1>
-<p>
-    <a class="btn btn-primary" asp-action="CreateForStudent">Manually sign up student</a>
-    <a class="btn btn-secondary" asp-action="PreAssignInterviews">Pre-assign interviews</a>
-</p>
+<section class="space-y-8">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader"
+                 model='new UiPageHeaderViewModel("Assignment board", "Check in students, make assignments, and track active interviews.")' />
+        <div class="flex shrink-0 flex-wrap gap-3">
+            <a asp-action="PreAssignInterviews" ui-variant="Secondary">
+                <ui-icon name="calendar-days" class="size-4" />
+                Pre-assign
+            </a>
+            <a asp-action="CreateForStudent" ui-variant="Primary">
+                <ui-icon name="user-plus" class="size-4" />
+                Add student
+            </a>
+        </div>
+    </div>
 
-<partial name="_AssignmentBoard" model="Model" />
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new UiFeedbackViewModel(UiFeedbackKind.Success, statusMessage, string.Empty)" />
+    }
+
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new UiFeedbackViewModel(UiFeedbackKind.Error, errorMessage, string.Empty)" />
+    }
+
+    <partial name="_AssignmentBoard" model="Model" />
+</section>

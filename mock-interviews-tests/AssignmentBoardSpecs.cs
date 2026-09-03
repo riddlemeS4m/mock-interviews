@@ -82,6 +82,44 @@ public sealed class AssignmentBoardSpecs(MockInterviewsWebApplicationFactory fac
         Assert.Contains("assignment-board-region", await systemAdminResponse.Content.ReadAsStringAsync());
     }
 
+    [Fact]
+    public async Task Board_uses_the_tailwind_shell_and_renders_a_normal_assignment_dialog()
+    {
+        await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            await TestData.AddUserAsync(context, "interviewer-1");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var interview = new Interview
+            {
+                StudentId = "student-1",
+                TimeslotId = slots[0].Id,
+                Status = StatusConstants.CheckedIn,
+                CheckedInAt = DateTime.UtcNow,
+                Type = InterviewTypeConstants.Behavioral
+            };
+            var signup = Signup("interviewer-1", behavioral: true);
+            context.AddRange(interview, signup);
+            await context.SaveChangesAsync();
+            context.InterviewerTimeslots.Add(new InterviewerTimeslot
+            {
+                InterviewerSignupId = signup.Id,
+                TimeslotId = slots[0].Id
+            });
+            await context.SaveChangesAsync();
+        });
+        using var admin = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
+
+        var response = await admin.GetAsync("/InterviewEvents");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("tailwind.css", html);
+        Assert.Contains("assignment-dialog-", html);
+        Assert.Contains("data-dialog", html);
+        Assert.DoesNotContain("modal fade", html);
+    }
+
     private static InterviewerSignup Signup(string interviewerId, bool behavioral = false, bool technical = false) => new()
     {
         InterviewerId = interviewerId,
