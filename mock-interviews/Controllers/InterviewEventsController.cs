@@ -27,9 +27,9 @@ namespace MockInterviews.Controllers
 {
     public class InterviewEventsController : Controller
     {
-        private readonly IManageInterviews _manager;
         private readonly AssignmentLifecycleService _assignmentLifecycle;
         private readonly AssignmentBoardQueryService _assignmentBoardQuery;
+        private readonly PreAssignmentService _preAssignmentService;
         private readonly MockInterviewsDbContext _context;
         private readonly ParticipantSchedulingService _participantSchedulingService;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -39,9 +39,9 @@ namespace MockInterviews.Controllers
         private readonly ILogger<InterviewEventsController> _logger;
         private readonly string _superUserEmail;
 
-        public InterviewEventsController(IManageInterviews manager,
-            AssignmentLifecycleService assignmentLifecycle,
+        public InterviewEventsController(AssignmentLifecycleService assignmentLifecycle,
             AssignmentBoardQueryService assignmentBoardQuery,
+            PreAssignmentService preAssignmentService,
             MockInterviewsDbContext context,
             ParticipantSchedulingService participantSchedulingService,
             UserManager<ApplicationUser> userManager,
@@ -51,9 +51,9 @@ namespace MockInterviews.Controllers
             ILogger<InterviewEventsController> logger,
             IOptions<SuperUserOptions> superUserOptions)
         {
-            _manager = manager;
             _assignmentLifecycle = assignmentLifecycle;
             _assignmentBoardQuery = assignmentBoardQuery;
+            _preAssignmentService = preAssignmentService;
             _context = context;
             _participantSchedulingService = participantSchedulingService;
             _userManager = userManager;
@@ -1412,37 +1412,31 @@ namespace MockInterviews.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> PreAssignInterviews()
         {
-            var vm = await _manager.ListOfAssignedStudents();
-
-            return View(vm);
+            return View(await _preAssignmentService.BuildAsync());
         }
 
         [HttpPost]
-        [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> PreAssignInterviews([FromBody] List<PreAssignInterviewRequestViewModel> requests)
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        public async Task<IActionResult> PreAssignInterviews(PreAssignmentTimeslotRequest request)
         {
-            _logger.LogInformation("Preassignment requested...");
-
-            if (requests == null || requests.Count == 0)
+            if (!ModelState.IsValid)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Invalid data. No interviews to assign." });
+                return View(await _preAssignmentService.BuildAsync());
             }
 
-            var dictionary = requests.ToDictionary(x => int.Parse(x.InterviewEventId), x => x.SelectedValue);
-
-            try
+            var result = await _preAssignmentService.ApplyAsync(request);
+            if (result.Status == PreAssignmentCommandStatus.Success)
             {
-                await _manager.AssignStudentsToInterviewers(dictionary);
-            }
-            catch
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to assign students to interviewers" });
+                TempData["StatusMessage"] = "Pre-assignments saved for this timeslot.";
+                return RedirectToAction(nameof(PreAssignInterviews));
             }
 
-            return StatusCode(StatusCodes.Status200OK, new { message = "Success!" });
+            ModelState.AddModelError(string.Empty, result.Message ?? "The pre-assignment could not be saved.");
+            return View(await _preAssignmentService.BuildAsync());
         }
 
         private IActionResult ToAssignmentResult(AssignmentCommandResult result) => result.Status switch

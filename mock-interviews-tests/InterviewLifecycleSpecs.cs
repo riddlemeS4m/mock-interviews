@@ -249,7 +249,9 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
             {
                 InterviewerId = "interviewer-1",
                 FirstName = "Interview",
-                LastName = "Person"
+                LastName = "Person",
+                CheckedIn = true,
+                IsBehavioral = true
             };
             var interview = new Interview
             {
@@ -271,14 +273,15 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
         using var admin = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
         var request = new[]
         {
-            new
-            {
-                InterviewEventId = data.interview.Id.ToString(),
-                SelectedValue = "interviewer-1"
-            }
+            new KeyValuePair<string, string>("TimeslotId", data.slots[0].Id.ToString()),
+            new KeyValuePair<string, string>("Assignments[0].InterviewId", data.interview.Id.ToString()),
+            new KeyValuePair<string, string>("Assignments[0].InterviewerId", "interviewer-1")
         };
 
-        var unavailable = await admin.PostAsJsonAsync("/InterviewEvents/PreAssignInterviews", request);
+        var unavailable = await admin.PostFormWithAntiforgeryAsync(
+            "/InterviewEvents/PreAssignInterviews",
+            "/InterviewEvents/PreAssignInterviews",
+            request);
         Assert.Equal(HttpStatusCode.OK, unavailable.StatusCode);
         Assert.Null(await Factory.InDatabaseScopeAsync(async context =>
             (await context.Interviews.SingleAsync()).InterviewerTimeslotId));
@@ -293,9 +296,12 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
             await context.SaveChangesAsync();
         });
 
-        var assigned = await admin.PostAsJsonAsync("/InterviewEvents/PreAssignInterviews", request);
+        var assigned = await admin.PostFormWithAntiforgeryAsync(
+            "/InterviewEvents/PreAssignInterviews",
+            "/InterviewEvents/PreAssignInterviews",
+            request);
 
-        Assert.Equal(HttpStatusCode.OK, assigned.StatusCode);
+        Assert.Equal(HttpStatusCode.Found, assigned.StatusCode);
         Assert.NotNull(await Factory.InDatabaseScopeAsync(async context =>
             (await context.Interviews.SingleAsync()).InterviewerTimeslotId));
     }

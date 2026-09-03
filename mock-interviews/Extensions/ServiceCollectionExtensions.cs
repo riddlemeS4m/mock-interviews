@@ -167,6 +167,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ParticipantSchedulingService>();
         services.AddScoped<AssignmentLifecycleService>();
         services.AddScoped<AssignmentBoardQueryService>();
+        services.AddScoped<PreAssignmentService>();
         services.AddScoped<DashboardService>();
         services.AddScoped<SettingsService>();
         services.AddScoped<TimeslotService>();
