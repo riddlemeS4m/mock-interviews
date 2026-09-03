@@ -1,0 +1,25 @@
+@using MockInterviews.Data.Constants
+@model MockInterviews.Models.ViewModels.InterviewEventsController.AssignmentBoardViewModel
+
+<div id="assignment-board-region" aria-live="polite">
+<section aria-labelledby="available-interviewers-heading">
+    <h2 id="available-interviewers-heading">Available interviewers</h2>
+    @if (Model.AvailableInterviewers.Count == 0)
+    {
+        <p class="empty-state">No interviewers are currently available.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var interviewer in Model.AvailableInterviewers)
+            {
+                <li><strong>@interviewer.Name</strong> — @interviewer.InterviewTypes, @interviewer.Room</li>
+            }
+        </ul>
+    }
+</section>
+
+<partial name="_AssignmentBoardTable" model='(Model.CheckedIn, "Checked-in students", "No students are waiting for assignment.")' />
+<partial name="_AssignmentBoardTable" model='(Model.Ongoing, "Ongoing interviews", "No interviews are in progress.")' />
+<partial name="_AssignmentBoardTable" model='(Model.Upcoming, "Upcoming students", "No upcoming interviews are in the current board horizon.")' />
+</div>

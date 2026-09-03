@@ -166,6 +166,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<InterviewService>();
         services.AddScoped<ParticipantSchedulingService>();
         services.AddScoped<AssignmentLifecycleService>();
+        services.AddScoped<AssignmentBoardQueryService>();
         services.AddScoped<DashboardService>();
         services.AddScoped<SettingsService>();
         services.AddScoped<TimeslotService>();

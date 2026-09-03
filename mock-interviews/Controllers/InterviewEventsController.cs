@@ -29,6 +29,7 @@ namespace MockInterviews.Controllers
     {
         private readonly IManageInterviews _manager;
         private readonly AssignmentLifecycleService _assignmentLifecycle;
+        private readonly AssignmentBoardQueryService _assignmentBoardQuery;
         private readonly MockInterviewsDbContext _context;
         private readonly ParticipantSchedulingService _participantSchedulingService;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -41,6 +42,7 @@ namespace MockInterviews.Controllers
 
         public InterviewEventsController(IManageInterviews manager,
             AssignmentLifecycleService assignmentLifecycle,
+            AssignmentBoardQueryService assignmentBoardQuery,
             MockInterviewsDbContext context,
             ParticipantSchedulingService participantSchedulingService,
             UserManager<ApplicationUser> userManager,
@@ -53,6 +55,7 @@ namespace MockInterviews.Controllers
         {
             _manager = manager;
             _assignmentLifecycle = assignmentLifecycle;
+            _assignmentBoardQuery = assignmentBoardQuery;
             _context = context;
             _participantSchedulingService = participantSchedulingService;
             _userManager = userManager;
@@ -68,153 +71,12 @@ namespace MockInterviews.Controllers
 
         // GET: InterviewEvents
         [Authorize(Roles = RolesConstants.AdministrationRoles)]
-        public async Task<IActionResult> Index()
-        {
-            //var interviewers = new List<AvailableInterviewer>();
-            var busyInterviewers = await _context.Interviews
-                .Include(x => x.InterviewerTimeslot)
-                // EF Core parses Include expressions without dereferencing an optional navigation.
-                .ThenInclude(x => x!.InterviewerSignup)
-                .Where(x => x.Status == StatusConstants.Ongoing && x.InterviewerTimeslot != null)
-                .Select(x => x.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
-                .Distinct()
-                .ToListAsync();
+        public async Task<IActionResult> Index() => View(await _assignmentBoardQuery.BuildAsync());
 
-            var interviewers = await _context.InterviewerSignups
-                .Where(x => x.CheckedIn && !busyInterviewers.Contains(x.InterviewerId))
-                .Select(x => new AvailableInterviewer
-                {
-                    InterviewerId = x.InterviewerId,
-                    InterviewType = x.Type ?? string.Empty,
-                })
-                .ToListAsync();
-
-            foreach (var iv in interviewers)
-            {
-                iv.Name = await _userManager.Users
-                    .Where(x => x.Id == iv.InterviewerId)
-                    .Select(x => x.FirstName + " " + x.LastName)
-                    .FirstOrDefaultAsync() ?? "Deleted user";
-
-                var date = DateTime.UtcNow.Date;
-                //var date = new DateTime(2024, 2, 8);
-
-                iv.Room = await _context.InterviewerLocations
-                    .Include(x => x.Location)
-                    .Include(x => x.Event)
-                    .Where(x => x.InterviewerId == iv.InterviewerId &&
-                        x.Event != null && x.Event.Date.Date == date)
-                    .Select(x => x.Location == null ? "Not Assigned" : x.Location.Room)
-                    .FirstOrDefaultAsync() ?? "Not Assigned";
-            }
-
-            interviewers.Sort((x, y) => string.Compare(x.Name, y.Name));
-
-            var hoursInAdvanceStr = _context.Settings
-                .Where(x => x.Name == "interview_index_hours")
-                .Select(x => x.Value)
-                .FirstOrDefault();
-
-            var hoursInAdvance = int.TryParse(hoursInAdvanceStr, out var configuredHours)
-                ? configuredHours
-                : throw new InvalidOperationException("Setting 'interview_index_hours' is not an integer.");
-
-            var timeslot = await _context.Timeslots
-                .OrderByDescending(x => x.MaxSignUps)
-                .FirstOrDefaultAsync();
-            var maxsignups = (timeslot?.MaxSignUps ?? 0) * hoursInAdvance * 2; //* 2 because there are two interviews per hour
-            var interviewEvents = await _context.Interviews
-                .Include(i => i.Location)
-                .Include(i => i.InterviewerTimeslot)
-                .ThenInclude(i => i!.InterviewerSignup)
-                .Include(i => i.Timeslot)
-                .ThenInclude(j => j.Event)
-                .Where(i => i.Status != StatusConstants.Completed &&
-                    i.Status != StatusConstants.NoShow &&
-                    i.Status != StatusConstants.Excused &&
-                    i.Timeslot.Event.IsActive)
-                .OrderBy(i => i.TimeslotId)
-                .ThenBy(i => i.Id)
-                .Take(maxsignups)
-                .ToListAsync();
-
-            // 1. Collect unique StudentIds
-            var studentIds = interviewEvents
-                .Select(ie => ie.StudentId)
-                .Distinct()
-                .ToList();
-
-            // 2. Fetch student names for all unique StudentIds
-            var students = await _userManager.Users
-                .Where(u => studentIds.Contains(u.Id))
-                .Select(u => new { u.Id, FullName = $"{u.FirstName} {u.LastName}", u.Class })
-                .ToListAsync();
-
-            var studentNames = students
-                .Select(u => new { u.Id, u.FullName })
-                .ToDictionary(u => u.Id, u => u.FullName);
-
-            var studentClasses = students
-                .Select(u => new { u.Id, Class = ClassConstants.GetClassText(u.Class) })
-                .ToDictionary(u => u.Id, u => u.Class);
-
-            //3. Collect unique InterviewerIds
-            var interviewerIds = await _context.InterviewerSignups
-                .Select(ie => ie.InterviewerId)
-                .Distinct()
-                .ToListAsync();
-
-            // 4. Fetch interviewer names for all unique InterviewerIds
-            var interviewerNames = await _userManager.Users
-                .Where(u => interviewerIds.Contains(u.Id))
-                .Select(u => new { u.Id, FullName = $"{u.FirstName} {u.LastName}" })
-                .ToDictionaryAsync(u => u.Id, u => u.FullName);
-
-            var model = new InterviewEventIndexViewModel();
-            var eventslist = new List<InterviewEventViewModel>();
-
-            foreach (Interview interviewEvent in interviewEvents)
-            {
-                var interviewEventViewModel = new InterviewEventViewModel();
-
-                if (studentNames.TryGetValue(interviewEvent.StudentId, out var studentName))
-                {
-                    interviewEventViewModel.StudentName = studentName;
-                }
-
-                if (studentClasses.TryGetValue(interviewEvent.StudentId, out var studentClass))
-                {
-                    interviewEventViewModel.Class = studentClass;
-                }
-
-                if (interviewEvent.InterviewerTimeslot != null)
-                {
-                    if (interviewerNames.TryGetValue(interviewEvent.InterviewerTimeslot.InterviewerSignup.InterviewerId, out var interviewerName))
-                    {
-                        interviewEventViewModel.InterviewerName = interviewerName;
-                    }
-
-                    interviewEventViewModel.InterviewEvent = interviewEvent;
-
-                    eventslist.Add(interviewEventViewModel);
-                }
-                else
-                {
-                    interviewEventViewModel.InterviewerName = "Not Assigned";
-                    interviewEventViewModel.InterviewEvent = interviewEvent;
-
-                    eventslist.Add(interviewEventViewModel);
-                }
-            }
-
-            model.Interviews = eventslist;
-            model.AvailableInterviewers = interviewers;
-
-            model.TechnicalInterviewers = new();
-            model.BehavioralInterviewers = new();
-
-            return View(model);
-        }
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        [HttpGet]
+        public async Task<IActionResult> Board()
+            => PartialView("_AssignmentBoard", await _assignmentBoardQuery.BuildAsync());
 
         [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> AttendanceReport()
