@@ -11,25 +11,11 @@
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="Override">
+        <form asp-action="Override" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="InterviewEvent.Id" />
-            <input type="hidden" asp-for="InterviewEvent.StudentId" />
-            <input type="hidden" asp-for="InterviewEvent.TimeslotId" />
-            <div class="form-group">
-                <label asp-for="InterviewEvent.Status" class="control-label"></label>
-                <select asp-for="InterviewEvent.Status" class="form-control" asp-items='@StatusConstants.GetCompleteStatusOptions()'>
-                    <option value="">-- Select One --</option>
-                </select>
-                <span asp-validation-for="InterviewEvent.Status" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="InterviewEvent.Type" class="control-label"></label>
-                <select asp-for="InterviewEvent.Type" class="form-control" asp-items='@InterviewTypeConstants.GetInterviewTypesOptions()'>
-                    <option value="">-- Select One --</option>
-                </select>
-                <span asp-validation-for="InterviewEvent.Type" class="text-danger"></span>
-            </div>
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.InterviewEvent.Id" />
+            <p>This intentional override can bypass interviewer check-in, current assignment, interview type, and exact-timeslot availability. The assignment is still linked to a real volunteered availability row for this event.</p>
             <div class="form-group">
                 <label asp-for="InterviewerId" class="control-label"></label>
                 <select asp-for="InterviewerId" class="form-control" asp-items="@Model.RequestedInterviewers"></select>

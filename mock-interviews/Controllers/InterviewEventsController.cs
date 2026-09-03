@@ -28,6 +28,7 @@ namespace MockInterviews.Controllers
     public class InterviewEventsController : Controller
     {
         private readonly IManageInterviews _manager;
+        private readonly AssignmentLifecycleService _assignmentLifecycle;
         private readonly MockInterviewsDbContext _context;
         private readonly ParticipantSchedulingService _participantSchedulingService;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -39,6 +40,7 @@ namespace MockInterviews.Controllers
         private readonly string _superUserEmail;
 
         public InterviewEventsController(IManageInterviews manager,
+            AssignmentLifecycleService assignmentLifecycle,
             MockInterviewsDbContext context,
             ParticipantSchedulingService participantSchedulingService,
             UserManager<ApplicationUser> userManager,
@@ -50,6 +52,7 @@ namespace MockInterviews.Controllers
             IOptions<SuperUserOptions> superUserOptions)
         {
             _manager = manager;
+            _assignmentLifecycle = assignmentLifecycle;
             _context = context;
             _participantSchedulingService = participantSchedulingService;
             _userManager = userManager;
@@ -64,7 +67,7 @@ namespace MockInterviews.Controllers
         //--Dalton Wright, Fall 2023
 
         // GET: InterviewEvents
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Index()
         {
             //var interviewers = new List<AvailableInterviewer>();
@@ -701,7 +704,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: InterviewEvents/Edit/5
-        [Authorize(Roles = RolesConstants.AdminRole + "," + RolesConstants.InterviewerRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Edit(int? id)
         {
             if (_context.Interviews == null)
@@ -751,124 +754,20 @@ namespace MockInterviews.Controllers
             return View(interviewEventManageViewModel);
         }
 
-        // POST: InterviewEvents/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [Authorize(Roles = RolesConstants.AdminRole + "," + RolesConstants.InterviewerRole)]
+        // Direct assignment fallback. The board is the primary workflow, but this
+        // route remains useful without JavaScript and follows the same command.
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,StudentId,LocationId,TimeslotId,Type,Status,InterviewerTimeslotId")] Interview interviewEvent, string InterviewerId)
+        public async Task<IActionResult> Edit(int id, string? interviewerId)
         {
-            if (id != interviewEvent.Id)
-            {
-                return NotFound();
-            }
-
-            //if(InterviewerId == "0")
-            //{
-            //    interviewEvent.SignupInterviewerTimeslot = null;
-            //}
-
-            if (ModelState.IsValid)
-            {
-                if (InterviewerId == "0")
-                {
-                    interviewEvent.InterviewerTimeslot = null;
-                    interviewEvent.InterviewerTimeslotId = null;
-                    interviewEvent.Location = null;
-                    interviewEvent.LocationId = null;
-                }
-                else
-                {
-                    var signupInterviewTimeslot = await _context.InterviewerTimeslots
-                        .Include(x => x.InterviewerSignup)
-                        .Include(x => x.Timeslot)
-                        .ThenInclude(x => x.Event)
-                        .Where(x => x.InterviewerSignup.InterviewerId == InterviewerId)
-                        .FirstOrDefaultAsync();
-
-                    if (signupInterviewTimeslot is null)
-                    {
-                        interviewEvent.InterviewerTimeslot = null;
-                        interviewEvent.InterviewerTimeslotId = null;
-                        interviewEvent.Location = null;
-                        interviewEvent.LocationId = null;
-                    }
-                    else
-                    {
-                        if (interviewEvent.Status == StatusConstants.CheckedIn)
-                        {
-                            interviewEvent.Status = StatusConstants.Ongoing;
-                        }
-
-                        var interviewerPreference = "";
-                        if (signupInterviewTimeslot.InterviewerSignup.IsVirtual && signupInterviewTimeslot.InterviewerSignup.InPerson)
-                        {
-                            interviewerPreference = InterviewLocationConstants.InPerson + "/" + InterviewLocationConstants.IsVirtual;
-                        }
-                        else if (signupInterviewTimeslot.InterviewerSignup.IsVirtual)
-                        {
-                            interviewerPreference = InterviewLocationConstants.IsVirtual;
-                        }
-                        else if (signupInterviewTimeslot.InterviewerSignup.InPerson)
-                        {
-                            interviewerPreference = InterviewLocationConstants.InPerson;
-                        }
-
-                        var location = await _context.InterviewerLocations
-                        .Include(x => x.Location)
-                        .Where(x => x.InterviewerId == InterviewerId &&
-                            x.Preference == interviewerPreference &&
-                            x.EventId == signupInterviewTimeslot.Timeslot.EventId &&
-                            x.LocationId != null)
-                        .FirstOrDefaultAsync();
-
-                        if (location?.Location is null)
-                        {
-                            interviewEvent.Location = null;
-                            interviewEvent.LocationId = null;
-                        }
-                        else
-                        {
-                            interviewEvent.Location = location.Location;
-                            interviewEvent.LocationId = location.Location.Id;
-                        }
-
-                        interviewEvent.InterviewerTimeslot = signupInterviewTimeslot;
-                        interviewEvent.InterviewerTimeslotId = signupInterviewTimeslot.Id;
-                    }
-                }
-
-                try
-                {
-                    _context.Update(interviewEvent);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!InterviewEventExists(interviewEvent.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                if (User.IsInRole(RolesConstants.AdminRole))
-                {
-                    await UpdateHub(id);
-                    await UpdateHub();
-
-                    return RedirectToAction(nameof(Index));
-                }
-                return RedirectToAction("Index", "Home");
-            }
-
-            return View(interviewEvent);
+            var result = await _assignmentLifecycle.AssignAsync(id, interviewerId);
+            return result.Status == AssignmentCommandStatus.Success
+                ? RedirectToAction(nameof(Index))
+                : ToAssignmentResult(result);
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Override(int? id)
         {
             if (_context.Interviews == null)
@@ -976,143 +875,25 @@ namespace MockInterviews.Controllers
             return View(interviewEventManageViewModel);
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Override(int id, [Bind("Id,StudentId,LocationId,TimeslotId,Type,Status,InterviewerTimeslotId")] Interview interviewEvent, string InterviewerId)
+        public async Task<IActionResult> Override(int id, string? interviewerId)
         {
-            if (id != interviewEvent.Id)
+            var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (actorId is null)
             {
-                return NotFound();
+                return Challenge();
             }
 
-            if (ModelState.IsValid)
-            {
-                if (InterviewerId == "0")
-                {
-                    interviewEvent.InterviewerTimeslot = null;
-                }
-                else
-                {
-                    var signupInterviewTimeslot = await _context.InterviewerTimeslots
-                        .Include(x => x.InterviewerSignup)
-                        .Include(x => x.Timeslot)
-                        .ThenInclude(x => x.Event)
-                        .Where(x => x.TimeslotId == interviewEvent.TimeslotId && x.InterviewerSignup.InterviewerId == InterviewerId)
-                        .FirstOrDefaultAsync();
-
-                    if (signupInterviewTimeslot != null)
-                    {
-                        var interviewerPreference = "";
-                        if (signupInterviewTimeslot.InterviewerSignup.IsVirtual && signupInterviewTimeslot.InterviewerSignup.InPerson)
-                        {
-                            interviewerPreference = InterviewLocationConstants.InPerson + "/" + InterviewLocationConstants.IsVirtual;
-                        }
-                        else if (signupInterviewTimeslot.InterviewerSignup.IsVirtual)
-                        {
-                            interviewerPreference = InterviewLocationConstants.IsVirtual;
-                        }
-                        else if (signupInterviewTimeslot.InterviewerSignup.InPerson)
-                        {
-                            interviewerPreference = InterviewLocationConstants.InPerson;
-                        }
-
-                        var location = await _context.InterviewerLocations
-                            .Include(x => x.Location)
-                            .Where(x => x.InterviewerId == InterviewerId && x.Preference == interviewerPreference && x.EventId == signupInterviewTimeslot.Timeslot.EventId && x.LocationId != null)
-                            .FirstOrDefaultAsync();
-
-                        interviewEvent.InterviewerTimeslot = signupInterviewTimeslot;
-                        interviewEvent.InterviewerTimeslotId = signupInterviewTimeslot.Id;
-
-                        if (location != null)
-                        {
-                            interviewEvent.LocationId = location.Location?.Id;
-                            interviewEvent.Location = location.Location;
-                        }
-
-                        if (interviewEvent.Status == StatusConstants.Ongoing)
-                        {
-                            interviewEvent.StartedAt = DateTime.UtcNow;
-                        }
-                        else if (interviewEvent.Status == StatusConstants.CheckedIn)
-                        {
-                            interviewEvent.CheckedInAt = DateTime.UtcNow;
-                        }
-                        else if (interviewEvent.Status == StatusConstants.Completed)
-                        {
-                            interviewEvent.EndedAt = DateTime.UtcNow;
-                        }
-                    }
-                }
-
-                try
-                {
-                    _context.Update(interviewEvent);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!InterviewEventExists(interviewEvent.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-
-                var newInterviewEvent = await _context.Interviews
-                    .Include(x => x.Location)
-                    .Include(x => x.InterviewerTimeslot)
-                    .ThenInclude(x => x!.InterviewerSignup)
-                    .Include(x => x.Timeslot)
-                    .ThenInclude(x => x.Event)
-                    .FirstOrDefaultAsync(x => x.Id == id);
-                if (newInterviewEvent is null)
-                {
-                    return NotFound();
-                }
-
-                var student = await _userManager.Users
-                    .Where(x => x.Id == newInterviewEvent.StudentId)
-                    .FirstOrDefaultAsync();
-
-                var interviewername = "Not Assigned";
-                var interviewerId = "0";
-
-                if (newInterviewEvent.InterviewerTimeslot != null)
-                {
-                    interviewerId = newInterviewEvent.InterviewerTimeslot.InterviewerSignup.InterviewerId;
-                    interviewername = await _userManager.Users
-                        .Where(x => x.Id == interviewerId)
-                        .Select(x => x.FirstName + " " + x.LastName)
-                        .FirstOrDefaultAsync() ?? "Deleted user";
-                }
-
-                if (newInterviewEvent.Location == null)
-                {
-                    newInterviewEvent.Location = new Location()
-                    {
-                        Room = "Not Assigned"
-                    };
-                }
-
-                var time = $"{newInterviewEvent.Timeslot.Time:hh:mm tt}";
-                var date = $"{newInterviewEvent.Timeslot.Event.Date:M/d/yyyy}";
-
-                await _hubContext.Clients.All.SendAsync("ReceiveInterviewEventUpdate", newInterviewEvent, GetDisplayName(student), student?.GetClass() ?? string.Empty, interviewerId, interviewername, time, date);
-                await UpdateHub();
-
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(interviewEvent);
+            var result = await _assignmentLifecycle.OverrideAsync(id, interviewerId, actorId);
+            return result.Status == AssignmentCommandStatus.Success
+                ? RedirectToAction(nameof(Index))
+                : ToAssignmentResult(result);
         }
 
         // GET: InterviewEvents/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Delete(int? id)
         {
             if (_context.Interviews == null)
@@ -1158,24 +939,24 @@ namespace MockInterviews.Controllers
                 Class = student is null ? string.Empty : ClassConstants.GetClassText(student.Class)
             };
 
-            await _hubContext.Clients.All.SendAsync("ReceiveInterviewEventUpdate", new Interview { Id = id ?? 0 }, "delete", "0", "", "", "");
-
             return View(secondViewModel);
         }
 
         // POST: InterviewEvents/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var interviewEvent = await _context.Interviews.FindAsync(id);
-            if (interviewEvent != null)
+            if (interviewEvent is null)
             {
-                _context.Interviews.Remove(interviewEvent);
+                return NotFound();
             }
 
+            _context.Interviews.Remove(interviewEvent);
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("BoardChanged", id);
             return RedirectToAction("Index", "Home");
         }
 
@@ -1537,288 +1318,60 @@ namespace MockInterviews.Controllers
             };
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> StudentCheckIn(int id)
-        {
-            _logger.LogInformation("Interviewee checked in. Interview Id: {id}", id);
+            => ToAssignmentResult(await _assignmentLifecycle.CheckInAsync(id));
 
-            if (_context.Interviews == null)
-            {
-                return BadRequest("Interview not found.");
-            }
-
-            var interviewEvent = await _context.Interviews
-                .Include(x => x.Timeslot)
-                .ThenInclude(x => x.Event)
-                .Where(x => x.Id == id)
-                .FirstOrDefaultAsync();
-
-            if (interviewEvent == null)
-            {
-                return NotFound("Interview not found.");
-            }
-
-            interviewEvent.Status = StatusConstants.CheckedIn;
-            interviewEvent.CheckedInAt = DateTime.UtcNow;
-
-            try
-            {
-                _context.Update(interviewEvent);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return Conflict("Concurrency exception occurred.");
-            }
-            catch (DbUpdateException)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Database error occurred.");
-            }
-
-            await UpdateHub(id);
-
-            return NoContent();
-        }
-
-        [Authorize(Roles = RolesConstants.AdminRole + "," + RolesConstants.InterviewerRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles + "," + RolesConstants.InterviewerRole)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> StudentComplete(int id)
         {
-            _logger.LogInformation($"Interview marked completed. Id: {id}");
-
-            if (_context.Interviews == null)
-            {
-                return BadRequest("Interview not found.");
-            }
-
-            var interviewEvent = await _context.Interviews
-                .Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x!.InterviewerSignup)
-                .Include(x => x.Timeslot)
-                .ThenInclude(x => x.Event)
-                .Where(x => x.Id == id)
-                .FirstOrDefaultAsync();
-
-            if (interviewEvent == null)
-            {
-                return NotFound("Interview not found.");
-            }
-
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!User.IsInRole(RolesConstants.AdminRole) &&
-                (interviewEvent.InterviewerTimeslot?.InterviewerSignup.InterviewerId != userId))
+            if (userId is null)
             {
-                return Forbid();
+                return Challenge();
             }
 
-            interviewEvent.Status = StatusConstants.Completed;
-            interviewEvent.EndedAt = DateTime.UtcNow;
-
-            try
-            {
-                _context.Update(interviewEvent);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return Conflict("Concurrency exception occurred.");
-            }
-            catch (DbUpdateException)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Database error occurred.");
-            }
-
-            await UpdateHub(id);
-
-            return NoContent();
+            return ToAssignmentResult(await _assignmentLifecycle.CompleteAsync(
+                id,
+                userId,
+                User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.SystemAdminRole)));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = RolesConstants.AdminRole + "," + RolesConstants.InterviewerRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles + "," + RolesConstants.InterviewerRole)]
         public async Task<IActionResult> CompleteAssignedInterview(int id)
         {
-            var result = await StudentComplete(id);
-            return result is NoContentResult
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId is null)
+            {
+                return Challenge();
+            }
+
+            var result = await _assignmentLifecycle.CompleteAsync(
+                id,
+                userId,
+                User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.SystemAdminRole));
+            return result.Status == AssignmentCommandStatus.Success
                 ? RedirectToAction("Index", "Home")
-                : result;
+                : ToAssignmentResult(result);
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> StudentNoShow(int id)
-        {
-            _logger.LogInformation($"Interview marked no-show. Id: {id}");
-
-            if (_context.Interviews == null)
-            {
-                return BadRequest("Interview not found.");
-            }
-
-            var interviewEvent = await _context.Interviews
-                .Include(x => x.Timeslot)
-                .ThenInclude(x => x.Event)
-                .Where(x => x.Id == id)
-                .FirstOrDefaultAsync();
-
-            if (interviewEvent == null)
-            {
-                return NotFound("Interview not found.");
-            }
-
-            interviewEvent.Status = StatusConstants.NoShow;
-            interviewEvent.EndedAt = DateTime.UtcNow;
-
-            try
-            {
-                _context.Update(interviewEvent);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                return Conflict("Concurrency exception occurred.");
-            }
-            catch (DbUpdateException)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Database error occurred.");
-            }
-
-            await UpdateHub(id);
-
-            return NoContent();
-        }
+            => ToAssignmentResult(await _assignmentLifecycle.MarkNoShowAsync(id));
 
         [HttpPost]
-        [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> EditInline(int Id, string Status, string InterviewerId, string Type)
-        {
-            _logger.LogInformation($"Id: {Id}, Status: {Status}, InterviewerId: {InterviewerId}, Type: {Type}");
-
-            if (Id == 0 || Status == null || Type == null)
-            {
-                return BadRequest("Interview not found.");
-            }
-
-            var interviewEvent = await _context.Interviews
-                .Include(x => x.Timeslot)
-                .ThenInclude(x => x.Event)
-                .Where(x => x.Id == Id)
-                .FirstOrDefaultAsync();
-
-            if (interviewEvent == null)
-            {
-                return NotFound();
-            }
-
-            interviewEvent.Status = Status;
-            interviewEvent.Type = Type;
-
-            if (InterviewerId == "0" || InterviewerId == "" || InterviewerId == null)
-            {
-                interviewEvent.InterviewerTimeslot = null;
-                interviewEvent.InterviewerTimeslotId = null;
-                interviewEvent.Location = null;
-                interviewEvent.LocationId = null;
-            }
-            else
-            {
-                var signupInterviewTimeslot = await _context.InterviewerTimeslots
-                    .Include(x => x.InterviewerSignup)
-                    .Include(x => x.Timeslot)
-                    .ThenInclude(x => x.Event)
-                    .Where(x => x.InterviewerSignup.InterviewerId == InterviewerId &&
-                        x.TimeslotId == interviewEvent.TimeslotId)
-                    .FirstOrDefaultAsync();
-
-                if (signupInterviewTimeslot is null)
-                {
-                    return BadRequest("The selected interviewer is not available for this timeslot.");
-                }
-                else
-                {
-                    if (interviewEvent.Status == StatusConstants.CheckedIn)
-                    {
-                        interviewEvent.Status = StatusConstants.Ongoing;
-                        interviewEvent.StartedAt = DateTime.UtcNow;
-                    }
-
-                    var interviewerPreference = "";
-                    if (signupInterviewTimeslot.InterviewerSignup.IsVirtual && signupInterviewTimeslot.InterviewerSignup.InPerson)
-                    {
-                        interviewerPreference = InterviewLocationConstants.InPerson + "/" + InterviewLocationConstants.IsVirtual;
-                    }
-                    else if (signupInterviewTimeslot.InterviewerSignup.IsVirtual)
-                    {
-                        interviewerPreference = InterviewLocationConstants.IsVirtual;
-                    }
-                    else if (signupInterviewTimeslot.InterviewerSignup.InPerson)
-                    {
-                        interviewerPreference = InterviewLocationConstants.InPerson;
-                    }
-
-                    var location = await _context.InterviewerLocations
-                    .Include(x => x.Location)
-                    .Where(x => x.InterviewerId == InterviewerId &&
-                        x.Preference == interviewerPreference &&
-                        x.EventId == signupInterviewTimeslot.Timeslot.EventId &&
-                        x.LocationId != null)
-                    .FirstOrDefaultAsync();
-
-                    if (location?.Location is null)
-                    {
-                        interviewEvent.Location = null;
-                        interviewEvent.LocationId = null;
-                    }
-                    else
-                    {
-                        interviewEvent.Location = location.Location;
-                        interviewEvent.LocationId = location.Location.Id;
-                    }
-
-                    interviewEvent.InterviewerTimeslot = signupInterviewTimeslot;
-                    interviewEvent.InterviewerTimeslotId = signupInterviewTimeslot.Id;
-                }
-            }
-
-            try
-            {
-                _context.Update(interviewEvent);
-                await _context.SaveChangesAsync();
-
-                await UpdateHub(Id);
-                await UpdateHub();
-
-                var student = await _userManager.Users
-                    .Where(x => x.Id == interviewEvent.StudentId)
-                    .Select(x => new
-                    {
-                        StudentName = x.FirstName + " " + x.LastName,
-                    })
-                    .FirstOrDefaultAsync();
-
-                var response = new EditInterviewResponse
-                {
-                    StudentName = student?.StudentName ?? "Deleted user",
-                    InterviewType = interviewEvent.Type, // Replace with actual values
-                    InterviewerName = interviewEvent.InterviewerTimeslot?.InterviewerSignup.GetInterviewerName() ?? "Not Assigned",
-                    Location = interviewEvent.Location?.Room ?? "Not Assigned",
-                };
-
-                await UpdateHub(Id);
-
-                return Ok(response);
-
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!InterviewEventExists(interviewEvent.Id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-        }
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        public async Task<IActionResult> EditInline(int id, string? interviewerId)
+            => ToAssignmentResult(await _assignmentLifecycle.AssignAsync(id, interviewerId));
 
         [Authorize(Roles = RolesConstants.AdminRole)]
         public async Task<ActionResult<AvailableInterviewersViewModel>> GetAvailableInterviewers(int id)
@@ -2164,6 +1717,16 @@ namespace MockInterviews.Controllers
 
             return StatusCode(StatusCodes.Status200OK, new { message = "Success!" });
         }
+
+        private IActionResult ToAssignmentResult(AssignmentCommandResult result) => result.Status switch
+        {
+            AssignmentCommandStatus.Success => NoContent(),
+            AssignmentCommandStatus.Validation => BadRequest(result.Message),
+            AssignmentCommandStatus.Conflict => Conflict(result.Message),
+            AssignmentCommandStatus.NotFound => NotFound(),
+            AssignmentCommandStatus.Forbidden => Forbid(),
+            _ => StatusCode(StatusCodes.Status500InternalServerError)
+        };
 
         private static DateTime CombineDateWithTimeString(DateTime date, string timeString)
         {

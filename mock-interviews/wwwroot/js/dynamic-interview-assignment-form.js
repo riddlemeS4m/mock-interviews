@@ -100,16 +100,11 @@ $(document).ready(() => {
             data: formData,
             processData: false, // Prevent jQuery from automatically processing the data
             contentType: false, // Prevent jQuery from setting the content type header
-            success: function (data) {
-                // console.log(data);
-
-                $('#edit-form-div').hide();
-
-                const successMessage = buildSuccessMessage(data);
-
-                $('#successText').empty().append(successMessage);
-
-                $('#exampleModalCenter').modal('show');
+            success: function () {
+                // The command now owns lifecycle state on the server. Until the
+                // server-rendered board refresh replaces this legacy screen, a
+                // successful fallback submission reloads its authoritative state.
+                window.location.reload();
             },
             error: function (xhr, status, error) {
                 console.error('Form submission failed:', error);

@@ -40,6 +40,7 @@ else
     <div class="row">
         <div class="col-md-4">
             <form id="editForm" action="/InterviewEvents/EditInline" method="post">
+                @Html.AntiForgeryToken()
                 <input type="hidden" id="Id" name="Id">
                 <div class="form-group">
                     <label for="Status">Status:</label>
@@ -121,7 +122,11 @@ else
                     <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Type)</td>
                     <td>
                         <a asp-action="Override" asp-route-id="@item.InterviewEvent.Id">Override</a> |
-                        <a asp-action="StudentComplete" asp-route-id="@item.InterviewEvent.Id">Complete</a>
+                        <form asp-action="StudentComplete" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@item.InterviewEvent.Id" />
+                            <button type="submit" class="btn btn-link p-0">Complete</button>
+                        </form>
                     </td>
                 </tr>
             }
@@ -161,7 +166,11 @@ else
                     <td>
                         <a class="capture-data">Assign</a> |
                         <a asp-action="Override" asp-route-id="@item.InterviewEvent.Id">Override</a> |
-                        <a asp-action="StudentComplete" asp-route-id="@item.InterviewEvent.Id">Complete</a>
+                        <form asp-action="StudentComplete" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@item.InterviewEvent.Id" />
+                            <button type="submit" class="btn btn-link p-0">Complete</button>
+                        </form>
                     </td>
                 </tr>
             }
@@ -205,9 +214,17 @@ else
                     <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Timeslot.Event.Date)</td>
                     <td>@Html.DisplayFor(modelItem => item.InterviewEvent.Type)</td>
                     <td>
-                        <a asp-action="StudentCheckIn" asp-route-id="@item.InterviewEvent.Id">Check In</a> |
+                        <form asp-action="StudentCheckIn" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@item.InterviewEvent.Id" />
+                            <button type="submit" class="btn btn-link p-0">Check In</button>
+                        </form> |
                         <a asp-action="Override" asp-route-id="@item.InterviewEvent.Id">Override</a> |
-                        <a asp-action="StudentNoShow" asp-route-id="@item.InterviewEvent.Id">No Show</a>
+                        <form asp-action="StudentNoShow" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@item.InterviewEvent.Id" />
+                            <button type="submit" class="btn btn-link p-0">No Show</button>
+                        </form>
                     </td>
                 </tr>
             }
