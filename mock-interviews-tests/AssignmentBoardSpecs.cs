@@ -139,6 +139,16 @@ public sealed class AssignmentBoardSpecs(MockInterviewsWebApplicationFactory fac
         Assert.Equal(HttpStatusCode.OK, adminResponse.StatusCode);
     }
 
+    [Fact]
+    public async Task Retired_inline_assignment_candidate_endpoint_is_not_exposed()
+    {
+        using var admin = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
+
+        var response = await admin.GetAsync("/InterviewEvents/GetAvailableInterviewers/1");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     private static InterviewerSignup Signup(string interviewerId, bool behavioral = false, bool technical = false) => new()
     {
         InterviewerId = interviewerId,

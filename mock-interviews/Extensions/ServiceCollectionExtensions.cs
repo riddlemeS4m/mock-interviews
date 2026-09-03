@@ -178,8 +178,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UserService>();
         services.AddTransient<IEmailSender, IdentityEmailSender>();
 
-        services.AddTransient<IManageInterviews, ManageInterviewsService>();
-
         return services;
     }
 
