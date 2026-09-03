@@ -30,4 +30,16 @@ public sealed class InterviewerCheckInSpecs(MockInterviewsWebApplicationFactory 
         var checkedIn = await Factory.InDatabaseScopeAsync(context => context.InterviewerSignups.Where(signup => signup.Id == signupId).Select(signup => signup.CheckedIn).SingleAsync());
         Assert.True(checkedIn);
     }
+
+    [Fact]
+    public async Task Retired_interviewer_check_in_endpoint_is_not_exposed()
+    {
+        using var client = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
+
+        var get = await client.GetAsync("/InterviewEvents/InterviewerSelfCheckIn");
+        var post = await client.PostAsync("/InterviewEvents/InterviewerSelfCheckIn", new FormUrlEncodedContent([]));
+
+        Assert.Equal(HttpStatusCode.NotFound, get.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, post.StatusCode);
+    }
 }

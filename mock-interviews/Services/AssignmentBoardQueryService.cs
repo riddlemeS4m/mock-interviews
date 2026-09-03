@@ -227,27 +227,15 @@ public sealed class AssignmentBoardQueryService(MockInterviewsDbContext context)
             .Where(signup => signup.CheckedIn && !busyInterviewerIds.Contains(signup.InterviewerId))
             .OrderBy(signup => signup.InterviewerId)
             .ToListAsync();
-        var activeEventIds = await context.Events
-            .AsNoTracking()
-            .Where(@event => @event.IsActive)
-            .Select(@event => @event.Id)
-            .ToArrayAsync();
-        var rooms = await BuildRoomIndexAsync(activeEventIds);
-
         return signups
             .GroupBy(signup => signup.InterviewerId)
             .Select(group =>
             {
                 var signup = group.First();
-                var room = rooms
-                    .Where(pair => pair.Key.InterviewerId == signup.InterviewerId)
-                    .Select(pair => pair.Value)
-                    .FirstOrDefault() ?? "Not assigned";
                 return new AssignmentBoardAvailableInterviewerViewModel(
                     signup.InterviewerId,
                     NameFor(signup.InterviewerId, users),
-                    DescribeInterviewTypes(signup),
-                    room);
+                    DescribeInterviewTypes(signup));
             })
             .OrderBy(interviewer => interviewer.Name)
             .ToList();

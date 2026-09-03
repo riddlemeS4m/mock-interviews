@@ -46,18 +46,6 @@ const applyTimers = function () {
   });
 };
 
-const interviewerSelfCheckIn = (status) => {
-  $(document).ready(() => {
-    if (status) {
-      $("#exampleModalCenter").modal("show");
-    }
-
-    $("#hideModalButton").click(() => {
-      $("#exampleModalCenter").modal("hide");
-    });
-  });
-};
-
 const displayResources = () => {
   $("#manual-button").on("click", () => {
     $(this).addClass("disabled");

@@ -35,9 +35,21 @@
     }
     else
     {
-        @foreach (var dateGroup in Model.Timeslots.GroupBy(timeslot => timeslot.EventDate.Date))
+        var dateGroups = Model.Timeslots.GroupBy(timeslot => timeslot.EventDate.Date).ToList();
+        @if (dateGroups.Count > 1)
         {
-            <section class="space-y-4" aria-labelledby="preassignment-date-@dateGroup.Key.ToString("yyyyMMdd")">
+            <nav class="flex flex-wrap gap-2" aria-label="Filter pre-assignments by date" data-preassignment-date-filters>
+                <button type="button" ui-variant="Secondary" aria-pressed="false" data-preassignment-date-filter="all">All dates</button>
+                @foreach (var dateGroup in dateGroups)
+                {
+                    <button type="button" ui-variant="Secondary" aria-pressed="false" data-preassignment-date-filter="@dateGroup.Key.ToString("yyyy-MM-dd")">@dateGroup.Key.ToString("MMM d, yyyy")</button>
+                }
+            </nav>
+        }
+
+        @foreach (var dateGroup in dateGroups)
+        {
+            <section class="space-y-4" aria-labelledby="preassignment-date-@dateGroup.Key.ToString("yyyyMMdd")" data-preassignment-date="@dateGroup.Key.ToString("yyyy-MM-dd")">
                 <div class="flex items-center gap-3">
                     <ui-icon name="calendar-days" class="size-5 text-muted" />
                     <h2 id="preassignment-date-@dateGroup.Key.ToString("yyyyMMdd")" class="text-xl font-semibold text-ink">@dateGroup.Key.ToString("dddd, MMMM d")</h2>
@@ -84,6 +96,7 @@
                                             <td class="px-5 py-4 text-ink">@interview.InterviewType</td>
                                             <td class="px-5 py-4">
                                                 <input type="hidden" name="Assignments[@index].InterviewId" value="@interview.InterviewId" />
+                                                <input type="hidden" name="Assignments[@index].ExpectedInterviewerTimeslotId" value="@interview.AssignedInterviewerTimeslotId" />
                                                 <label for="@selectId" class="sr-only">Interviewer for @interview.StudentName</label>
                                                 <select id="@selectId" name="Assignments[@index].InterviewerId" ui-control>
                                                     <option value="">Unassigned</option>
@@ -94,7 +107,7 @@
                                                 </select>
                                                 @if (interview.Candidates.Count == 0)
                                                 {
-                                                    <p class="mt-2 text-xs text-muted">No checked-in, type-compatible interviewer is available for this exact timeslot.</p>
+                                                    <p class="mt-2 text-xs text-muted">No type-compatible interviewer volunteered for this exact timeslot.</p>
                                                 }
                                             </td>
                                         </tr>
@@ -108,3 +121,7 @@
         }
     }
 </section>
+
+@section Scripts {
+    <script src="~/js/pre-assignment.js" asp-append-version="true"></script>
+}

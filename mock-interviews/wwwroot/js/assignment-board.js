@@ -11,6 +11,21 @@
     }
   };
 
+  const updateElapsedTimers = (root = document) => {
+    root.querySelectorAll("[data-elapsed-timer]").forEach((timer) => {
+      const startedAt = Date.parse(timer.getAttribute("data-elapsed-from") || "");
+      const label = timer.getAttribute("data-elapsed-label") || "Elapsed";
+      if (Number.isNaN(startedAt)) {
+        return;
+      }
+
+      const elapsedMinutes = Math.max(0, Math.floor((Date.now() - startedAt) / 60000));
+      const hours = Math.floor(elapsedMinutes / 60);
+      const minutes = elapsedMinutes % 60;
+      timer.textContent = `${label} ${hours > 0 ? `${hours}h ` : ""}${minutes}m`;
+    });
+  };
+
   const bindDialogs = (root) => {
     root.querySelectorAll("[data-dialog-target]").forEach((opener) => {
       opener.addEventListener("click", (event) => {
@@ -111,6 +126,7 @@
       currentRegion.replaceWith(replacement);
       bindDialogs(replacement);
       bindCommands(replacement);
+      updateElapsedTimers(replacement);
       if (focusedInterview) {
         replacement.querySelector(`[data-interview-id="${CSS.escape(focusedInterview)}"] button, [data-interview-id="${CSS.escape(focusedInterview)}"] a`)?.focus();
       }
@@ -135,6 +151,8 @@
   }
 
   bindCommands(initialRegion);
+  updateElapsedTimers(initialRegion);
+  window.setInterval(() => updateElapsedTimers(), 1000);
 
   if (!window.signalR) {
     announce("Live updates are unavailable. You can continue using the board and refresh manually.");

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
@@ -19,6 +20,8 @@ public sealed class AssignmentLifecycleService(
 {
     public async Task<AssignmentCommandResult> CheckInAsync(int interviewId)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await InterviewerAssignmentLock.AcquireAsync(context, InterviewerAssignmentLock.Interview(interviewId));
         var interview = await FindInterviewAsync(interviewId);
         if (interview is null)
         {
@@ -32,7 +35,7 @@ public sealed class AssignmentLifecycleService(
 
         interview.Status = StatusConstants.CheckedIn;
         interview.CheckedInAt = DateTime.UtcNow;
-        return await SaveAndPublishAsync(interview, "checked in");
+        return await SaveAndPublishAsync(interview, "checked in", transaction: transaction);
     }
 
     public async Task<AssignmentCommandResult> AssignAsync(int interviewId, string? interviewerId)
@@ -42,6 +45,11 @@ public sealed class AssignmentLifecycleService(
             return await UnassignAsync(interviewId);
         }
 
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await InterviewerAssignmentLock.AcquireAsync(
+            context,
+            InterviewerAssignmentLock.Interview(interviewId),
+            InterviewerAssignmentLock.Interviewer(interviewerId));
         var interview = await FindInterviewAsync(interviewId);
         if (interview is null)
         {
@@ -73,11 +81,13 @@ public sealed class AssignmentLifecycleService(
         await ApplyAssignmentAsync(interview, availability);
         interview.Status = StatusConstants.Ongoing;
         interview.StartedAt ??= DateTime.UtcNow;
-        return await SaveAndPublishAsync(interview, "assigned");
+        return await SaveAndPublishAsync(interview, "assigned", transaction: transaction);
     }
 
     public async Task<AssignmentCommandResult> UnassignAsync(int interviewId)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await InterviewerAssignmentLock.AcquireAsync(context, InterviewerAssignmentLock.Interview(interviewId));
         var interview = await FindInterviewAsync(interviewId);
         if (interview is null)
         {
@@ -91,7 +101,7 @@ public sealed class AssignmentLifecycleService(
 
         interview.InterviewerTimeslotId = null;
         interview.LocationId = null;
-        return await SaveAndPublishAsync(interview, "unassigned");
+        return await SaveAndPublishAsync(interview, "unassigned", transaction: transaction);
     }
 
     public async Task<AssignmentCommandResult> OverrideAsync(int interviewId, string? interviewerId, string actorId)
@@ -101,6 +111,11 @@ public sealed class AssignmentLifecycleService(
             return await UnassignAsync(interviewId);
         }
 
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await InterviewerAssignmentLock.AcquireAsync(
+            context,
+            InterviewerAssignmentLock.Interview(interviewId),
+            InterviewerAssignmentLock.Interviewer(interviewerId));
         var interview = await FindInterviewAsync(interviewId);
         if (interview is null)
         {
@@ -145,11 +160,13 @@ public sealed class AssignmentLifecycleService(
             interviewerId,
             bypasses.Count == 0 ? "none" : string.Join(", ", bypasses));
 
-        return await SaveAndPublishAsync(interview, "overridden", bypasses);
+        return await SaveAndPublishAsync(interview, "overridden", bypasses, transaction);
     }
 
     public async Task<AssignmentCommandResult> CompleteAsync(int interviewId, string actorId, bool isAdministrator)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await InterviewerAssignmentLock.AcquireAsync(context, InterviewerAssignmentLock.Interview(interviewId));
         var interview = await FindInterviewAsync(interviewId);
         if (interview is null)
         {
@@ -168,11 +185,13 @@ public sealed class AssignmentLifecycleService(
 
         interview.Status = StatusConstants.Completed;
         interview.EndedAt = DateTime.UtcNow;
-        return await SaveAndPublishAsync(interview, "completed");
+        return await SaveAndPublishAsync(interview, "completed", transaction: transaction);
     }
 
     public async Task<AssignmentCommandResult> MarkNoShowAsync(int interviewId)
     {
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await InterviewerAssignmentLock.AcquireAsync(context, InterviewerAssignmentLock.Interview(interviewId));
         var interview = await FindInterviewAsync(interviewId);
         if (interview is null)
         {
@@ -186,7 +205,7 @@ public sealed class AssignmentLifecycleService(
 
         interview.Status = StatusConstants.NoShow;
         interview.EndedAt = DateTime.UtcNow;
-        return await SaveAndPublishAsync(interview, "marked no-show");
+        return await SaveAndPublishAsync(interview, "marked no-show", transaction: transaction);
     }
 
     private async Task<Interview?> FindInterviewAsync(int interviewId) => await context.Interviews
@@ -281,11 +300,16 @@ public sealed class AssignmentLifecycleService(
     private async Task<AssignmentCommandResult> SaveAndPublishAsync(
         Interview interview,
         string action,
-        IReadOnlyList<string>? bypasses = null)
+        IReadOnlyList<string>? bypasses = null,
+        IDbContextTransaction? transaction = null)
     {
         try
         {
             await context.SaveChangesAsync();
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync();
+            }
         }
         catch (DbUpdateConcurrencyException)
         {

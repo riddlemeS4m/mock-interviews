@@ -56,6 +56,14 @@
                                         <span class="size-2 rounded-full @(interview.Status == StatusConstants.Ongoing ? "bg-positive" : interview.Status == StatusConstants.CheckedIn ? "bg-warning" : "bg-muted")" aria-hidden="true"></span>
                                         @interview.Status
                                     </span>
+                                    @if (interview.Status == StatusConstants.CheckedIn && interview.CheckedInAt is not null)
+                                    {
+                                        <span class="mt-1 block text-xs text-muted" data-elapsed-timer data-elapsed-from="@interview.CheckedInAt.Value.ToString("O")" data-elapsed-label="Waiting">Waiting</span>
+                                    }
+                                    @if (interview.Status == StatusConstants.Ongoing && interview.StartedAt is not null)
+                                    {
+                                        <span class="mt-1 block text-xs text-muted" data-elapsed-timer data-elapsed-from="@interview.StartedAt.Value.ToString("O")" data-elapsed-label="In progress">In progress</span>
+                                    }
                                 </td>
                                 <td class="px-5 py-4 text-ink">
                                     @interview.InterviewerName
@@ -89,6 +97,9 @@
                                                asp-route-id="@interview.InterviewId"
                                                ui-variant="Secondary"
                                                data-dialog-target="override-dialog-@interview.InterviewId">Override</a>
+                                        }
+                                        @if (interview.Status == StatusConstants.Ongoing)
+                                        {
                                             <form asp-action="StudentComplete" method="post" data-assignment-board-command>
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@interview.InterviewId" />

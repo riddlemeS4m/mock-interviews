@@ -114,12 +114,127 @@ public sealed class PreAssignmentSpecs(MockInterviewsWebApplicationFactory facto
         Assert.Equal(StatusConstants.Default, stored.Status);
     }
 
-    private static InterviewerSignup Signup(string interviewerId, bool behavioral = false, bool technical = false) => new()
+    [Fact]
+    public async Task Preassignment_uses_volunteered_availability_before_check_in_and_while_the_interviewer_is_busy()
+    {
+        var ids = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            await TestData.AddUserAsync(context, "student-2");
+            await TestData.AddUserAsync(context, "interviewer-1");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var signup = Signup("interviewer-1", behavioral: true, checkedIn: false);
+            var target = new Interview { StudentId = "student-1", TimeslotId = slots[0].Id, Status = StatusConstants.Default, Type = InterviewTypeConstants.Behavioral };
+            var current = new Interview { StudentId = "student-2", TimeslotId = slots[1].Id, Status = StatusConstants.Ongoing, Type = InterviewTypeConstants.Behavioral };
+            context.AddRange(signup, target, current);
+            await context.SaveChangesAsync();
+            var targetAvailability = new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = slots[0].Id };
+            var currentAvailability = new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = slots[1].Id };
+            context.InterviewerTimeslots.AddRange(targetAvailability, currentAvailability);
+            await context.SaveChangesAsync();
+            current.InterviewerTimeslotId = currentAvailability.Id;
+            await context.SaveChangesAsync();
+            return (timeslotId: slots[0].Id, targetInterviewId: target.Id, availabilityId: targetAvailability.Id);
+        });
+        using var scope = Factory.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<PreAssignmentService>();
+
+        var page = await service.BuildAsync();
+        Assert.Contains(page.Timeslots.Single(slot => slot.TimeslotId == ids.timeslotId).Interviews.Single().Candidates,
+            candidate => candidate.InterviewerId == "interviewer-1");
+
+        var result = await service.ApplyAsync(new PreAssignmentTimeslotRequest
+        {
+            TimeslotId = ids.timeslotId,
+            Assignments = [new PreAssignmentInterviewRequest { InterviewId = ids.targetInterviewId, InterviewerId = "interviewer-1" }]
+        });
+
+        Assert.Equal(PreAssignmentCommandStatus.Success, result.Status);
+        Assert.Equal(ids.availabilityId, await Factory.InDatabaseScopeAsync(context => context.Interviews
+            .Where(interview => interview.Id == ids.targetInterviewId)
+            .Select(interview => interview.InterviewerTimeslotId)
+            .SingleAsync()));
+    }
+
+    [Fact]
+    public async Task Simultaneous_preassignments_cannot_plan_one_interviewer_twice_in_the_same_timeslot()
+    {
+        var ids = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            await TestData.AddUserAsync(context, "student-2");
+            await TestData.AddUserAsync(context, "interviewer-1");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var signup = Signup("interviewer-1", behavioral: true, checkedIn: false);
+            var first = new Interview { StudentId = "student-1", TimeslotId = slots[0].Id, Status = StatusConstants.Default, Type = InterviewTypeConstants.Behavioral };
+            var second = new Interview { StudentId = "student-2", TimeslotId = slots[0].Id, Status = StatusConstants.Default, Type = InterviewTypeConstants.Behavioral };
+            context.AddRange(signup, first, second);
+            await context.SaveChangesAsync();
+            context.InterviewerTimeslots.Add(new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = slots[0].Id });
+            await context.SaveChangesAsync();
+            return (timeslotId: slots[0].Id, firstInterviewId: first.Id, secondInterviewId: second.Id);
+        });
+        using var firstScope = Factory.Services.CreateScope();
+        using var secondScope = Factory.Services.CreateScope();
+        var firstService = firstScope.ServiceProvider.GetRequiredService<PreAssignmentService>();
+        var secondService = secondScope.ServiceProvider.GetRequiredService<PreAssignmentService>();
+
+        var results = await Task.WhenAll(
+            firstService.ApplyAsync(Request(ids.timeslotId, ids.firstInterviewId)),
+            secondService.ApplyAsync(Request(ids.timeslotId, ids.secondInterviewId)));
+
+        Assert.Single(results, result => result.Status == PreAssignmentCommandStatus.Success);
+        Assert.Single(results, result => result.Status == PreAssignmentCommandStatus.Conflict && result.Message == "A selected interviewer already has a planned interview for this timeslot.");
+        Assert.Equal(1, await Factory.InDatabaseScopeAsync(context => context.Interviews.CountAsync(interview => interview.InterviewerTimeslotId != null)));
+    }
+
+    [Fact]
+    public async Task Simultaneous_preassignments_cannot_overwrite_one_interview_with_different_interviewers()
+    {
+        var ids = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            await TestData.AddUserAsync(context, "interviewer-1");
+            await TestData.AddUserAsync(context, "interviewer-2");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var interview = new Interview { StudentId = "student-1", TimeslotId = slots[0].Id, Status = StatusConstants.Default, Type = InterviewTypeConstants.Behavioral };
+            var first = Signup("interviewer-1", behavioral: true, checkedIn: false);
+            var second = Signup("interviewer-2", behavioral: true, checkedIn: false);
+            context.AddRange(interview, first, second);
+            await context.SaveChangesAsync();
+            context.InterviewerTimeslots.AddRange(
+                new InterviewerTimeslot { InterviewerSignupId = first.Id, TimeslotId = slots[0].Id },
+                new InterviewerTimeslot { InterviewerSignupId = second.Id, TimeslotId = slots[0].Id });
+            await context.SaveChangesAsync();
+            return (timeslotId: slots[0].Id, interviewId: interview.Id);
+        });
+        using var firstScope = Factory.Services.CreateScope();
+        using var secondScope = Factory.Services.CreateScope();
+        var firstService = firstScope.ServiceProvider.GetRequiredService<PreAssignmentService>();
+        var secondService = secondScope.ServiceProvider.GetRequiredService<PreAssignmentService>();
+
+        var results = await Task.WhenAll(
+            firstService.ApplyAsync(Request(ids.timeslotId, ids.interviewId, "interviewer-1")),
+            secondService.ApplyAsync(Request(ids.timeslotId, ids.interviewId, "interviewer-2")));
+
+        Assert.Single(results, result => result.Status == PreAssignmentCommandStatus.Success);
+        Assert.Single(results, result => result.Status == PreAssignmentCommandStatus.Conflict && result.Message == "One or more pre-assignments changed in another session. Refresh the page and try again.");
+        Assert.NotNull(await Factory.InDatabaseScopeAsync(async context =>
+            (await context.Interviews.SingleAsync()).InterviewerTimeslotId));
+    }
+
+    private static PreAssignmentTimeslotRequest Request(int timeslotId, int interviewId, string interviewerId = "interviewer-1") => new()
+    {
+        TimeslotId = timeslotId,
+        Assignments = [new PreAssignmentInterviewRequest { InterviewId = interviewId, InterviewerId = interviewerId }]
+    };
+
+    private static InterviewerSignup Signup(string interviewerId, bool behavioral = false, bool technical = false, bool checkedIn = true) => new()
     {
         InterviewerId = interviewerId,
         FirstName = interviewerId,
         LastName = "Signup",
-        CheckedIn = true,
+        CheckedIn = checkedIn,
         IsBehavioral = behavioral,
         IsTechnical = technical
     };

@@ -40,5 +40,4 @@ public sealed record AssignmentBoardOverrideCandidateViewModel(
 public sealed record AssignmentBoardAvailableInterviewerViewModel(
     string InterviewerId,
     string Name,
-    string InterviewTypes,
-    string Room);
+    string InterviewTypes);

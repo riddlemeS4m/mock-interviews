@@ -40,14 +40,6 @@ public sealed class PreAssignmentService(
             .ThenInclude(timeslot => timeslot.Event)
             .Where(item => timeslotIds.Contains(item.TimeslotId))
             .ToListAsync();
-        var busyInterviewerIds = await context.Interviews
-            .AsNoTracking()
-            .Where(interview => interview.Status == StatusConstants.Ongoing && interview.InterviewerTimeslot != null)
-            .Select(interview => interview.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
-            .Distinct()
-            .ToListAsync();
-        var busySet = busyInterviewerIds.ToHashSet(StringComparer.Ordinal);
-
         var userIds = interviews.Select(interview => interview.StudentId)
             .Concat(availability.Select(item => item.InterviewerSignup.InterviewerId))
             .Concat(interviews.Where(interview => interview.InterviewerTimeslot is not null)
@@ -73,10 +65,9 @@ public sealed class PreAssignmentService(
                     ClassFor(interview.StudentId, users),
                     interview.Type ?? "Not specified",
                     interview.InterviewerTimeslot?.InterviewerSignup.InterviewerId,
+                    interview.InterviewerTimeslotId,
                     availability
                         .Where(item => item.TimeslotId == interview.TimeslotId &&
-                            item.InterviewerSignup.CheckedIn &&
-                            !busySet.Contains(item.InterviewerSignup.InterviewerId) &&
                             SupportsInterviewType(item.InterviewerSignup, interview.Type))
                         .GroupBy(item => item.InterviewerSignup.InterviewerId)
                         .Select(candidate => new PreAssignmentCandidateViewModel(
@@ -111,8 +102,22 @@ public sealed class PreAssignmentService(
             return PreAssignmentCommandResult.Validation("The submitted interview selections are invalid.");
         }
 
+        var requestedInterviewerIds = request.Assignments
+            .Select(item => item.InterviewerId?.Trim())
+            .Where(id => !string.IsNullOrWhiteSpace(id) && id != "0")
+            .Cast<string>()
+            .ToArray();
+        if (requestedInterviewerIds.GroupBy(id => id, StringComparer.Ordinal).Any(group => group.Count() > 1))
+        {
+            return PreAssignmentCommandResult.Validation("An interviewer can only be planned for one interview in this timeslot.");
+        }
+
         await using var transaction = await context.Database.BeginTransactionAsync();
         var interviewIds = request.Assignments.Select(item => item.InterviewId).ToArray();
+        await InterviewerAssignmentLock.AcquireAsync(
+            context,
+            interviewIds.Select(InterviewerAssignmentLock.Interview)
+                .Concat(requestedInterviewerIds.Select(InterviewerAssignmentLock.Interviewer)));
         var interviews = await context.Interviews
             .Include(interview => interview.Timeslot)
             .ThenInclude(timeslot => timeslot.Event)
@@ -127,14 +132,9 @@ public sealed class PreAssignmentService(
             return PreAssignmentCommandResult.Conflict("One or more interviews changed and can no longer be pre-assigned. Refresh the page and try again.");
         }
 
-        var requestedInterviewerIds = request.Assignments
-            .Select(item => item.InterviewerId?.Trim())
-            .Where(id => !string.IsNullOrWhiteSpace(id) && id != "0")
-            .Cast<string>()
-            .ToArray();
-        if (requestedInterviewerIds.GroupBy(id => id, StringComparer.Ordinal).Any(group => group.Count() > 1))
+        if (request.Assignments.Any(item => interviews.Single(interview => interview.Id == item.InterviewId).InterviewerTimeslotId != item.ExpectedInterviewerTimeslotId))
         {
-            return PreAssignmentCommandResult.Validation("An interviewer can only be planned for one interview in this timeslot.");
+            return PreAssignmentCommandResult.Conflict("One or more pre-assignments changed in another session. Refresh the page and try again.");
         }
 
         var availability = await context.InterviewerTimeslots
@@ -153,13 +153,6 @@ public sealed class PreAssignmentService(
         }
 
         var selectedAvailabilityIds = availabilityByInterviewer.Values.Select(item => item.Id).ToArray();
-        var busyInterviewerIds = await context.Interviews
-            .Where(interview => interview.Status == StatusConstants.Ongoing &&
-                interview.InterviewerTimeslot != null &&
-                requestedInterviewerIds.Contains(interview.InterviewerTimeslot.InterviewerSignup.InterviewerId))
-            .Select(interview => interview.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
-            .Distinct()
-            .ToListAsync();
         var occupiedAvailabilityIds = await context.Interviews
             .Where(interview => interview.InterviewerTimeslotId != null &&
                 selectedAvailabilityIds.Contains(interview.InterviewerTimeslotId.Value) &&
@@ -181,19 +174,9 @@ public sealed class PreAssignmentService(
 
             var interview = interviews.Single(item => item.Id == requestItem.InterviewId);
             var candidate = availabilityByInterviewer[interviewerId];
-            if (!candidate.InterviewerSignup.CheckedIn)
-            {
-                return PreAssignmentCommandResult.Validation("A selected interviewer has not checked in.");
-            }
-
             if (!SupportsInterviewType(candidate.InterviewerSignup, interview.Type))
             {
                 return PreAssignmentCommandResult.Validation("A selected interviewer does not support this interview type.");
-            }
-
-            if (busyInterviewerIds.Contains(interviewerId, StringComparer.Ordinal))
-            {
-                return PreAssignmentCommandResult.Conflict("A selected interviewer is already conducting an interview.");
             }
 
             if (occupiedAvailabilityIds.Contains(candidate.Id))

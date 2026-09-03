@@ -1,87 +1,29 @@
-﻿@model MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventViewModel
+@using MockInterviews.Models.ViewModels.Shared
+@model MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventViewModel
 
 @{
-    ViewData["Title"] = "Delete";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
+    ViewData["Title"] = "Delete interview";
 }
 
-<h1>Delete</h1>
+<section class="mx-auto max-w-xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Delete interview", "Use this correction only when an interview must be permanently removed.")' />
 
-<h3>Are you sure you want to delete @Model.StudentName's interview?</h3>
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.StudentName)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.StudentName)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.InterviewEvent.Timeslot)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.InterviewEvent.Timeslot.Time)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.InterviewEvent.Timeslot.Event.Date)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.InterviewEvent.Timeslot.Event.Date)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.InterviewEvent.Type)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.InterviewEvent.Type)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.InterviewEvent.Status)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.InterviewEvent.Status)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.InterviewerName)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.InterviewerName)
-        </dd>
-        <dt class = "col-sm-2">
-            Location
-        </dt>
-        <dd class = "col-sm-10">
-            @(Model.InterviewEvent.Location?.Room ?? "Not assigned")
-        </dd>
-        
-        @*<dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.InterviewerRating)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.InterviewerRating)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.InterviewerFeedback)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.InterviewerFeedback)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.ProcessFeedback)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.ProcessFeedback)
-        </dd>*@
-        @*<dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SignupInterviewerTimeslot)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SignupInterviewerTimeslot.Id)
-        </dd>*@
+    <partial name="DesignSystem/_Feedback"
+             model='new UiFeedbackViewModel(UiFeedbackKind.Warning, "This cannot be undone", "The interview and its assignment history will be removed.")' />
+
+    <dl class="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface shadow-card">
+        <div class="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4"><dt class="text-sm font-semibold text-muted">Student</dt><dd class="sm:col-span-2">@Model.StudentName</dd></div>
+        <div class="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4"><dt class="text-sm font-semibold text-muted">Scheduled</dt><dd class="sm:col-span-2">@Model.InterviewEvent.Timeslot.Event.Date.ToString("MMM d, yyyy") · @Model.InterviewEvent.Timeslot.Time.ToString("h:mm tt")</dd></div>
+        <div class="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4"><dt class="text-sm font-semibold text-muted">Interview</dt><dd class="sm:col-span-2">@Model.InterviewEvent.Type</dd></div>
+        <div class="grid gap-1 px-5 py-4 sm:grid-cols-3 sm:gap-4"><dt class="text-sm font-semibold text-muted">Interviewer</dt><dd class="sm:col-span-2">@Model.InterviewerName</dd></div>
     </dl>
-    
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="InterviewEvent.Id" />
-        <input type="submit" value="Delete" class="btn btn-primary" /> |
-        <a asp-action="Index">Back to List</a>
+
+    <form asp-action="Delete" method="post" class="flex flex-wrap items-center gap-4">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.InterviewEvent.Id" />
+        <button type="submit" ui-variant="Primary" class="bg-negative hover:bg-negative/90 focus-visible:outline-negative">Delete interview</button>
+        <a asp-action="Index" class="text-sm font-semibold text-ink hover:underline">Keep interview</a>
     </form>
-</div>
+</section>

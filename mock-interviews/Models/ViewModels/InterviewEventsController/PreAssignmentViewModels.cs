@@ -20,6 +20,7 @@ public sealed record PreAssignmentInterviewViewModel(
     string StudentClass,
     string InterviewType,
     string? AssignedInterviewerId,
+    int? AssignedInterviewerTimeslotId,
     IReadOnlyList<PreAssignmentCandidateViewModel> Candidates);
 
 public sealed record PreAssignmentCandidateViewModel(
@@ -36,5 +37,6 @@ public sealed class PreAssignmentTimeslotRequest
 public sealed class PreAssignmentInterviewRequest
 {
     public int InterviewId { get; set; }
+    public int? ExpectedInterviewerTimeslotId { get; set; }
     public string? InterviewerId { get; set; }
 }

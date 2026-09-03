@@ -1,4 +1,5 @@
 using MockInterviews.IntegrationTests.Infrastructure;
+using MockInterviews.Services;
 
 namespace MockInterviews.IntegrationTests;
 
@@ -122,6 +123,117 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
         Assert.NotNull(stored.StartedAt);
         Assert.NotNull(stored.InterviewerTimeslotId);
         Assert.NotNull(stored.LocationId);
+    }
+
+    [Fact]
+    public async Task Simultaneous_assignments_cannot_start_two_interviews_with_the_same_interviewer()
+    {
+        var ids = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            await TestData.AddUserAsync(context, "student-2");
+            await TestData.AddUserAsync(context, "interviewer-1");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var signup = new InterviewerSignup { InterviewerId = "interviewer-1", FirstName = "Test", LastName = "Interviewer", CheckedIn = true, IsBehavioral = true };
+            var first = new Interview { StudentId = "student-1", TimeslotId = slots[0].Id, Status = StatusConstants.CheckedIn, CheckedInAt = DateTime.UtcNow, Type = InterviewTypeConstants.Behavioral };
+            var second = new Interview { StudentId = "student-2", TimeslotId = slots[1].Id, Status = StatusConstants.CheckedIn, CheckedInAt = DateTime.UtcNow, Type = InterviewTypeConstants.Behavioral };
+            context.AddRange(signup, first, second);
+            await context.SaveChangesAsync();
+            context.InterviewerTimeslots.AddRange(
+                new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = slots[0].Id },
+                new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = slots[1].Id });
+            await context.SaveChangesAsync();
+            return (firstInterviewId: first.Id, secondInterviewId: second.Id);
+        });
+        using var firstScope = Factory.Services.CreateScope();
+        using var secondScope = Factory.Services.CreateScope();
+        var firstService = firstScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+        var secondService = secondScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+
+        var results = await Task.WhenAll(
+            firstService.AssignAsync(ids.firstInterviewId, "interviewer-1"),
+            secondService.AssignAsync(ids.secondInterviewId, "interviewer-1"));
+
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Success);
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Validation && result.Message == "The selected interviewer is already conducting an interview.");
+        Assert.Equal(1, await Factory.InDatabaseScopeAsync(context => context.Interviews.CountAsync(interview => interview.Status == StatusConstants.Ongoing)));
+    }
+
+    [Fact]
+    public async Task Simultaneous_assignments_cannot_overwrite_the_same_interview_with_different_interviewers()
+    {
+        var interviewId = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            await TestData.AddUserAsync(context, "interviewer-1");
+            await TestData.AddUserAsync(context, "interviewer-2");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var interview = new Interview { StudentId = "student-1", TimeslotId = slots[0].Id, Status = StatusConstants.CheckedIn, CheckedInAt = DateTime.UtcNow, Type = InterviewTypeConstants.Behavioral };
+            var first = new InterviewerSignup { InterviewerId = "interviewer-1", FirstName = "First", LastName = "Interviewer", CheckedIn = true, IsBehavioral = true };
+            var second = new InterviewerSignup { InterviewerId = "interviewer-2", FirstName = "Second", LastName = "Interviewer", CheckedIn = true, IsBehavioral = true };
+            context.AddRange(interview, first, second);
+            await context.SaveChangesAsync();
+            context.InterviewerTimeslots.AddRange(
+                new InterviewerTimeslot { InterviewerSignupId = first.Id, TimeslotId = slots[0].Id },
+                new InterviewerTimeslot { InterviewerSignupId = second.Id, TimeslotId = slots[0].Id });
+            await context.SaveChangesAsync();
+            return interview.Id;
+        });
+        using var firstScope = Factory.Services.CreateScope();
+        using var secondScope = Factory.Services.CreateScope();
+        var firstService = firstScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+        var secondService = secondScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+
+        var results = await Task.WhenAll(
+            firstService.AssignAsync(interviewId, "interviewer-1"),
+            secondService.AssignAsync(interviewId, "interviewer-2"));
+
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Success);
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Conflict);
+        var stored = await Factory.InDatabaseScopeAsync(context => context.Interviews.SingleAsync());
+        Assert.Equal(StatusConstants.Ongoing, stored.Status);
+        Assert.NotNull(stored.InterviewerTimeslotId);
+    }
+
+    [Fact]
+    public async Task Simultaneous_conflicting_lifecycle_commands_apply_only_one_transition()
+    {
+        var interviewId = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            await TestData.AddUserAsync(context, "interviewer-1");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var interview = new Interview { StudentId = "student-1", TimeslotId = slots[0].Id, Status = StatusConstants.CheckedIn, CheckedInAt = DateTime.UtcNow, Type = InterviewTypeConstants.Behavioral };
+            var signup = new InterviewerSignup { InterviewerId = "interviewer-1", FirstName = "Test", LastName = "Interviewer", CheckedIn = true, IsBehavioral = true };
+            context.AddRange(interview, signup);
+            await context.SaveChangesAsync();
+            context.InterviewerTimeslots.Add(new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = slots[0].Id });
+            await context.SaveChangesAsync();
+            return interview.Id;
+        });
+        using var assignmentScope = Factory.Services.CreateScope();
+        using var noShowScope = Factory.Services.CreateScope();
+        var assignmentService = assignmentScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+        var noShowService = noShowScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+
+        var results = await Task.WhenAll(
+            assignmentService.AssignAsync(interviewId, "interviewer-1"),
+            noShowService.MarkNoShowAsync(interviewId));
+
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Success);
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Conflict);
+        var stored = await Factory.InDatabaseScopeAsync(context => context.Interviews.SingleAsync());
+        if (stored.Status == StatusConstants.Ongoing)
+        {
+            Assert.NotNull(stored.StartedAt);
+            Assert.Null(stored.EndedAt);
+        }
+        else
+        {
+            Assert.Equal(StatusConstants.NoShow, stored.Status);
+            Assert.NotNull(stored.EndedAt);
+            Assert.Null(stored.StartedAt);
+        }
     }
 
     [Fact]
