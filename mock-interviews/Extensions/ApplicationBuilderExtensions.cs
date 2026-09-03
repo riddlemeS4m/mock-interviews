@@ -57,7 +57,6 @@ public static class ApplicationBuilderExtensions
         app.MapRazorPages();
         app.MapHealthChecks("/health");
         app.MapHub<AssignInterviewsHub>("/interviewhub");
-        app.MapHub<AvailableInterviewersHub>("/interviewershub");
 
         return app;
     }

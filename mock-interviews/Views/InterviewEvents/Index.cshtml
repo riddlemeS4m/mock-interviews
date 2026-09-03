@@ -34,5 +34,14 @@
                  model="new UiFeedbackViewModel(UiFeedbackKind.Error, errorMessage, string.Empty)" />
     }
 
+    <p class="sr-only" aria-live="polite" data-assignment-board-status></p>
     <partial name="_AssignmentBoard" model="Model" />
 </section>
+
+@section Head {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.0/dist/browser/signalr.min.js" integrity="sha384-/taWmisziXYpcfnYsumSUmNaiMvG/fF/OJOUCLnqCIYTrpOZy7WbFF6FfIxwOrfL" crossorigin="anonymous"></script>
+}
+
+@section Scripts {
+    <script src="~/js/assignment-board.js" asp-append-version="true"></script>
+}

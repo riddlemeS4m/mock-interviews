@@ -13,23 +13,17 @@ namespace MockInterviews.Services
         private readonly InterviewerTimeslotService _interviewerTimeslotService;
         private readonly UserService _userService;
         private readonly IHubContext<AssignInterviewsHub> _interviewsHub;
-        private readonly IHubContext<AvailableInterviewersHub> _interviewersHub;
-        private readonly ILogger<ManageInterviewsService> _logger;
 
         public ManageInterviewsService(
             InterviewService interviewService,
             InterviewerTimeslotService interviewerTimeslotService,
             UserService userService,
-            IHubContext<AssignInterviewsHub> interviewsHub,
-            IHubContext<AvailableInterviewersHub> interviewersHub,
-            ILogger<ManageInterviewsService> logger)
+            IHubContext<AssignInterviewsHub> interviewsHub)
         {
             _interviewService = interviewService;
             _interviewerTimeslotService = interviewerTimeslotService;
             _userService = userService;
             _interviewsHub = interviewsHub;
-            _interviewersHub = interviewersHub;
-            _logger = logger;
         }
 
         public async Task AssignStudentsToInterviewers(Dictionary<int, string> keyValuePairs)
@@ -63,25 +57,10 @@ namespace MockInterviews.Services
                 }
             }
 
-            var studentIds = interviewsToUpdate.Select(x => x.StudentId).ToList();
-            var students = await _userService.GetUsersByIds(studentIds);
-
             if (interviewsToUpdate.Count > 0)
             {
                 await _interviewService.UpdateRangeAsync(interviewsToUpdate);
-
-                foreach (var interview in interviewsToUpdate)
-                {
-                    if (interview.InterviewerTimeslot is not { } interviewerTimeslot)
-                    {
-                        continue;
-                    }
-
-                    students.TryGetValue(interview.StudentId, out var student);
-                    var studentName = student?.GetFullName() ?? "Deleted user";
-                    var studentClass = student?.GetClass() ?? string.Empty;
-                    await _interviewsHub.Clients.All.SendAsync("ReceiveInterviewEventUpdate", interview, studentName, studentClass, interviewerTimeslot.InterviewerSignup.InterviewerId, interviewerTimeslot.InterviewerSignup.GetInterviewerName(), interview.Timeslot.Time, interview.Timeslot.Event.Date);
-                }
+                await _interviewsHub.Clients.All.SendAsync("BoardChanged");
             }
         }
 

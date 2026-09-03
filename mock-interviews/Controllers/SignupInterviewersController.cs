@@ -7,7 +7,6 @@ using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Models.ViewModels.SignupInterviewersController;
 using MockInterviews.Services.SignalR;
 
@@ -16,12 +15,12 @@ namespace MockInterviews.Controllers
     public class SignupInterviewersController : Controller
     {
         private readonly MockInterviewsDbContext _context;
-        private readonly IHubContext<AvailableInterviewersHub> _hubContext;
+        private readonly IHubContext<AssignInterviewsHub> _hubContext;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<SignupInterviewersController> _logger;
 
         public SignupInterviewersController(MockInterviewsDbContext context,
-            IHubContext<AvailableInterviewersHub> hubContext,
+            IHubContext<AssignInterviewsHub> hubContext,
             UserManager<ApplicationUser> userManager,
             ILogger<SignupInterviewersController> logger)
         {
@@ -228,50 +227,7 @@ namespace MockInterviews.Controllers
             return (_context.InterviewerSignups?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
-        private async Task UpdateHub()
-        {
-            var busyInterviewers = await _context.Interviews
-                .Include(x => x.InterviewerTimeslot)
-                // EF Core parses Include expressions without dereferencing an optional navigation.
-                .ThenInclude(x => x!.InterviewerSignup)
-                .Where(x => x.Status == StatusConstants.Ongoing && x.InterviewerTimeslot != null)
-                .Select(x => x.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
-                .Distinct()
-                .ToListAsync();
-
-            var interviewers = await _context.InterviewerSignups
-                .Where(x => x.CheckedIn && !busyInterviewers.Contains(x.InterviewerId))
-                .Select(x => new AvailableInterviewer
-                {
-                    InterviewerId = x.InterviewerId,
-                    InterviewType = x.Type ?? string.Empty,
-                })
-            .ToListAsync();
-
-            foreach (var iv in interviewers)
-            {
-                iv.Name = await _userManager.Users
-                    .Where(x => x.Id == iv.InterviewerId)
-                    .Select(x => x.FirstName + " " + x.LastName)
-                    .FirstOrDefaultAsync() ?? "Deleted user";
-
-                var date = DateTime.UtcNow.Date;
-                //var date = new DateTime(2024, 2, 8);
-
-                iv.Room = await _context.InterviewerLocations
-                    .Include(x => x.Location)
-                    .Include(x => x.Event)
-                    .Where(x => x.InterviewerId == iv.InterviewerId &&
-                        x.Event != null && x.Event.Date == date && x.Location != null)
-                    .Select(x => x.Location!.Room)
-                    .FirstOrDefaultAsync() ?? "Not Assigned";
-            }
-
-            interviewers.Sort((x, y) => string.Compare(x.Name, y.Name));
-
-            _logger.LogInformation("Requesting all clients to update their available interviewers lists...");
-            await _hubContext.Clients.All.SendAsync("ReceiveAvailableInterviewersUpdate", interviewers);
-            _logger.LogInformation("Requested.");
-        }
+        private Task UpdateHub()
+            => _hubContext.Clients.All.SendAsync("BoardChanged");
     }
 }

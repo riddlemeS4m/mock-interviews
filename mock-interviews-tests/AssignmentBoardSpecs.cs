@@ -117,7 +117,26 @@ public sealed class AssignmentBoardSpecs(MockInterviewsWebApplicationFactory fac
         Assert.Contains("tailwind.css", html);
         Assert.Contains("assignment-dialog-", html);
         Assert.Contains("data-dialog", html);
+        Assert.Contains("assignment-board.js", html);
+        Assert.DoesNotContain("signal-r-interviews.js", html);
+        Assert.DoesNotContain("signal-r-available-interviewers.js", html);
         Assert.DoesNotContain("modal fade", html);
+    }
+
+    [Fact]
+    public async Task Assignment_hub_is_limited_to_administration_roles()
+    {
+        using var anonymous = Factory.CreateAnonymousClient();
+        using var interviewer = Factory.CreateAuthenticatedClient("interviewer-1", RolesConstants.InterviewerRole);
+        using var admin = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
+
+        var anonymousResponse = await anonymous.PostAsync("/interviewhub/negotiate?negotiateVersion=1", new StringContent(string.Empty));
+        var interviewerResponse = await interviewer.PostAsync("/interviewhub/negotiate?negotiateVersion=1", new StringContent(string.Empty));
+        var adminResponse = await admin.PostAsync("/interviewhub/negotiate?negotiateVersion=1", new StringContent(string.Empty));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymousResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, interviewerResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, adminResponse.StatusCode);
     }
 
     private static InterviewerSignup Signup(string interviewerId, bool behavioral = false, bool technical = false) => new()

@@ -36,7 +36,6 @@ namespace MockInterviews.Controllers
         private readonly UserService _userService;
         private readonly IEmailTransport _emailTransport;
         private readonly IHubContext<AssignInterviewsHub> _hubContext;
-        private readonly IHubContext<AvailableInterviewersHub> _hubContextInterviewer;
         private readonly ILogger<InterviewEventsController> _logger;
         private readonly string _superUserEmail;
 
@@ -49,7 +48,6 @@ namespace MockInterviews.Controllers
             UserService userService,
             IEmailTransport emailTransport,
             IHubContext<AssignInterviewsHub> hubContext,
-            IHubContext<AvailableInterviewersHub> hubContextInterviewer,
             ILogger<InterviewEventsController> logger,
             IOptions<SuperUserOptions> superUserOptions)
         {
@@ -62,7 +60,6 @@ namespace MockInterviews.Controllers
             _userService = userService;
             _emailTransport = emailTransport;
             _hubContext = hubContext;
-            _hubContextInterviewer = hubContextInterviewer;
             _logger = logger;
             _superUserEmail = superUserOptions.Value.Email;
         }
@@ -1532,108 +1529,11 @@ namespace MockInterviews.Controllers
             return stringBuilder.ToString();
         }
 
-        private async Task UpdateHub(int id)
-        {
-            var newInterviewEvent = await _context.Interviews
-                .Include(x => x.Location)
-                .Include(x => x.InterviewerTimeslot)
-                // EF Core parses Include expressions without dereferencing an optional navigation.
-                .ThenInclude(x => x!.InterviewerSignup)
-                .Include(x => x.Timeslot)
-                .ThenInclude(x => x.Event)
-                .FirstOrDefaultAsync(x => x.Id == id);
+        private Task UpdateHub(int id)
+            => _hubContext.Clients.All.SendAsync("BoardChanged", id);
 
-            if (newInterviewEvent is null)
-            {
-                return;
-            }
-
-            var student = await _userManager.Users
-                .Where(x => x.Id == newInterviewEvent.StudentId)
-                .FirstOrDefaultAsync();
-
-            var studentName = "";
-            if (newInterviewEvent.Status == StatusConstants.Completed || newInterviewEvent.Status == StatusConstants.NoShow || newInterviewEvent.Status == StatusConstants.Excused)
-            {
-                studentName = "delete";
-            }
-            else
-            {
-                studentName = student?.GetFullName() ?? "Deleted user";
-            }
-
-            var interviewername = "Not Assigned";
-            var interviewerId = "0";
-
-            if (newInterviewEvent.InterviewerTimeslot != null)
-            {
-                interviewerId = newInterviewEvent.InterviewerTimeslot.InterviewerSignup.InterviewerId;
-                interviewername = await _userManager.Users
-                    .Where(x => x.Id == interviewerId)
-                    .Select(x => x.FirstName + " " + x.LastName)
-                    .FirstOrDefaultAsync() ?? "Deleted user";
-            }
-
-            if (newInterviewEvent.Location == null)
-            {
-                newInterviewEvent.Location = new Location()
-                {
-                    Room = "Not Assigned"
-                };
-            }
-
-            var time = $"{newInterviewEvent.Timeslot.Time:hh:mm tt}";
-            var date = $"{newInterviewEvent.Timeslot.Event.Date:M/d/yyyy}";
-
-            _logger.LogInformation("Requesting all connected clients to update.");
-            await _hubContext.Clients.All.SendAsync("ReceiveInterviewEventUpdate", newInterviewEvent, studentName, student?.GetClass() ?? string.Empty, interviewerId, interviewername, time, date);
-            _logger.LogInformation("Requested.");
-        }
-
-        private async Task UpdateHub()
-        {
-            var busyInterviewers = await _context.Interviews
-                .Include(x => x.InterviewerTimeslot)
-                .ThenInclude(x => x!.InterviewerSignup)
-                .Where(x => x.Status == StatusConstants.Ongoing && x.InterviewerTimeslot != null)
-                .Select(x => x.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
-                .Distinct()
-                .ToListAsync();
-
-            var interviewers = await _context.InterviewerSignups
-                .Where(x => x.CheckedIn && !busyInterviewers.Contains(x.InterviewerId))
-                .Select(x => new AvailableInterviewer
-                {
-                    InterviewerId = x.InterviewerId,
-                    InterviewType = x.Type ?? string.Empty,
-                })
-            .ToListAsync();
-
-            foreach (var iv in interviewers)
-            {
-                iv.Name = await _userManager.Users
-                    .Where(x => x.Id == iv.InterviewerId)
-                    .Select(x => x.FirstName + " " + x.LastName)
-                    .FirstOrDefaultAsync() ?? "Deleted user";
-
-                var date = DateTime.UtcNow.Date;
-                //var date = new DateTime(2024, 2, 8);
-
-                iv.Room = await _context.InterviewerLocations
-                    .Include(x => x.Location)
-                    .Include(x => x.Event)
-                    .Where(x => x.InterviewerId == iv.InterviewerId &&
-                        x.Event != null && x.Event.Date == date && x.Location != null)
-                    .Select(x => x.Location!.Room)
-                    .FirstOrDefaultAsync() ?? "Not Assigned";
-            }
-
-            interviewers.Sort((x, y) => string.Compare(x.Name, y.Name));
-
-            _logger.LogInformation("Requesting all clients to update their available interviewers lists...");
-            await _hubContextInterviewer.Clients.All.SendAsync("ReceiveAvailableInterviewersUpdate", interviewers);
-            _logger.LogInformation("Requested.");
-        }
+        private Task UpdateHub()
+            => _hubContext.Clients.All.SendAsync("BoardChanged");
 
         private static string GetDisplayName(ApplicationUser? user) => user is null
             ? "Deleted user"
