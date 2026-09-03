@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
-using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.SignupInterviewersController;
 using MockInterviews.Services.SignalR;
 
@@ -16,18 +14,12 @@ namespace MockInterviews.Controllers
     {
         private readonly MockInterviewsDbContext _context;
         private readonly IHubContext<AssignInterviewsHub> _hubContext;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ILogger<SignupInterviewersController> _logger;
 
         public SignupInterviewersController(MockInterviewsDbContext context,
-            IHubContext<AssignInterviewsHub> hubContext,
-            UserManager<ApplicationUser> userManager,
-            ILogger<SignupInterviewersController> logger)
+            IHubContext<AssignInterviewsHub> hubContext)
         {
             _context = context;
             _hubContext = hubContext;
-            _userManager = userManager;
-            _logger = logger;
         }
 
         // GET: SignupInterviewers
@@ -72,31 +64,6 @@ namespace MockInterviews.Controllers
             };
 
             return View(vm);
-        }
-
-        // GET: SignupInterviewers/Create
-        [Authorize(Roles = RolesConstants.InterviewerRole)]
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: SignupInterviewers/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [Authorize(Roles = RolesConstants.InterviewerRole)]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,FirstName,LastName,IsVirtual,InPerson,IsTechnical,IsBehavioral,InterviewerId")] InterviewerSignup signupInterviewer)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(signupInterviewer);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(signupInterviewer);
         }
 
         // GET: SignupInterviewers/Edit/5
