@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Email;
 using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.UsersController;
 using MockInterviews.Services;
@@ -217,7 +218,15 @@ namespace MockInterviews.Controllers
                 ModelState.AddModelError(string.Empty, "Unable to create a password reset link.");
                 return View(model);
             }
-            await _emailSender.SendEmailAsync(user.Email, "Reset your Mock Interviews password", $"<a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>Reset your password</a>.");
+            try
+            {
+                await _emailSender.SendEmailAsync(user.Email, "Reset your Mock Interviews password", $"<a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>Reset your password</a>.");
+            }
+            catch (EmailDeliveryException)
+            {
+                ModelState.AddModelError(string.Empty, "The password reset email could not be delivered. Please try again later.");
+                return View(model);
+            }
             TempData["StatusMessage"] = "Password reset email sent.";
             return RedirectToAction("Index", "UserRoles");
         }

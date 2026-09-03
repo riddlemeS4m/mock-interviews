@@ -1,31 +1,18 @@
-﻿@model MockInterviews.Models.Entities.VolunteerTimeslot
+@model MockInterviews.Models.Entities.VolunteerTimeslot
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Volunteer availability details";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Details</h1>
+<section class="mx-auto max-w-2xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Volunteer availability details", "Review this selected volunteer time.")' />
 
-<div>
-    <h4>VolunteerEvent</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Timeslot)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Timeslot.Time)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Timeslot.Event.Date)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Timeslot.Event.Date)
-        </dd>
-
+    <dl class="rounded-card border border-line bg-surface p-6 shadow-card">
+        <dt class="text-sm text-muted">Time</dt>
+        <dd class="mt-1 font-semibold text-ink">@Model.Timeslot.Event.Date.ToString("MMMM d, yyyy") · @Model.Timeslot.Time.ToString("h:mm tt")</dd>
     </dl>
-</div>
-<div>
 
-    <a asp-action="Index">Back to List</a>
-</div>
+    <a asp-action="Index" ui-variant="Quiet">Back to volunteer availability</a>
+</section>

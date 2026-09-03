@@ -24,14 +24,22 @@ public sealed class SendGridEmailTransport(ISendGridClient client, ILogger<SendG
                 attachment.ContentType);
         }
 
-        var response = await client.SendEmailAsync(sendGridMessage, cancellationToken);
-        if ((int)response.StatusCode is >= 200 and < 300)
+        try
         {
-            logger.LogInformation("Email delivered through SendGrid to {Recipient} with status {StatusCode}", message.To.Address, response.StatusCode);
-            return;
-        }
+            var response = await client.SendEmailAsync(sendGridMessage, cancellationToken);
+            if ((int)response.StatusCode is >= 200 and < 300)
+            {
+                logger.LogInformation("Email delivered through SendGrid to {Recipient} with status {StatusCode}", message.To.Address, response.StatusCode);
+                return;
+            }
 
-        logger.LogError("SendGrid rejected email to {Recipient} with status {StatusCode}", message.To.Address, response.StatusCode);
-        throw new EmailDeliveryException("SendGrid was unable to deliver the email.");
+            logger.LogError("SendGrid rejected email to {Recipient} with status {StatusCode}", message.To.Address, response.StatusCode);
+            throw new EmailDeliveryException("SendGrid was unable to deliver the email.");
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException and not EmailDeliveryException)
+        {
+            logger.LogError(exception, "SendGrid was unable to deliver email to {Recipient}", message.To.Address);
+            throw new EmailDeliveryException("SendGrid was unable to deliver the email.", exception);
+        }
     }
 }

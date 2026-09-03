@@ -1,73 +1,63 @@
-﻿@model IEnumerable<MockInterviews.Models.ViewModels.Shared.TimeRangeViewModel>
+@model IEnumerable<MockInterviews.Models.ViewModels.Shared.TimeRangeViewModel>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Interviewer availability";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Interviewers</h1>
+<section class="space-y-8">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader"
+                 model='new UiPageHeaderViewModel("Interviewer availability", "Review active interviewer availability in exact 30-minute blocks.")' />
+        <a asp-action="CreateForInterviewer" ui-variant="Primary">
+            <ui-icon name="plus" class="size-4" />
+            Add availability
+        </a>
+    </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                Name
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.InterviewType)
-            </th>
-            <th>
-                In-Person/Virtual
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.WantsLunch)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Date)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.StartTime)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.InterviewType)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Location)
-            </td>
-            <td>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" disabled checked="@(item.WantsLunch ?? false)">
-                </div>
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Date)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.StartTime)-@Html.DisplayFor(modelItem => item.EndTime)
-            </td>
-            <td>
-@*                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="DetailsRange" asp-route-id="@item.TimeslotIds">Details</a> |
-*@                    @Html.ActionLink("Delete",
-                        "DeleteRange",   // <-- ActionMethod
-                        "SignupInterviewerTimeslots",  // <-- Controller Name.
-                        new { timeslots = item.TimeslotIds.ToArray() }, // <-- Route arguments.
-                        null
-                    )
-                @*<a asp-action="UserDeleteRange" asp-route-id="@item.TimeslotIds">Delete</a>*@
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    @if (!Model.Any())
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("calendar-days", "No interviewer availability", "Active interviewer availability will appear here.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="border-b border-line bg-soft text-sm text-muted">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">Interviewer</th>
+                            <th class="px-5 py-3 font-semibold">Types</th>
+                            <th class="px-5 py-3 font-semibold">Preference</th>
+                            <th class="px-5 py-3 font-semibold">Lunch</th>
+                            <th class="px-5 py-3 font-semibold">Date and time</th>
+                            <th class="px-5 py-3"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <th scope="row" class="px-5 py-4 font-semibold text-ink">@item.Name</th>
+                                <td class="px-5 py-4 text-muted">@item.InterviewType</td>
+                                <td class="px-5 py-4 text-muted">@item.Location</td>
+                                <td class="px-5 py-4 text-muted">@(item.WantsLunch == true ? "Requested" : "—")</td>
+                                <td class="px-5 py-4 text-muted">@item.Date.ToString("MMM d, yyyy") · @item.StartTime–@item.EndTime</td>
+                                <td class="px-5 py-4 text-right">
+                                    <form asp-action="DeleteRange" method="get">
+                                        @foreach (var id in item.TimeslotIds)
+                                        {
+                                            <input type="hidden" name="timeslots" value="@id" />
+                                        }
+                                        <button type="submit" class="text-sm font-semibold text-negative hover:underline">Cancel</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>

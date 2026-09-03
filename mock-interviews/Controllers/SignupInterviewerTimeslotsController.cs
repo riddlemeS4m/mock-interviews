@@ -49,7 +49,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: SignupInterviewerTimeslots
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Index()
         {
             var signupInterviewTimeslots = await _context.InterviewerTimeslots
@@ -57,8 +57,9 @@ namespace MockInterviews.Controllers
                 .Include(s => s.Timeslot)
                 .ThenInclude(s => s.Event)
                 .OrderBy(ve => ve.InterviewerSignup.InterviewerId)
-                .ThenBy(ve => ve.TimeslotId)
-                .Where(s => s.Timeslot.IsInterviewer && s.Timeslot.Event.IsActive)
+                .ThenBy(ve => ve.Timeslot.Event.Date)
+                .ThenBy(ve => ve.Timeslot.Time)
+                .Where(s => s.Timeslot.Event.IsActive)
                 .ToListAsync();
 
             var timeRanges = new ControlBreakInterviewer(_userManager);
@@ -75,8 +76,7 @@ namespace MockInterviews.Controllers
                 .Include(s => s.InterviewerSignup)
                 .Include(s => s.Timeslot)
                 .ThenInclude(s => s.Event)
-                .Where(s => s.Timeslot.IsInterviewer &&
-                    s.Timeslot.Event.For221 == For221.n &&
+                .Where(s => s.Timeslot.Event.For221 == For221.n &&
                     s.Timeslot.Event.IsActive)
                 .ToListAsync();
 
@@ -111,7 +111,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: SignupInterviewerTimeslots/Details/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null || _context.InterviewerTimeslots == null)
@@ -486,7 +486,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: SignupInterviewerTimeslots/Edit/5
-        [Authorize(Roles = RolesConstants.InterviewerRole + "," + RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.InterviewerRole + "," + RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Edit(int id)
         {
             if (id == 0 || _context.InterviewerTimeslots == null)
@@ -500,7 +500,7 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            if (!User.IsInRole(RolesConstants.AdminRole) && signupInterviewer.InterviewerId != _userManager.GetUserId(User))
+            if (!IsAvailabilityAdministrator() && signupInterviewer.InterviewerId != _userManager.GetUserId(User))
             {
                 return BadRequest(new ForbiddenException());
             }
@@ -550,7 +550,7 @@ namespace MockInterviews.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         //currently not used -sam
-        [Authorize(Roles = RolesConstants.InterviewerRole + "," + RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.InterviewerRole + "," + RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int[] SelectedTimeslotIds,
@@ -569,7 +569,7 @@ namespace MockInterviews.Controllers
                 return Conflict("The interviewer signup was changed or deleted. Refresh the page and try again.");
             }
 
-            if (!User.IsInRole(RolesConstants.AdminRole) && existingSignupInterviewer.InterviewerId != _userManager.GetUserId(User))
+            if (!IsAvailabilityAdministrator() && existingSignupInterviewer.InterviewerId != _userManager.GetUserId(User))
             {
                 return BadRequest(new ForbiddenException());
             }
@@ -712,7 +712,7 @@ namespace MockInterviews.Controllers
             }
             await _context.SaveChangesAsync();
 
-            if (User.IsInRole(RolesConstants.AdminRole))
+            if (IsAvailabilityAdministrator())
             {
                 return RedirectToAction("Index", "SignupInterviewers");
             }
@@ -760,12 +760,14 @@ namespace MockInterviews.Controllers
             }
 
             var selectedIds = SelectedTimeslotIds.Distinct().ToArray();
-            var timeslots = await _context.Timeslots
+            var eligibleStartTimeslots = await _context.Timeslots
                 .Include(timeslot => timeslot.Event)
-                .Where(timeslot => selectedIds.Contains(timeslot.Id) && timeslot.IsInterviewer && timeslot.IsActive && timeslot.Event.IsActive)
+                .Where(timeslot => timeslot.IsInterviewer && timeslot.IsActive && timeslot.Event.IsActive)
                 .OrderBy(timeslot => timeslot.Event.Date)
                 .ThenBy(timeslot => timeslot.Time)
                 .ToListAsync();
+            var eligibleTimeslots = await _participantSchedulingService.ComposeEligibleInterviewerTimeslotsAsync(eligibleStartTimeslots);
+            var timeslots = eligibleTimeslots.Where(timeslot => selectedIds.Contains(timeslot.Id)).ToList();
             if (timeslots.Count != selectedIds.Length)
             {
                 ModelState.AddModelError(nameof(SelectedTimeslotIds), "One or more selected timeslots are no longer available. Refresh the page and try again.");
@@ -866,12 +868,13 @@ namespace MockInterviews.Controllers
             InterviewerSignup? signupInterviewer = null,
             bool lunch = false)
         {
-            var timeslots = await _context.Timeslots
+            var eligibleStartTimeslots = await _context.Timeslots
                 .Include(timeslot => timeslot.Event)
                 .Where(timeslot => timeslot.IsInterviewer && timeslot.IsActive && timeslot.Event.IsActive)
                 .OrderBy(timeslot => timeslot.Event.Date)
                 .ThenBy(timeslot => timeslot.Time)
                 .ToListAsync();
+            var timeslots = (await _participantSchedulingService.ComposeEligibleInterviewerTimeslotsAsync(eligibleStartTimeslots)).ToList();
             var users = await _userManager.GetUsersInRoleAsync(RolesConstants.InterviewerRole);
 
             return new SignupInterviewerTimeslotsViewModel
@@ -897,7 +900,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: SignupInterviewerTimeslots/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null || _context.InterviewerTimeslots == null)
@@ -920,19 +923,21 @@ namespace MockInterviews.Controllers
         }
 
         // POST: SignupInterviewerTimeslots/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var signupInterviewerTimeslot = await _context.InterviewerTimeslots.FindAsync(id);
+            var signupInterviewerTimeslot = await _context.InterviewerTimeslots
+                .Include(timeslot => timeslot.InterviewerSignup)
+                .Include(timeslot => timeslot.Timeslot)
+                .SingleOrDefaultAsync(timeslot => timeslot.Id == id);
             if (signupInterviewerTimeslot != null)
             {
-                _context.InterviewerTimeslots.Remove(signupInterviewerTimeslot);
+                await DeleteAvailabilityAndCleanUpAsync([signupInterviewerTimeslot]);
             }
 
-            await _context.SaveChangesAsync();
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction(nameof(Index));
         }
 
         private bool SignupInterviewerTimeslotExists(int id)
@@ -992,8 +997,10 @@ namespace MockInterviews.Controllers
             return View(signupInterviewerTimeslot);
         }
 
-        // POST: SignupInterviewerTimeslots/Delete/5
+        // POST: SignupInterviewerTimeslots/UserDelete/5
         [Authorize(Roles = RolesConstants.InterviewerRole)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UserDeleteConfirmed(int id)
         {
             var signupInterviewerTimeslot = await _context.InterviewerTimeslots
@@ -1001,17 +1008,14 @@ namespace MockInterviews.Controllers
                 .Include(s => s.Timeslot)
                 .ThenInclude(y => y.Event)
                 .FirstOrDefaultAsync(m => m.Id == id);
-            ;
             if (signupInterviewerTimeslot != null && signupInterviewerTimeslot.InterviewerSignup.InterviewerId == User.FindFirstValue(ClaimTypes.NameIdentifier))
             {
-                _context.InterviewerTimeslots.Remove(signupInterviewerTimeslot);
+                await DeleteAvailabilityAndCleanUpAsync([signupInterviewerTimeslot]);
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction("Index", "Home");
         }
 
-        [Authorize(Roles = RolesConstants.InterviewerRole + "," + RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.InterviewerRole + "," + RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> UserDeleteRange(int id)
         {
             // Check if the timeslotIds array is empty or null
@@ -1036,7 +1040,7 @@ namespace MockInterviews.Controllers
 
             //Make sure the person trying to delete the timeslots is an admin or the user themselves
             if (timeslotsToDelete.All(e => e.InterviewerSignup.InterviewerId == User.FindFirstValue(ClaimTypes.NameIdentifier)) ||
-                User.IsInRole(RolesConstants.AdminRole))
+                IsAvailabilityAdministrator())
             {
                 var viewModel = new TimeRangeViewModel
                 {
@@ -1053,7 +1057,7 @@ namespace MockInterviews.Controllers
             }
         }
 
-        [Authorize(Roles = RolesConstants.InterviewerRole + "," + RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.InterviewerRole + "," + RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UserDeleteRangeConfirmed(int id)
@@ -1076,41 +1080,12 @@ namespace MockInterviews.Controllers
             }
 
             if (timeslotsToDelete.All(e => e.InterviewerSignup.InterviewerId == User.FindFirstValue(ClaimTypes.NameIdentifier)) ||
-            User.IsInRole(RolesConstants.AdminRole))
+            IsAvailabilityAdministrator())
             {
-                var interviewerId = timeslotsToDelete[0].InterviewerSignup.InterviewerId;
-                var eventIds = timeslotsToDelete.Select(timeslot => timeslot.Timeslot.EventId).Distinct().ToList();
-                // Delete the timeslots
-                _context.InterviewerTimeslots.RemoveRange(timeslotsToDelete);
-
-                await _context.SaveChangesAsync();
-
-                foreach (var eventId in eventIds)
-                {
-                    if (await _context.InterviewerTimeslots.AnyAsync(timeslot =>
-                        timeslot.InterviewerSignup.InterviewerId == interviewerId && timeslot.Timeslot.EventId == eventId))
-                    {
-                        continue;
-                    }
-
-                    var locationInterviewersToDelete = _context.InterviewerLocations
-                        .Where(location => location.InterviewerId == interviewerId && location.EventId == eventId);
-                    _context.InterviewerLocations.RemoveRange(locationInterviewersToDelete);
-                }
-
-                if (!await _context.InterviewerTimeslots.AnyAsync(timeslot =>
-                    timeslot.InterviewerSignup.InterviewerId == interviewerId))
-                {
-                    var signupInterviewersToDelete = _context.InterviewerSignups
-                        .Where(signup => signup.InterviewerId == interviewerId);
-
-                    _context.InterviewerSignups.RemoveRange(signupInterviewersToDelete);
-                }
-
-                await _context.SaveChangesAsync();
+                await DeleteAvailabilityAndCleanUpAsync(timeslotsToDelete);
                 TempData["StatusMessage"] = "Your interviewer availability was cancelled.";
 
-                if (User.IsInRole(RolesConstants.AdminRole))
+                if (IsAvailabilityAdministrator())
                 {
                     return RedirectToAction("Index", "SignupInterviewers");
                 }
@@ -1120,7 +1095,7 @@ namespace MockInterviews.Controllers
             return NotFound();
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> DeleteRange(int[] timeslots)
         {
             // Check if the timeslotIds array is empty or null
@@ -1129,55 +1104,112 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            // Get the timeslots to delete
+            var requestedTimeslotIds = timeslots.Distinct().ToArray();
             var timeslotsToDelete = await _context.InterviewerTimeslots
                 .Include(x => x.InterviewerSignup)
                 .Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
-                .Where(t => timeslots.Contains(t.Id))
+                .Where(t => requestedTimeslotIds.Contains(t.Id))
+                .OrderBy(t => t.Timeslot.Time)
                 .ToListAsync();
 
-            // Check if any of the timeslots to delete are null
-            if (timeslotsToDelete == null || timeslotsToDelete.Count == 0)
+            if (!IsSingleInterviewerRange(timeslotsToDelete, requestedTimeslotIds.Length))
             {
                 return NotFound();
             }
 
-            var date = timeslotsToDelete.First().Timeslot.Event.Date;
-            if (timeslotsToDelete.Any(t => t.Timeslot.Event.Date != date))
-            {
-                return NotFound();
-            }
-
-            var timeslotslist = timeslots.ToList();
+            var date = timeslotsToDelete[0].Timeslot.Event.Date;
 
             var viewModel = new TimeRangeViewModel
             {
                 Date = date,
                 StartTime = timeslotsToDelete.First().Timeslot.Time.ToString(@"h\:mm tt"),
                 EndTime = timeslotsToDelete.Last().Timeslot.Time.AddMinutes(30).ToString(@"h\:mm tt"),
-                TimeslotIds = timeslotslist
+                TimeslotIds = requestedTimeslotIds.ToList()
             };
 
 
-            return View("UserDeleteRange", viewModel);
+            return View("DeleteRange", viewModel);
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteRangeConfirmed(int[] timeslots)
         {
+            if (timeslots is null || timeslots.Length == 0)
+            {
+                return NotFound();
+            }
 
-            // Get the timeslots to delete
+            var requestedTimeslotIds = timeslots.Distinct().ToArray();
             var timeslotsToDelete = await _context.InterviewerTimeslots
                 .Include(x => x.InterviewerSignup)
-                .Where(t => timeslots.Contains(t.Id))
+                .Include(x => x.Timeslot)
+                .ThenInclude(x => x.Event)
+                .Where(t => requestedTimeslotIds.Contains(t.Id))
+                .OrderBy(t => t.Timeslot.Time)
                 .ToListAsync();
 
-            // Delete the timeslots
-            _context.InterviewerTimeslots.RemoveRange(timeslotsToDelete);
-            await _context.SaveChangesAsync();
+            if (!IsSingleInterviewerRange(timeslotsToDelete, requestedTimeslotIds.Length))
+            {
+                return NotFound();
+            }
+
+            await DeleteAvailabilityAndCleanUpAsync(timeslotsToDelete);
+            TempData["StatusMessage"] = "Interviewer availability cancelled.";
 
             return RedirectToAction("Index", "SignupInterviewerTimeslots");
+        }
+
+        private bool IsAvailabilityAdministrator()
+            => User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.SystemAdminRole);
+
+        private static bool IsSingleInterviewerRange(List<InterviewerTimeslot> timeslots, int requestedCount)
+        {
+            if (timeslots.Count == 0 || timeslots.Count != requestedCount)
+            {
+                return false;
+            }
+
+            var first = timeslots[0];
+            return timeslots.All(timeslot =>
+                    timeslot.InterviewerSignupId == first.InterviewerSignupId &&
+                    timeslot.Timeslot.EventId == first.Timeslot.EventId)
+                && timeslots.Zip(timeslots.Skip(1), (current, next) =>
+                    next.Timeslot.Time == current.Timeslot.Time.AddMinutes(30)).All(isAdjacent => isAdjacent);
+        }
+
+        private async Task DeleteAvailabilityAndCleanUpAsync(IEnumerable<InterviewerTimeslot> availability)
+        {
+            var selected = availability.ToList();
+            if (selected.Count == 0)
+            {
+                return;
+            }
+
+            var interviewerId = selected[0].InterviewerSignup.InterviewerId;
+            var affectedEventIds = selected.Select(timeslot => timeslot.Timeslot.EventId).Distinct().ToArray();
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            _context.InterviewerTimeslots.RemoveRange(selected);
+            await _context.SaveChangesAsync();
+
+            var remainingEventIds = await _context.InterviewerTimeslots
+                .Where(timeslot => timeslot.InterviewerSignup.InterviewerId == interviewerId && affectedEventIds.Contains(timeslot.Timeslot.EventId))
+                .Select(timeslot => timeslot.Timeslot.EventId)
+                .Distinct()
+                .ToListAsync();
+            _context.InterviewerLocations.RemoveRange(_context.InterviewerLocations
+                .Where(location => location.InterviewerId == interviewerId && location.EventId.HasValue &&
+                    affectedEventIds.Contains(location.EventId.Value) && !remainingEventIds.Contains(location.EventId.Value)));
+
+            if (!await _context.InterviewerTimeslots.AnyAsync(timeslot => timeslot.InterviewerSignup.InterviewerId == interviewerId))
+            {
+                _context.InterviewerSignups.RemoveRange(_context.InterviewerSignups.Where(signup => signup.InterviewerId == interviewerId));
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
         private static DateTime CombineDateWithTimeString(DateTime date, string timeString)
         {

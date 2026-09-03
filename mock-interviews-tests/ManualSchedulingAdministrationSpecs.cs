@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using MockInterviews.Data.Access.Reports;
 using MockInterviews.IntegrationTests.Infrastructure;
 
 namespace MockInterviews.IntegrationTests;
@@ -63,15 +64,18 @@ public sealed class ManualSchedulingAdministrationSpecs(MockInterviewsWebApplica
         });
         using var client = Factory.CreateAuthenticatedClient("system-admin-1", RolesConstants.SystemAdminRole);
 
+        var page = await client.GetAsync("/SignupInterviewerTimeslots/CreateForInterviewer");
         var response = await client.PostFormWithAntiforgeryAsync("/SignupInterviewerTimeslots/CreateForInterviewer", new[]
         {
             new KeyValuePair<string, string>("InterviewerId", data.interviewer.Id),
             new KeyValuePair<string, string>("SignupInterviewer.InPerson", "false"),
             new KeyValuePair<string, string>("SignupInterviewer.IsTechnical", "true"),
-            new KeyValuePair<string, string>("SelectedTimeslotIds", data.firstDay.Timeslots[0].Id.ToString()),
-            new KeyValuePair<string, string>("SelectedTimeslotIds", data.secondDay.Timeslots[2].Id.ToString())
+            new KeyValuePair<string, string>("SelectedTimeslotIds", data.firstDay.Timeslots[1].Id.ToString()),
+            new KeyValuePair<string, string>("SelectedTimeslotIds", data.secondDay.Timeslots[3].Id.ToString())
         });
 
+        Assert.Equal(HttpStatusCode.OK, page.StatusCode);
+        Assert.Contains($"value=\"{data.firstDay.Timeslots[1].Id}\"", await page.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal("/SignupInterviewers", response.Headers.Location?.OriginalString);
         await Factory.InDatabaseScopeAsync(async context =>
@@ -89,7 +93,7 @@ public sealed class ManualSchedulingAdministrationSpecs(MockInterviewsWebApplica
 
             Assert.False(signup.InPerson);
             Assert.True(signup.IsVirtual);
-            Assert.Equal(new[] { data.firstDay.Timeslots[0].Id, data.secondDay.Timeslots[2].Id }.Order(), availability);
+            Assert.Equal(new[] { data.firstDay.Timeslots[1].Id, data.secondDay.Timeslots[3].Id }.Order(), availability);
             Assert.Equal(2, locations.Count);
             Assert.All(locations, location => Assert.Equal(InterviewLocationConstants.IsVirtual, location.Preference));
         });
@@ -127,5 +131,38 @@ public sealed class ManualSchedulingAdministrationSpecs(MockInterviewsWebApplica
             Assert.Empty(await context.InterviewerSignups.ToListAsync());
             Assert.Empty(await context.InterviewerTimeslots.ToListAsync());
         });
+    }
+
+    [Fact]
+    public async Task Availability_ranges_remain_grouped_when_two_events_share_a_date()
+    {
+        var availability = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "interviewer-1");
+            var firstEvent = await TestData.AddEventWithTimeslotsAsync(context, For221.n, name: "Morning event");
+            var secondEvent = await TestData.AddEventWithTimeslotsAsync(context, For221.n, name: "Afternoon event");
+            var signup = new InterviewerSignup { InterviewerId = "interviewer-1", FirstName = "Test", LastName = "Interviewer" };
+            context.InterviewerSignups.Add(signup);
+            await context.SaveChangesAsync();
+            context.InterviewerTimeslots.AddRange(
+                new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = firstEvent.Timeslots[0].Id },
+                new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = firstEvent.Timeslots[1].Id },
+                new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = secondEvent.Timeslots[0].Id },
+                new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = secondEvent.Timeslots[1].Id });
+            await context.SaveChangesAsync();
+
+            return await context.InterviewerTimeslots
+                .Include(timeslot => timeslot.InterviewerSignup)
+                .Include(timeslot => timeslot.Timeslot)
+                .ThenInclude(timeslot => timeslot.Event)
+                .ToListAsync();
+        });
+        using var scope = Factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var ranges = await new ControlBreakInterviewer(userManager).ToTimeRanges(availability);
+
+        Assert.Equal(2, ranges.Count);
+        Assert.All(ranges, range => Assert.Equal(2, range.TimeslotIds.Count));
     }
 }

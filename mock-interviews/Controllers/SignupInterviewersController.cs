@@ -52,7 +52,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: SignupInterviewers/Details/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null || _context.InterviewerSignups == null)
@@ -101,7 +101,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: SignupInterviewers/Edit/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null || _context.InterviewerSignups == null)
@@ -121,7 +121,7 @@ namespace MockInterviews.Controllers
         // POST: SignupInterviewers/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,FirstName,LastName,IsVirtual,InPerson,IsTechnical,IsBehavioral,InterviewerId")] InterviewerSignup signupInterviewer)
@@ -156,7 +156,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: SignupInterviewers/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null || _context.InterviewerSignups == null)
@@ -175,7 +175,7 @@ namespace MockInterviews.Controllers
         }
 
         // POST: SignupInterviewers/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

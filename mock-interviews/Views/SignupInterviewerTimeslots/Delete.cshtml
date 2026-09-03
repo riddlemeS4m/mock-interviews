@@ -1,62 +1,24 @@
-﻿@using MockInterviews.Data.Constants;
 @model MockInterviews.Models.Entities.InterviewerTimeslot
 
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Cancel availability";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Interviewer Cancellation</h1>
+<section class="mx-auto max-w-2xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Cancel availability", "This removes one selected 30-minute availability block.")' />
 
-<h3>Are you sure you want to cancel this?</h3>
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            Name
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.InterviewerSignup.FirstName) @Html.DisplayFor(model => model.InterviewerSignup.LastName)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Timeslot.Time)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Timeslot.Time)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Timeslot.Event.Date)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Timeslot.Event.Date)
-        </dd>
-        <dt>
-            @Html.DisplayNameFor(model => model.InterviewerSignup.Type)
-        </dt>
-        <dd>
-            @Html.DisplayFor(model => model.InterviewerSignup.Type)
-        </dd>
-        <dt>
-            In-Person or Virtual:
-        </dt>
+    <div class="rounded-card border border-line bg-surface p-6 shadow-card">
+        <p class="text-ink">
+            <span class="font-semibold">@Model.InterviewerSignup.FirstName @Model.InterviewerSignup.LastName</span>
+            · @Model.Timeslot.Event.Date.ToString("MMM d, yyyy") at @Model.Timeslot.Time.ToString("h:mm tt")
+        </p>
 
-        @if (Model.InterviewerSignup.IsVirtual)
-        {
-            <dd>Virtual</dd>
-        }
-        else if (Model.InterviewerSignup.InPerson)
-        {
-            <dd>In Person</dd>
-        }
-    </dl>
-    
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="Id" />
-        <input type="submit" value="Cancel" class="btn btn-primary" /> |
-        @Html.ActionLink("Return to Home",
-        "Index",   // <-- ActionMethod
-        "Home",  // <-- Controller Name.
-        null, // <-- Route arguments.
-        null
-        )
-    </form>
-</div>
+        <form asp-action="Delete" method="post" class="mt-6 flex gap-3">
+            <input type="hidden" asp-for="Id" />
+            <button type="submit" ui-variant="Destructive">Cancel availability</button>
+            <a asp-action="Index" ui-variant="Quiet">Keep it</a>
+        </form>
+    </div>
+</section>

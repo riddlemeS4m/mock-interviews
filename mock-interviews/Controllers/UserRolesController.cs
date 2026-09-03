@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
+using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.UserRolesController;
 
@@ -13,11 +14,16 @@ namespace MockInterviews.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly MockInterviewsDbContext _context;
 
-        public UserRolesController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+        public UserRolesController(
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            MockInterviewsDbContext context)
         {
             _roleManager = roleManager;
             _userManager = userManager;
+            _context = context;
         }
         public async Task<IActionResult> Index()
         {
@@ -111,18 +117,29 @@ namespace MockInterviews.Controllers
                 ModelState.AddModelError(string.Empty, "At least one System Admin is required.");
                 return View(model);
             }
-            var result = await _userManager.RemoveFromRolesAsync(user, manageableExistingRoles);
+            var rolesToRemove = manageableExistingRoles
+                .Except(selectedRoles, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var rolesToAdd = selectedRoles
+                .Except(roles, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            var result = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
             if (!result.Succeeded)
             {
-                ModelState.AddModelError("", "Cannot remove user existing roles");
+                await transaction.RollbackAsync();
+                ModelState.AddModelError(string.Empty, string.Join(" ", result.Errors.Select(error => error.Description)));
                 return View(model);
             }
-            result = await _userManager.AddToRolesAsync(user, selectedRoles);
+            result = await _userManager.AddToRolesAsync(user, rolesToAdd);
             if (!result.Succeeded)
             {
-                ModelState.AddModelError("", "Cannot add selected roles to user");
+                await transaction.RollbackAsync();
+                ModelState.AddModelError(string.Empty, string.Join(" ", result.Errors.Select(error => error.Description)));
                 return View(model);
             }
+            await transaction.CommitAsync();
             return RedirectToAction("Index");
         }
 

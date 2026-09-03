@@ -67,7 +67,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: VolunteerEvents/Details/
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null || _context.VolunteerTimeslots == null)
@@ -237,7 +237,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: VolunteerEvents/Edit/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null || _context.VolunteerTimeslots == null)
@@ -257,7 +257,7 @@ namespace MockInterviews.Controllers
         // POST: VolunteerEvents/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,StudentId,TimeslotId")] VolunteerTimeslot volunteerEvent)
@@ -293,7 +293,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: VolunteerEvents/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null || _context.VolunteerTimeslots == null)
@@ -313,7 +313,7 @@ namespace MockInterviews.Controllers
         }
 
         // POST: VolunteerEvents/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -384,7 +384,7 @@ namespace MockInterviews.Controllers
             await emailNotification.SendEmailAsync(_emailTransport, _superUserEmail, "Volunteer Sign-Up Notification: " + fullName, _superUserEmail, fullName, times, null);
         }
 
-        [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> UserDeleteRange(int[] timeslots)
         {
             // Check if the timeslotIds array is empty or null
@@ -412,7 +412,7 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            if (!timeslotsToDelete.All(e => e.StudentId == User.FindFirstValue(ClaimTypes.NameIdentifier)) && !User.IsInRole(RolesConstants.AdminRole))
+            if (!timeslotsToDelete.All(e => e.StudentId == User.FindFirstValue(ClaimTypes.NameIdentifier)) && !IsVolunteerAdministrator())
             {
                 return NotFound();
             }
@@ -431,7 +431,7 @@ namespace MockInterviews.Controllers
             return View(viewModel);
         }
 
-        [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UserDeleteRangeConfirmed(int[] timeslots)
@@ -443,7 +443,7 @@ namespace MockInterviews.Controllers
                 .Where(t => timeslots.Contains(t.Id))
                 .ToListAsync();
 
-            if (!timeslotsToDelete.All(e => e.StudentId == User.FindFirstValue(ClaimTypes.NameIdentifier)) && !User.IsInRole(RolesConstants.AdminRole))
+            if (!timeslotsToDelete.All(e => e.StudentId == User.FindFirstValue(ClaimTypes.NameIdentifier)) && !IsVolunteerAdministrator())
             {
                 return NotFound();
             }
@@ -453,7 +453,7 @@ namespace MockInterviews.Controllers
             await _context.SaveChangesAsync();
             TempData["StatusMessage"] = "Your volunteer shift was cancelled.";
 
-            if (User.IsInRole(RolesConstants.AdminRole))
+            if (IsVolunteerAdministrator())
             {
                 return RedirectToAction("Index", "VolunteerEvents");
             }
@@ -547,6 +547,9 @@ namespace MockInterviews.Controllers
                 && volunteerTimeslots.Zip(volunteerTimeslots.Skip(1), (current, next) =>
                     next.Timeslot.Time == current.Timeslot.Time.AddMinutes(30)).All(isAdjacent => isAdjacent);
         }
+
+        private bool IsVolunteerAdministrator()
+            => User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.SystemAdminRole);
         private static DateTime CombineDateWithTimeString(DateTime date, string timeString)
         {
             DateTime dateTime = DateTime.ParseExact(timeString, "h:mm tt", CultureInfo.InvariantCulture);

@@ -154,4 +154,60 @@ public sealed class CancellationSpecs(MockInterviewsWebApplicationFactory factor
             Assert.Equal(2, await context.Users.CountAsync());
         });
     }
+
+    [Fact]
+    public async Task Interviewer_single_and_admin_range_cancellations_are_post_only_and_validate_the_range()
+    {
+        var availability = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "interviewer");
+            var firstDay = await TestData.AddEventWithTimeslotsAsync(context, For221.n);
+            var secondDay = await TestData.AddEventWithTimeslotsAsync(context, For221.n);
+            var signup = new InterviewerSignup { InterviewerId = "interviewer", FirstName = "Test", LastName = "Interviewer" };
+            context.InterviewerSignups.Add(signup);
+            await context.SaveChangesAsync();
+            var blocks = new[]
+            {
+                new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = firstDay.Timeslots[0].Id },
+                new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = firstDay.Timeslots[1].Id },
+                new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = secondDay.Timeslots[0].Id }
+            };
+            context.InterviewerTimeslots.AddRange(blocks);
+            await context.SaveChangesAsync();
+            return blocks;
+        });
+        using var interviewer = Factory.CreateAuthenticatedClient("interviewer", RolesConstants.InterviewerRole);
+        using var admin = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
+
+        var singleGet = await interviewer.GetAsync($"/SignupInterviewerTimeslots/UserDeleteConfirmed?id={availability[0].Id}");
+        var rangeGet = await admin.GetAsync($"/SignupInterviewerTimeslots/DeleteRangeConfirmed?timeslots={availability[0].Id}&timeslots={availability[2].Id}");
+        var confirmation = await admin.GetAsync($"/SignupInterviewerTimeslots/DeleteRange?timeslots={availability[0].Id}&timeslots={availability[1].Id}");
+        var invalidRangePost = await admin.PostFormWithAntiforgeryAsync(
+            "/SignupInterviewerTimeslots/CreateForInterviewer",
+            "/SignupInterviewerTimeslots/DeleteRangeConfirmed",
+            new[]
+            {
+                new KeyValuePair<string, string>("timeslots", availability[0].Id.ToString()),
+                new KeyValuePair<string, string>("timeslots", availability[2].Id.ToString())
+            });
+
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, singleGet.StatusCode);
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, rangeGet.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, confirmation.StatusCode);
+        Assert.Contains("DeleteRangeConfirmed", await confirmation.Content.ReadAsStringAsync());
+        Assert.Equal(HttpStatusCode.NotFound, invalidRangePost.StatusCode);
+        Assert.Equal(3, await Factory.InDatabaseScopeAsync(context => context.InterviewerTimeslots.CountAsync()));
+
+        var validRangePost = await admin.PostFormWithAntiforgeryAsync(
+            $"/SignupInterviewerTimeslots/DeleteRange?timeslots={availability[0].Id}&timeslots={availability[1].Id}",
+            "/SignupInterviewerTimeslots/DeleteRangeConfirmed",
+            new[]
+            {
+                new KeyValuePair<string, string>("timeslots", availability[0].Id.ToString()),
+                new KeyValuePair<string, string>("timeslots", availability[1].Id.ToString())
+            });
+
+        Assert.Equal(HttpStatusCode.Redirect, validRangePost.StatusCode);
+        Assert.Equal(1, await Factory.InDatabaseScopeAsync(context => context.InterviewerTimeslots.CountAsync()));
+    }
 }

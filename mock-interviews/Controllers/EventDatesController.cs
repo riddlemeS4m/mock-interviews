@@ -57,9 +57,11 @@ public class EventDatesController(
             For221 = for221
         };
 
+        await using var transaction = await context.Database.BeginTransactionAsync();
         await context.Events.AddAsync(@event);
         await context.SaveChangesAsync();
         await TimeslotSeed.SeedTimeslots(timeslotService, @event, input.MaxSignUps);
+        await transaction.CommitAsync();
 
         TempData["StatusMessage"] = $"{@event.Name} was created with its 18 half-hour timeslots.";
         return RedirectToAction(nameof(Index));

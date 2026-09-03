@@ -49,7 +49,7 @@ public sealed class StaffReportsSpecs(MockInterviewsWebApplicationFactory factor
             context.InterviewerTimeslots.AddRange(schedules.Select(schedule => new InterviewerTimeslot
             {
                 InterviewerSignupId = signup.Id,
-                TimeslotId = schedule.Timeslots[0].Id
+                TimeslotId = schedule.Timeslots[1].Id
             }));
             await context.SaveChangesAsync();
             return schedules.Select(schedule => schedule.Event.Name).ToArray();

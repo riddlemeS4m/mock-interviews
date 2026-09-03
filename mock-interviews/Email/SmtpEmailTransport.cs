@@ -24,16 +24,24 @@ public sealed class SmtpEmailTransport(IOptions<SmtpEmailOptions> options, ILogg
         }
         mimeMessage.Body = body.ToMessageBody();
 
-        using var client = new SmtpClient();
-        var security = smtpOptions.UseTls ? SecureSocketOptions.StartTls : SecureSocketOptions.None;
-        await client.ConnectAsync(smtpOptions.Host, smtpOptions.Port, security, cancellationToken);
-        if (!string.IsNullOrWhiteSpace(smtpOptions.Username))
+        try
         {
-            await client.AuthenticateAsync(smtpOptions.Username, smtpOptions.Password!, cancellationToken);
-        }
+            using var client = new SmtpClient();
+            var security = smtpOptions.UseTls ? SecureSocketOptions.StartTls : SecureSocketOptions.None;
+            await client.ConnectAsync(smtpOptions.Host, smtpOptions.Port, security, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(smtpOptions.Username))
+            {
+                await client.AuthenticateAsync(smtpOptions.Username, smtpOptions.Password!, cancellationToken);
+            }
 
-        await client.SendAsync(mimeMessage, cancellationToken);
-        await client.DisconnectAsync(true, cancellationToken);
-        logger.LogInformation("Email delivered through SMTP to {Recipient}", message.To.Address);
+            await client.SendAsync(mimeMessage, cancellationToken);
+            await client.DisconnectAsync(true, cancellationToken);
+            logger.LogInformation("Email delivered through SMTP to {Recipient}", message.To.Address);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "SMTP was unable to deliver email to {Recipient}", message.To.Address);
+            throw new EmailDeliveryException("SMTP was unable to deliver the email.", exception);
+        }
     }
 }
