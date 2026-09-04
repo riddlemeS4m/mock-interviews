@@ -1,77 +1,88 @@
 (() => {
-  const navigation = document.querySelector("[data-shell-navigation]");
+  const shell = document.querySelector("[data-shell-navigation]");
 
-  if (!navigation) {
+  if (!shell) {
     return;
   }
 
-  const navigationToggle = navigation.querySelector("[data-navigation-toggle]");
-  const navigationPanel = navigation.querySelector("[data-navigation-panel]");
-  const menus = Array.from(navigation.querySelectorAll("[data-navigation-menu]"));
+  const toggle = shell.querySelector("[data-navigation-toggle]");
+  const closeButton = shell.querySelector("[data-navigation-close]");
+  const panel = shell.querySelector("[data-navigation-panel]");
+  const overlay = shell.querySelector("[data-navigation-overlay]");
+  const collapseButton = shell.querySelector("[data-navigation-collapse]");
+  const collapseIcon = shell.querySelector("[data-navigation-collapse-icon]");
+  const disclosureSummaries = shell.querySelectorAll("[data-navigation-summary]");
+  const desktopBreakpoint = window.matchMedia("(min-width: 64rem)");
+  const storageKey = "mock-interviews.navigation-collapsed";
 
-  const setMenuOpen = (menu, isOpen) => {
-    const button = menu.querySelector("[data-menu-toggle]");
-    const panel = menu.querySelector("[data-menu-panel]");
-
-    button?.setAttribute("aria-expanded", String(isOpen));
-    panel?.classList.toggle("hidden", !isOpen);
-  };
-
-  const closeMenus = (exceptMenu = null) => {
-    menus.forEach((menu) => {
-      if (menu !== exceptMenu) {
-        setMenuOpen(menu, false);
-      }
-    });
-  };
-
-  navigationToggle?.addEventListener("click", () => {
-    const isOpen = navigationToggle.getAttribute("aria-expanded") === "true";
-    navigationToggle.setAttribute("aria-expanded", String(!isOpen));
-    navigationPanel?.classList.toggle("hidden", isOpen);
+  const setOpen = (isOpen, restoreFocus = false) => {
+    toggle?.setAttribute("aria-expanded", String(isOpen));
+    panel?.classList.toggle("-translate-x-full", !isOpen);
+    overlay?.classList.toggle("hidden", !isOpen);
+    document.body.classList.toggle("overflow-hidden", isOpen);
+    if (panel) {
+      panel.inert = !desktopBreakpoint.matches && !isOpen;
+    }
 
     if (isOpen) {
-      closeMenus();
+      closeButton?.focus();
+    } else if (restoreFocus) {
+      toggle?.focus();
     }
+  };
+
+  const setCollapsed = (isCollapsed, persist = true) => {
+    if (isCollapsed) {
+      document.documentElement.dataset.navigationCollapsed = "true";
+    } else {
+      delete document.documentElement.dataset.navigationCollapsed;
+    }
+
+    collapseButton?.setAttribute("aria-expanded", String(!isCollapsed));
+    collapseButton?.setAttribute("aria-label", isCollapsed ? "Expand navigation" : "Collapse navigation");
+    collapseButton?.setAttribute("title", isCollapsed ? "Expand navigation" : "Collapse navigation");
+    collapseIcon?.classList.toggle("rotate-180", !isCollapsed);
+
+    if (persist) {
+      try {
+        localStorage.setItem(storageKey, String(isCollapsed));
+      } catch {
+        // The navigation still works when browser storage is unavailable.
+      }
+    }
+  };
+
+  toggle?.addEventListener("click", () => {
+    setOpen(toggle.getAttribute("aria-expanded") !== "true");
   });
 
-  menus.forEach((menu) => {
-    const button = menu.querySelector("[data-menu-toggle]");
+  closeButton?.addEventListener("click", () => setOpen(false, true));
+  overlay?.addEventListener("click", () => setOpen(false, true));
+  collapseButton?.addEventListener("click", () => {
+    setCollapsed(document.documentElement.dataset.navigationCollapsed !== "true");
+  });
 
-    button?.addEventListener("click", () => {
-      const isOpen = button.getAttribute("aria-expanded") === "true";
-      closeMenus(menu);
-      setMenuOpen(menu, !isOpen);
+  disclosureSummaries.forEach((summary) => {
+    summary.addEventListener("click", (event) => {
+      if (!desktopBreakpoint.matches || document.documentElement.dataset.navigationCollapsed !== "true") {
+        return;
+      }
+
+      event.preventDefault();
+      setCollapsed(false);
+      summary.closest("details").open = true;
+      summary.focus();
     });
-  });
-
-  document.addEventListener("click", (event) => {
-    if (!navigation.contains(event.target)) {
-      closeMenus();
-    }
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape") {
-      return;
-    }
-
-    const openMenu = menus.find(
-      (menu) => menu.querySelector("[data-menu-toggle]")?.getAttribute("aria-expanded") === "true",
-    );
-
-    if (openMenu) {
-      setMenuOpen(openMenu, false);
-      openMenu.querySelector("[data-menu-toggle]")?.focus();
+    if (event.key === "Escape" && toggle?.getAttribute("aria-expanded") === "true") {
+      setOpen(false, true);
     }
   });
 
-  const desktopBreakpoint = window.matchMedia("(min-width: 64rem)");
-  desktopBreakpoint.addEventListener("change", (event) => {
-    if (event.matches) {
-      navigationPanel?.classList.add("hidden");
-      navigationToggle?.setAttribute("aria-expanded", "false");
-      closeMenus();
-    }
-  });
+  desktopBreakpoint.addEventListener("change", () => setOpen(false));
+
+  setCollapsed(document.documentElement.dataset.navigationCollapsed === "true", false);
+  setOpen(false);
 })();

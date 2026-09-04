@@ -1,34 +1,4 @@
-﻿@{
-    ViewData["Title"] = "Update Duration";
-}
-
-<h1>Update Max Signups</h1>
-
-<div id="center-everything" class="row">
-    <div class="col-md-4">
-        <div>
-            <hr />
-            <p>
-                Changing this number affects the number of students that can sign up for all active timeslots. 
-            </p>
-            <p>
-                For example, if set to 8, up to 8 students can sign up for any active timeslot. If set to 0, no students can sign up for any active timeslot.
-            </p>
-        </div>
-        <div>
-            <form asp-action="UpdateMaxSignupsConfirmed">
-                <div class="form-group">
-                    <label for="maxsignups">New Duration:</label>
-                    <input type="number" class="form-control" id="maxsignups" name="maxsignups" />
-                </div>
-                <br />
-                <button type="submit" class="btn btn-primary">Update</button> | <a asp-action="Index">Back to List</a>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div>
-    
-</div>
-
+@model MockInterviews.Models.ViewModels.TimeslotsController.UpdateMaximumSignupsViewModel
+@{ ViewData["Title"] = "Update all capacities"; }
+<section class="max-w-xl space-y-6"><partial name="DesignSystem/_PageHeader" model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Update all capacities", "This applies one capacity to every timeslot, including inactive and historical events.")' /><form asp-action="UpdateMaxSignups" method="post" class="space-y-5 rounded-card border border-line bg-surface p-6 shadow-card"><div asp-validation-summary="ModelOnly" class="border-l-4 border-negative pl-4 text-sm text-negative"></div><div><label asp-for="MaxSignUps" class="block text-sm font-semibold text-ink"></label><input asp-for="MaxSignUps" type="number" min="0" class="mt-2 block min-h-11 w-full rounded-md border border-line px-3 py-2" /><span asp-validation-for="MaxSignUps" class="mt-1 block text-sm text-negative"></span></div><div class="flex gap-3"><a asp-action="Index" ui-variant="Secondary">Cancel</a><button type="submit" ui-variant="Primary">Update all timeslots</button></div></form></section>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

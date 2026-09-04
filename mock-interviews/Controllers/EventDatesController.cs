@@ -8,235 +8,156 @@ using MockInterviews.Models.Entities;
 using MockInterviews.Models.ViewModels.EventDatesController;
 using MockInterviews.Services;
 
-namespace MockInterviews.Controllers
+namespace MockInterviews.Controllers;
+
+[Authorize(Roles = RolesConstants.AdministrationRoles)]
+public class EventDatesController(
+    MockInterviewsDbContext context,
+    TimeslotService timeslotService,
+    ILogger<EventDatesController> logger) : Controller
 {
-    [Authorize(Roles = RolesConstants.AdminRole)]
-    public class EventDatesController : Controller
+    // GET: EventDates
+    public async Task<IActionResult> Index()
+        => View(await BuildIndexViewModelAsync());
+
+    // GET: EventDates/Details/5
+    public async Task<IActionResult> Details(int? id)
     {
-        private readonly MockInterviewsDbContext _context;
-        private readonly TimeslotService _timeslotService;
-        private readonly EventService _eventService;
-        private readonly ILogger<EventDatesController> _logger;
+        var @event = id is null ? null : await context.Events.AsNoTracking().SingleOrDefaultAsync(item => item.Id == id);
+        return @event is null ? NotFound() : View(@event);
+    }
 
-        public EventDatesController(MockInterviewsDbContext context,
-            TimeslotService timeslotService,
-            EventService eventService,
-            ILogger<EventDatesController> logger)
+    // GET: EventDates/Create
+    public IActionResult Create() => View(new EventDateCreationViewModel());
+
+    // POST: EventDates/Create
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(EventDateCreationViewModel input)
+    {
+        if (string.IsNullOrWhiteSpace(input.EventDate.Name))
         {
-            _context = context;
-            _timeslotService = timeslotService;
-            _eventService = eventService;
-            _logger = logger;
+            ModelState.AddModelError("EventDate.Name", "An event name is required.");
+        }
+        if (!TryGetFor221(input.For221True is not null, input.For221False is not null, out var for221))
+        {
+            ModelState.AddModelError("EventDate.For221", "Choose at least one eligible student group.");
         }
 
-        // GET: EventDates
-        public async Task<IActionResult> Index()
+        if (!ModelState.IsValid)
         {
-            _logger.LogInformation("Called {method} method...", nameof(Index));
-            return View(await _eventService.GetAllAsync());
+            return View(nameof(Index), await BuildIndexViewModelAsync(input, "event-create-dialog"));
         }
 
-        // GET: EventDates/Details/5
-        public async Task<IActionResult> Details(int id)
+        var @event = new Event
         {
-            _logger.LogInformation("Called {method} method...", nameof(Details));
+            Date = DateTime.SpecifyKind(input.EventDate.Date.Date, DateTimeKind.Utc),
+            Name = input.EventDate.Name.Trim(),
+            IsActive = input.EventDate.IsActive,
+            For221 = for221
+        };
 
-            var @event = await _eventService.GetByIdAsync(id);
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        await context.Events.AddAsync(@event);
+        await context.SaveChangesAsync();
+        await TimeslotSeed.SeedTimeslots(timeslotService, @event, input.MaxSignUps);
+        await transaction.CommitAsync();
 
-            if (@event == null)
-            {
-                return NotFound();
-            }
+        TempData["StatusMessage"] = $"{@event.Name} was created with its 18 half-hour timeslots.";
+        return RedirectToAction(nameof(Index));
+    }
 
-            return View(@event);
+    // GET: EventDates/Edit/5
+    public async Task<IActionResult> Edit(int? id)
+    {
+        var @event = id is null ? null : await context.Events.AsNoTracking().SingleOrDefaultAsync(item => item.Id == id);
+        return @event is null ? NotFound() : View(EventDateEditViewModel.FromEvent(@event));
+    }
+
+    // POST: EventDates/Edit/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, EventDateEditViewModel input)
+    {
+        if (id != input.Id)
+        {
+            return NotFound();
         }
 
-        // GET: EventDates/Create
-        public IActionResult Create()
+        if (string.IsNullOrWhiteSpace(input.Name))
         {
-            _logger.LogInformation("Getting initial {method} view", nameof(Create));
-            return View();
+            ModelState.AddModelError(nameof(input.Name), "An event name is required.");
+        }
+        if (!TryGetFor221(input.For221True, input.For221False, out var for221))
+        {
+            ModelState.AddModelError(nameof(input.For221True), "Choose at least one eligible student group.");
         }
 
-        // POST: EventDates/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Date,Name,For221,IsActive")] Event EventDate, int MaxSignUps)
+        if (!ModelState.IsValid)
         {
-            _logger.LogInformation("{method} method was called with a body...", nameof(Create));
-
-            var vm = new EventDateCreationViewModel();
-
-            var value = GetFor221Value(Request.Form);
-
-            if (value < 0)
-            {
-                ModelState.AddModelError("EventDate.For221", "Please indicate whether the event is for 221.");
-                vm.EventDate = EventDate;
-                return View(vm);
-            }
-
-            if (!ModelState.IsValid)
-            {
-                vm.EventDate = EventDate;
-                return View(vm);
-            }
-
-            var for221 = For221Constants.GetFor221Int(value)
-                ?? throw new InvalidOperationException("A valid MIS 221 selection is required.");
-            EventDate.For221 = (For221)for221;
-            EventDate.Date = DateTime.SpecifyKind(EventDate.Date.Date, DateTimeKind.Utc);
-
-            var attempt = await _eventService.AddAsync(EventDate);
-
-            if (attempt == null)
-            {
-                return NotFound();
-            }
-
-            TimeslotSeed.MaxSignups = MaxSignUps;
-            await TimeslotSeed.SeedTimeslots(_timeslotService, EventDate);
-
-            return RedirectToAction("Index", "EventDates");
+            return View(input);
         }
 
-        // GET: EventDates/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        var @event = await context.Events.SingleOrDefaultAsync(item => item.Id == id);
+        if (@event is null)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            _logger.LogInformation("Getting initial {method} view...", nameof(Edit));
-            var @event = await _eventService.GetByIdAsync(id);
-
-            if (@event == null)
-            {
-                return NotFound();
-            }
-
-            return View(@event);
+            return NotFound();
         }
 
-        // POST: EventDates/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Date,Name,IsActive")] Event @event)
+        @event.Date = DateTime.SpecifyKind(input.Date.Date, DateTimeKind.Utc);
+        @event.Name = input.Name.Trim();
+        @event.IsActive = input.IsActive;
+        @event.For221 = for221;
+        await context.SaveChangesAsync();
+        TempData["StatusMessage"] = $"{@event.Name} was updated.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    // GET: EventDates/Delete/5
+    public async Task<IActionResult> Delete(int? id)
+    {
+        var @event = id is null ? null : await context.Events.AsNoTracking().SingleOrDefaultAsync(item => item.Id == id);
+        return @event is null ? NotFound() : View(@event);
+    }
+
+    // POST: EventDates/Delete/5
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        var @event = await context.Events.SingleOrDefaultAsync(item => item.Id == id);
+        if (@event is null)
         {
-            _logger.LogInformation("{method} method was called with a body...", nameof(Edit));
-
-            if (id != @event.Id)
-            {
-                return NotFound();
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return View(@event);
-            }
-
-            var value = GetFor221Value(Request.Form);
-
-            if (value < 0)
-            {
-                ModelState.AddModelError("", "Please check indicate whether the event is for 221.");
-                return View(@event);
-            }
-
-            var for221 = For221Constants.GetFor221Int(value)
-                ?? throw new InvalidOperationException("A valid MIS 221 selection is required.");
-            @event.For221 = (For221)for221;
-
-            try
-            {
-                var attempt = await _eventService.UpdateAsync(@event);
-
-                if (attempt == null)
-                {
-                    return NotFound();
-                }
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await EventDateExists(@event.Id))
-                {
-                    return NotFound();
-                }
-            }
-
-            return RedirectToAction("Index", "EventDates");
+            TempData["ErrorMessage"] = "That event no longer exists.";
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: EventDates/Delete/5
-        public async Task<IActionResult> Delete(int id)
+        try
         {
-            _logger.LogInformation("Called {method} method...", nameof(Delete));
-
-            var @event = await _eventService.GetByIdAsync(id);
-
-            if (@event == null)
-            {
-                return NotFound();
-            }
-
-            return View(@event);
+            context.Events.Remove(@event);
+            await context.SaveChangesAsync();
+            TempData["StatusMessage"] = $"{@event.Name} was deleted.";
+        }
+        catch (DbUpdateException exception)
+        {
+            logger.LogWarning(exception, "Unable to delete event {EventId}", id);
+            TempData["ErrorMessage"] = $"{@event.Name} could not be deleted because it has related scheduling records.";
         }
 
-        // POST: EventDates/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            _logger.LogInformation("Finalizing event deletion...");
+        return RedirectToAction(nameof(Index));
+    }
 
-            var @event = await _eventService.GetByIdAsync(id);
+    private async Task<EventDateIndexViewModel> BuildIndexViewModelAsync(
+        EventDateCreationViewModel? editor = null,
+        string? activeDialog = null)
+    {
+        var events = await context.Events.AsNoTracking().OrderByDescending(item => item.Date).ThenBy(item => item.Name).ToListAsync();
+        return new EventDateIndexViewModel(events, editor ?? new EventDateCreationViewModel(), activeDialog);
+    }
 
-            if (@event != null)
-            {
-                var deleted = await _eventService.DeleteAsync(@event);
-
-                if (!deleted)
-                {
-                    return NotFound();
-                }
-            }
-
-            return RedirectToAction("Index", "EventDates");
-        }
-
-        private async Task<bool> EventDateExists(int id)
-        {
-            var exists = await _eventService.GetByIdAsync(id);
-            return exists != null;
-            //return (_context.Events?.Any(e => e.Id == id)).GetValueOrDefault();
-        }
-
-        private static int GetFor221Value(IFormCollection form)
-        {
-            bool isFor221True = form["For221True"].Count > 0;
-            bool isFor221False = form["For221False"].Count > 0;
-
-            if (isFor221True && isFor221False)
-            {
-                return (int)For221.b;
-            }
-            else if (isFor221True)
-            {
-                return (int)For221.y;
-            }
-            else if (isFor221False)
-            {
-                return (int)For221.n;
-            }
-            else
-            {
-                return -1;
-            }
-        }
+    private static bool TryGetFor221(bool includes221, bool includesUpper, out For221 for221)
+    {
+        for221 = includes221 && includesUpper ? For221.b : includes221 ? For221.y : For221.n;
+        return includes221 || includesUpper;
     }
 }

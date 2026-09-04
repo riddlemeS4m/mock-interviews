@@ -1,0 +1,26 @@
+@model MockInterviews.Models.ViewModels.GlobalConfigVarsController.ConfigurationEditViewModel
+
+<form asp-action="Edit" method="post" class="space-y-5">
+    <input asp-for="Id" type="hidden" data-dialog-field="id" />
+    <input asp-for="Name" type="hidden" data-dialog-field="name" />
+    <div asp-validation-summary="ModelOnly" class="border-l-4 border-negative pl-4 text-sm text-negative"></div>
+
+    <div>
+        <p class="text-sm text-muted">Setting</p>
+        <p class="mt-1 break-all font-mono text-sm font-semibold text-ink" data-dialog-field="name"></p>
+    </div>
+
+    <div>
+        <label asp-for="Value" class="block text-sm font-semibold text-ink">Value</label>
+        <input asp-for="Value"
+               class="mt-2 block min-h-11 w-full rounded-md border border-line px-3 py-2"
+               data-dialog-field="value"
+               data-dialog-initial-focus />
+        <span asp-validation-for="Value" class="mt-1 block text-sm text-negative"></span>
+    </div>
+
+    <div class="flex flex-wrap justify-end gap-3">
+        <button type="button" ui-variant="Secondary" data-dialog-close>Cancel</button>
+        <button type="submit" ui-variant="Primary">Save value</button>
+    </div>
+</form>

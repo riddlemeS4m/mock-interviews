@@ -1,38 +1,21 @@
-﻿@model MockInterviews.Models.Entities.VolunteerTimeslot
+@model MockInterviews.Models.Entities.VolunteerTimeslot
 
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Cancel volunteer availability";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Cancel</h1>
+<section class="mx-auto max-w-2xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Cancel volunteer availability", "Confirm removal of this volunteer time.")' />
 
-<h3 style="text-align: center;">Are you sure you want to cancel this?</h3>
-<div style="align-items: center; text-align: center; justify-content: center;">
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Timeslot)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Timeslot.Time)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Timeslot.Event.Date)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Timeslot.Event.Date)
-        </dd>
+    <div class="rounded-card border border-line bg-surface p-6 shadow-card">
+        <p class="text-ink">@Model.Timeslot.Event.Date.ToString("MMMM d, yyyy") · @Model.Timeslot.Time.ToString("h:mm tt")</p>
 
-    </dl>
-    
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="Id" />
-        <input type="submit" value="Cancel" class="btn btn-primary" /> |
-        @Html.ActionLink("Return to Home",
-                "Index",   // <-- ActionMethod
-                "Home",  // <-- Controller Name.
-                null, // <-- Route arguments.
-                null  
-                )
-    </form>
-</div>
+        <form asp-action="Delete" method="post" class="mt-6 flex gap-3">
+            <input type="hidden" asp-for="Id" />
+            <button type="submit" ui-variant="Destructive">Cancel availability</button>
+            <a asp-action="Index" ui-variant="Quiet">Keep it</a>
+        </form>
+    </div>
+</section>

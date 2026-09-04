@@ -1,18 +1,20 @@
-﻿@using MockInterviews.Models.Identity;
-@*@inject SignInManager<ApplicationUser> SignInManager
-@{
-    var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
-}*@
-<ul class="nav nav-pills flex-column">
-    <li class="nav-item"><a class="nav-link @ManageNavPages.IndexNavClass(ViewContext)" id="profile" asp-page="./Index">View Profile</a></li>
-    <li class="nav-item"><a class="nav-link @ManageNavPages.ProfileEditClass(ViewContext)" id="profile-edit" asp-page="./ProfileEdit">Edit Profile</a></li>
+@inject SignInManager<MockInterviews.Models.Identity.ApplicationUser> SignInManager
 
-@*    <li class="nav-item"><a class="nav-link @ManageNavPages.EmailNavClass(ViewContext)" id="email" asp-page="./Email">Email</a></li>
-*@    @*<li class="nav-item"><a class="nav-link @ManageNavPages.ChangePasswordNavClass(ViewContext)" id="change-password" asp-page="./ChangePassword">Password</a></li>*@
-    @*@if (hasExternalLogins)
+@{
+    const string linkClasses = "block rounded-md px-3 py-2 text-sm font-semibold transition-colors";
+    string Classes(string? activeClass) => $"{linkClasses} {(activeClass == "active" ? "bg-ink text-white" : "text-ink hover:bg-soft")}";
+    var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
+}
+
+<nav aria-label="Account settings" class="space-y-1 rounded-card border border-line bg-surface p-2 shadow-sm">
+    <a class="@Classes(ManageNavPages.IndexNavClass(ViewContext))" id="profile" asp-page="./Index">Profile</a>
+    <a class="@Classes(ManageNavPages.ProfileEditClass(ViewContext))" id="profile-edit" asp-page="./ProfileEdit">Edit profile</a>
+    <a class="@Classes(ManageNavPages.EmailNavClass(ViewContext))" id="email" asp-page="./Email">Email</a>
+    <a class="@Classes(ManageNavPages.ChangePasswordNavClass(ViewContext))" id="change-password" asp-page="./ChangePassword">Password</a>
+    @if (hasExternalLogins)
     {
-        <li id="external-logins" class="nav-item"><a id="external-login" class="nav-link @ManageNavPages.ExternalLoginsNavClass(ViewContext)" asp-page="./ExternalLogins">External logins</a></li>
-    }*@
-@*    <li class="nav-item"><a class="nav-link @ManageNavPages.TwoFactorAuthenticationNavClass(ViewContext)" id="two-factor" asp-page="./TwoFactorAuthentication">Two-factor authentication</a></li>
-*@    @*<li class="nav-item"><a class="nav-link @ManageNavPages.PersonalDataNavClass(ViewContext)" id="personal-data" asp-page="./PersonalData">Delete Account</a></li>*@
-</ul>
+        <a class="@Classes(ManageNavPages.ExternalLoginsNavClass(ViewContext))" id="external-logins" asp-page="./ExternalLogins">External sign-ins</a>
+    }
+    <a class="@Classes(ManageNavPages.TwoFactorAuthenticationNavClass(ViewContext))" id="two-factor" asp-page="./TwoFactorAuthentication">Two-factor authentication</a>
+    <a class="@Classes(ManageNavPages.PersonalDataNavClass(ViewContext))" id="personal-data" asp-page="./PersonalData">Personal data</a>
+</nav>

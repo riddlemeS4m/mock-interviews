@@ -1,73 +1,20 @@
-﻿@model MockInterviews.Models.Entities.Interview
+@model MockInterviews.Models.Entities.Interview
 
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Cancel interview";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<div style="display: flex; justify-content: center;">
-    <h2>Are you sure you want to cancel your interview?</h2>
-</div>
+<section class="mx-auto max-w-xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Cancel interview", "This permanently removes this individual interview from your schedule.")' />
 
-<div>
-@*    <hr />
-*@    <dl class="row">
-@*        <dt class="col-sm-6" style="text-align: right; margin-right: 15px;">
-            Location
-            @Html.DisplayNameFor(model => model.Location)
-        </dt>
-        <dd class="col-sm-6" id="leftAlign">
-            @Html.DisplayFor(model => model.Location.Id)
-        </dd>
-        <dt class="col-sm-6" style="text-align: right; margin-right: 15px;">
-            @Html.DisplayNameFor(model => model.Timeslot)
-        </dt>
-        <dd class="col-sm-6" id="leftAlign">
-            @Html.DisplayFor(model => model.Timeslot.Id)
-        </dd>
-        <dt class="col-sm-6" style="text-align: right; margin-right: 15px;">
-            Interview Type
-@*            @Html.DisplayNameFor(model => model.InterviewType)
-        </dt>
-        <dd class="col-sm-6" id="leftAlign">
-            @Html.DisplayFor(model => model.InterviewType)
-        @*</dd>
-        <dt class="col-sm-6" id="rightAlign">
-            @Html.DisplayNameFor(model => model.Status)
-        </dt>
-        <dd class="col-sm-6" id="leftAlign">
-            @Html.DisplayFor(model => model.Status)
-        </dd>
-        <dt class="col-sm-6" id="rightAlign">
-            @Html.DisplayNameFor(model => model.InterviewerRating)
-        </dt>
-        <dd class="col-sm-6" id="leftAlign">
-            @Html.DisplayFor(model => model.InterviewerRating)
-        </dd>
-        <dt class="col-sm-6" id="rightAlign">
-            @Html.DisplayNameFor(model => model.InterviewerFeedback)
-        </dt>
-        <dd class="col-sm-6" id="leftAlign">
-            @Html.DisplayFor(model => model.InterviewerFeedback)
-        </dd>
-        <dt class="col-sm-6" id="rightAlign">
-            @Html.DisplayNameFor(model => model.ProcessFeedback)
-        </dt>
-        <dd class="col-sm-6" id="leftAlign">
-            @Html.DisplayFor(model => model.ProcessFeedback)
-        </dd>
-        <dt class="col-sm-6" id="rightAlign">
-            @Html.DisplayNameFor(model => model.SignupInterviewerTimeslot)
-        </dt>
-        <dd class="col-sm-6" id="leftAlign">
-            @Html.DisplayFor(model => model.SignupInterviewerTimeslot.Id)
-        </dd> *@
-    </dl>
+    <partial name="DesignSystem/_Feedback"
+             model='new UiFeedbackViewModel(UiFeedbackKind.Warning, "Confirm cancellation", "This action cannot be undone.")' />
 
-    <div style="display: flex; justify-content: center;">
-        <form asp-action="UserDeleteConfirmed">
-            <input type="hidden" asp-for="Id" />
-            <input type="submit" value="Yes, Cancel" class="btn btn-primary" style="margin-right: 15px;"/>
-            <a class="btn btn-outline-primary" asp-action="Index">No, Back to List</a>
-        </form>
-    </div>
-</div>
+    <form asp-action="UserDeleteConfirmed" class="flex flex-wrap items-center gap-4">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" ui-variant="Primary" class="bg-negative hover:bg-negative/90 focus-visible:outline-negative">Cancel interview</button>
+        <a asp-controller="Home" asp-action="Index" class="text-sm font-semibold text-ink hover:underline">Keep interview</a>
+    </form>
+</section>

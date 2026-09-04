@@ -11,13 +11,14 @@ using MockInterviews.Data.Access.Emails;
 using MockInterviews.Data.Access.Reports;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Email;
 using MockInterviews.Interfaces.IServices;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
 using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Models.ViewModels.VolunteerEventsController;
 using MockInterviews.Options;
-using SendGrid;
+using MockInterviews.Services;
 
 
 namespace MockInterviews.Controllers
@@ -26,25 +27,28 @@ namespace MockInterviews.Controllers
     {
         private readonly MockInterviewsDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ISendGridClient _sendGridClient;
+        private readonly IEmailTransport _emailTransport;
+        private readonly ParticipantSchedulingService _participantSchedulingService;
         private readonly ILogger<VolunteerEventsController> _logger;
         private readonly string _superUserEmail;
 
         public VolunteerEventsController(MockInterviewsDbContext context,
             UserManager<ApplicationUser> userManager,
-            ISendGridClient sendGridClient,
+            IEmailTransport emailTransport,
+            ParticipantSchedulingService participantSchedulingService,
             IOptions<SuperUserOptions> superUserOptions,
             ILogger<VolunteerEventsController> logger)
         {
             _context = context;
             _userManager = userManager;
-            _sendGridClient = sendGridClient;
+            _emailTransport = emailTransport;
+            _participantSchedulingService = participantSchedulingService;
             _logger = logger;
             _superUserEmail = superUserOptions.Value.Email;
         }
 
         // GET: VolunteerEvents
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Index()
         {
             var volunteerEvents = await _context.VolunteerTimeslots
@@ -52,7 +56,8 @@ namespace MockInterviews.Controllers
                 .ThenInclude(y => y.Event)
                 .Where(y => y.Timeslot.Event.IsActive == true)
                 .OrderBy(ve => ve.StudentId)
-                .ThenBy(x => x.TimeslotId)
+                .ThenBy(ve => ve.Timeslot.EventId)
+                .ThenBy(ve => ve.Timeslot.Time)
                 .ToListAsync();
 
             var timeRanges = new ControlBreakVolunteer(_userManager);
@@ -62,7 +67,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: VolunteerEvents/Details/
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null || _context.VolunteerTimeslots == null)
@@ -102,7 +107,7 @@ namespace MockInterviews.Controllers
             }
 
             var timeslots = await _context.Timeslots
-                .Where(x => x.IsVolunteer == true)
+                .Where(x => x.IsVolunteer && x.IsActive)
                 .Include(y => y.Event)
                 .Where(x => !_context.VolunteerTimeslots.Any(y => y.TimeslotId == x.Id && y.StudentId == userId))
                 .Where(x => !_context.Interviews.Any(y => y.TimeslotId == x.Id && y.StudentId == userId))
@@ -118,8 +123,7 @@ namespace MockInterviews.Controllers
 
             VolunteerEventSignupViewModel volunteerEventsViewModel = new()
             {
-                Timeslots = timeslots,
-                EventDates = eventdates
+                EventDays = _participantSchedulingService.ComposeEventDays(timeslots)
             };
 
             if (timeslots.Count == 0)
@@ -140,12 +144,9 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.StudentRole)]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(int[] SelectedEventIds1, int[] SelectedEventIds2)
+        public async Task<IActionResult> Create(int[] SelectedTimeslotIds)
         {
-            int[] SelectedEventIds = (SelectedEventIds1 ?? [])
-                .Concat(SelectedEventIds2 ?? [])
-                .Distinct()
-                .ToArray();
+            SelectedTimeslotIds ??= [];
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId is null)
@@ -173,7 +174,7 @@ namespace MockInterviews.Controllers
 
             //handle bad input
             var timeslots = await _context.Timeslots
-                .Where(x => x.IsVolunteer == true)
+                .Where(x => x.IsVolunteer && x.IsActive)
                 .Include(y => y.Event)
                 .Where(x => !_context.VolunteerTimeslots.Any(y => y.TimeslotId == x.Id && y.StudentId == userId))
                 .Where(x => !_context.Interviews.Any(y => y.TimeslotId == x.Id && y.StudentId == userId))
@@ -189,23 +190,23 @@ namespace MockInterviews.Controllers
 
             VolunteerEventSignupViewModel volunteerEventsViewModel = new()
             {
-                Timeslots = timeslots,
-                EventDates = eventdates
+                EventDays = _participantSchedulingService.ComposeEventDays(timeslots, SelectedTimeslotIds),
+                SelectedTimeslotIds = SelectedTimeslotIds
             };
 
-            if (SelectedEventIds.Length == 0)
+            if (SelectedTimeslotIds.Length == 0)
             {
-                ModelState.AddModelError("SelectedEventIds1", "Please select at least one checkbox");
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "Please select at least one checkbox");
                 return View(volunteerEventsViewModel);
             }
 
-            if (SelectedEventIds.Any(id => timeslots.All(timeslot => timeslot.Id != id)))
+            if (SelectedTimeslotIds.Any(id => timeslots.All(timeslot => timeslot.Id != id)))
             {
-                ModelState.AddModelError("SelectedEventIds1", "One or more selected timeslots are no longer available. Refresh the page and try again.");
+                ModelState.AddModelError(nameof(SelectedTimeslotIds), "One or more selected timeslots are no longer available. Refresh the page and try again.");
                 return View(volunteerEventsViewModel);
             }
 
-            _context.VolunteerTimeslots.AddRange(SelectedEventIds.Select(id => new VolunteerTimeslot
+            _context.VolunteerTimeslots.AddRange(SelectedTimeslotIds.Distinct().Select(id => new VolunteerTimeslot
             {
                 TimeslotId = id,
                 StudentId = userId
@@ -223,7 +224,7 @@ namespace MockInterviews.Controllers
                 .Include(volunteerTimeslot => volunteerTimeslot.Timeslot)
                 .ThenInclude(timeslot => timeslot.Event)
                 .Where(volunteerTimeslot => volunteerTimeslot.StudentId == userId &&
-                    SelectedEventIds.Contains(volunteerTimeslot.TimeslotId))
+                    SelectedTimeslotIds.Contains(volunteerTimeslot.TimeslotId))
                 .ToListAsync();
 
             var sortedEvents = volEvents
@@ -236,7 +237,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: VolunteerEvents/Edit/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null || _context.VolunteerTimeslots == null)
@@ -256,7 +257,7 @@ namespace MockInterviews.Controllers
         // POST: VolunteerEvents/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,StudentId,TimeslotId")] VolunteerTimeslot volunteerEvent)
@@ -292,7 +293,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: VolunteerEvents/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null || _context.VolunteerTimeslots == null)
@@ -312,7 +313,7 @@ namespace MockInterviews.Controllers
         }
 
         // POST: VolunteerEvents/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -331,7 +332,7 @@ namespace MockInterviews.Controllers
                 var fullName = user is null ? "Deleted user" : $"{user.FirstName} {user.LastName}";
 
                 ASendAnEmail emailNotification = new VolunteerCancellationNotification();
-                await emailNotification.SendEmailAsync(_sendGridClient, _superUserEmail, "Volunteer Cancellation Notification: " + fullName, _superUserEmail, fullName, volunteerEvent.ToString(), null);
+                await emailNotification.SendEmailAsync(_emailTransport, _superUserEmail, "Volunteer Cancellation Notification: " + fullName, _superUserEmail, fullName, volunteerEvent.ToString(), null);
 
                 _context.VolunteerTimeslots.Remove(volunteerEvent);
             }
@@ -375,15 +376,15 @@ namespace MockInterviews.Controllers
                 return;
             }
 
-            await emailer.SendEmailAsync(_sendGridClient, _superUserEmail, "Volunteer Sign-Up Confirmation", user.Email, user.FirstName ?? "Deleted user", times, calendarEvents);
+            await emailer.SendEmailAsync(_emailTransport, _superUserEmail, "Volunteer Sign-Up Confirmation", user.Email, user.FirstName ?? "Deleted user", times, calendarEvents);
 
             string fullName = user.FirstName + " " + user.LastName;
 
             ASendAnEmail emailNotification = new VolunteerSignupNotification();
-            await emailNotification.SendEmailAsync(_sendGridClient, _superUserEmail, "Volunteer Sign-Up Notification: " + fullName, _superUserEmail, fullName, times, null);
+            await emailNotification.SendEmailAsync(_emailTransport, _superUserEmail, "Volunteer Sign-Up Notification: " + fullName, _superUserEmail, fullName, times, null);
         }
 
-        [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> UserDeleteRange(int[] timeslots)
         {
             // Check if the timeslotIds array is empty or null
@@ -411,7 +412,7 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            if (!timeslotsToDelete.All(e => e.StudentId == User.FindFirstValue(ClaimTypes.NameIdentifier)) && !User.IsInRole(RolesConstants.AdminRole))
+            if (!timeslotsToDelete.All(e => e.StudentId == User.FindFirstValue(ClaimTypes.NameIdentifier)) && !IsVolunteerAdministrator())
             {
                 return NotFound();
             }
@@ -430,7 +431,9 @@ namespace MockInterviews.Controllers
             return View(viewModel);
         }
 
-        [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.StudentRole + "," + RolesConstants.AdministrationRoles)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UserDeleteRangeConfirmed(int[] timeslots)
         {
 
@@ -440,7 +443,7 @@ namespace MockInterviews.Controllers
                 .Where(t => timeslots.Contains(t.Id))
                 .ToListAsync();
 
-            if (!timeslotsToDelete.All(e => e.StudentId == User.FindFirstValue(ClaimTypes.NameIdentifier)) && !User.IsInRole(RolesConstants.AdminRole))
+            if (!timeslotsToDelete.All(e => e.StudentId == User.FindFirstValue(ClaimTypes.NameIdentifier)) && !IsVolunteerAdministrator())
             {
                 return NotFound();
             }
@@ -448,8 +451,9 @@ namespace MockInterviews.Controllers
             // Delete the timeslots
             _context.VolunteerTimeslots.RemoveRange(timeslotsToDelete);
             await _context.SaveChangesAsync();
+            TempData["StatusMessage"] = "Your volunteer shift was cancelled.";
 
-            if (User.IsInRole(RolesConstants.AdminRole))
+            if (IsVolunteerAdministrator())
             {
                 return RedirectToAction("Index", "VolunteerEvents");
             }
@@ -459,7 +463,7 @@ namespace MockInterviews.Controllers
             }
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> DeleteRange(int[] timeslots)
         {
             // Check if the timeslotIds array is empty or null
@@ -469,54 +473,83 @@ namespace MockInterviews.Controllers
             }
 
             // Get the timeslots to delete
+            var requestedTimeslotIds = timeslots.Distinct().ToArray();
             var timeslotsToDelete = await _context.VolunteerTimeslots
                 .Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
-                .Where(t => timeslots.Contains(t.Id))
+                .Where(t => requestedTimeslotIds.Contains(t.Id))
+                .OrderBy(t => t.Timeslot.Time)
                 .ToListAsync();
 
-            // Check if any of the timeslots to delete are null
-            if (timeslotsToDelete == null || timeslotsToDelete.Count == 0)
+            if (timeslotsToDelete.Count != requestedTimeslotIds.Length
+                || !IsSingleVolunteerRange(timeslotsToDelete))
             {
                 return NotFound();
             }
 
             var date = timeslotsToDelete.First().Timeslot.Event.Date;
-            if (timeslotsToDelete.Any(t => t.Timeslot.Event.Date != date))
-            {
-                return NotFound();
-            }
-
-            var timeslotslist = timeslots.ToList();
 
             var viewModel = new TimeRangeViewModel
             {
                 Date = date,
                 StartTime = timeslotsToDelete.First().Timeslot.Time.ToString(@"h\:mm tt"),
                 EndTime = timeslotsToDelete.Last().Timeslot.Time.AddMinutes(30).ToString(@"h\:mm tt"),
-                TimeslotIds = timeslotslist
+                Name = (await _userManager.FindByIdAsync(timeslotsToDelete[0].StudentId)) is { } user
+                    ? $"{user.FirstName} {user.LastName}"
+                    : "Deleted user",
+                TimeslotIds = requestedTimeslotIds.ToList()
             };
 
 
             return View(viewModel);
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteRangeConfirmed(int[] timeslots)
         {
+            if (timeslots is null || timeslots.Length == 0)
+            {
+                return NotFound();
+            }
 
-            // Get the timeslots to delete
+            var requestedTimeslotIds = timeslots.Distinct().ToArray();
             var timeslotsToDelete = await _context.VolunteerTimeslots
-
-                .Where(t => timeslots.Contains(t.Id))
+                .Include(t => t.Timeslot)
+                .Where(t => requestedTimeslotIds.Contains(t.Id))
+                .OrderBy(t => t.Timeslot.Time)
                 .ToListAsync();
 
-            // Delete the timeslots
+            if (timeslotsToDelete.Count != requestedTimeslotIds.Length
+                || !IsSingleVolunteerRange(timeslotsToDelete))
+            {
+                return NotFound();
+            }
+
             _context.VolunteerTimeslots.RemoveRange(timeslotsToDelete);
             await _context.SaveChangesAsync();
+            TempData["StatusMessage"] = "Volunteer availability cancelled.";
 
             return RedirectToAction("Index", "VolunteerEvents");
         }
+
+        private static bool IsSingleVolunteerRange(List<VolunteerTimeslot> volunteerTimeslots)
+        {
+            if (volunteerTimeslots.Count == 0)
+            {
+                return false;
+            }
+
+            var first = volunteerTimeslots[0];
+            return volunteerTimeslots.All(volunteerTimeslot => volunteerTimeslot.StudentId == first.StudentId
+                && volunteerTimeslot.Timeslot.EventId == first.Timeslot.EventId)
+                && volunteerTimeslots.Zip(volunteerTimeslots.Skip(1), (current, next) =>
+                    next.Timeslot.Time == current.Timeslot.Time.AddMinutes(30)).All(isAdjacent => isAdjacent);
+        }
+
+        private bool IsVolunteerAdministrator()
+            => User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.SystemAdminRole);
         private static DateTime CombineDateWithTimeString(DateTime date, string timeString)
         {
             DateTime dateTime = DateTime.ParseExact(timeString, "h:mm tt", CultureInfo.InvariantCulture);
@@ -555,7 +588,7 @@ namespace MockInterviews.Controllers
             stringBuilder.AppendLine("SEQUENCE:0"); // Added SEQUENCE for indicating the version of the event
             stringBuilder.AppendFormat("DTSTART;TZID=America/Chicago:{0:yyyyMMddTHHmmss}\r\n", start);
             stringBuilder.AppendFormat("DTEND;TZID=America/Chicago:{0:yyyyMMddTHHmmss}\r\n", end);
-            stringBuilder.AppendLine("SUMMARY:UA MIS Mock Interviews");
+            stringBuilder.AppendLine("SUMMARY:Mock Interviews");
             stringBuilder.AppendLine("BEGIN:VALARM");
             stringBuilder.AppendLine("TRIGGER:-P14D"); // 14 days before
             stringBuilder.AppendLine("ACTION:DISPLAY");

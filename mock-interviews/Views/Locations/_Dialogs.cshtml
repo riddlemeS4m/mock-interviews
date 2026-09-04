@@ -1,0 +1,19 @@
+@using MockInterviews.Models.Entities
+@model LocationsIndexViewModel
+
+@{
+    var createModel = Model.ActiveDialog == "location-create-dialog" ? Model.Editor : new Location();
+    var editModel = Model.ActiveDialog == "location-edit-dialog" ? Model.Editor : new Location();
+}
+
+<partial name="DesignSystem/_Dialog"
+         model='new UiDialogViewModel("location-create-dialog", "Add room", "Create a room or virtual location for interview assignments.", "/Views/Locations/_CreateDialogContent.cshtml", createModel, Model.ActiveDialog == "location-create-dialog")' />
+
+<partial name="DesignSystem/_Dialog"
+         model='new UiDialogViewModel("location-details-dialog", "Room details", null, "/Views/Locations/_DetailsDialogContent.cshtml")' />
+
+<partial name="DesignSystem/_Dialog"
+         model='new UiDialogViewModel("location-edit-dialog", "Edit room", "Update the room name or supported interview formats.", "/Views/Locations/_EditDialogContent.cshtml", editModel, Model.ActiveDialog == "location-edit-dialog")' />
+
+<partial name="DesignSystem/_Dialog"
+         model='new UiDialogViewModel("location-delete-dialog", "Delete room?", null, "/Views/Locations/_DeleteDialogContent.cshtml")' />

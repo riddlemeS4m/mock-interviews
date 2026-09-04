@@ -1,82 +1,35 @@
-﻿@model MockInterviews.Models.ViewModels.TimeslotsController.TimeslotViewModel
+@using MockInterviews.Models.ViewModels.TimeslotsController
+@using MockInterviews.Models.ViewModels.Shared
+@model TimeslotIndexViewModel
+@{ ViewData["Title"] = "Timeslots"; }
 
-@{
-    ViewData["Title"] = "Manage Timeslots";
-}
-
-<h1>Manage Timeslots</h1>
-
-<div id="center-everything" class="row">
-    <div class="col-md-1"></div>
-    <div class="col-md-10">
-    <div>
-        <hr />
-        <br />
-        <h3>Administrative Actions</h3>
-        
-        <div>
-            <a asp-action="Create" class="btn btn-secondary">Create New</a> &nbsp;
-            <a asp-action="UpdateMaxTimeslots" class="btn btn-primary">Update Max Timeslot Signups</a>
-        </div>
-        <br />
+<section class="space-y-8">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader" model='new UiPageHeaderViewModel("Timeslots", "Maintain each active event’s independent half-hour availability and capacity.")' />
+        <div class="flex flex-wrap gap-3"><a asp-action="UpdateMaxTimeslots" ui-variant="Secondary">Update all capacities</a><a asp-action="Create" ui-variant="Primary"><ui-icon name="plus" class="size-4" />Add timeslot</a></div>
     </div>
-    <div>
-        <div>
-            <hr />
-            <br />
-            <h3>Timeslot List</h3>
+    @if (TempData["StatusMessage"] is string statusMessage) { <partial name="DesignSystem/_Feedback" model="new UiFeedbackViewModel(UiFeedbackKind.Success, statusMessage, string.Empty)" /> }
+    @if (TempData["ErrorMessage"] is string errorMessage) { <partial name="DesignSystem/_Feedback" model="new UiFeedbackViewModel(UiFeedbackKind.Error, errorMessage, string.Empty)" /> }
+    @if (Model.EventGroups.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState" model='new UiEmptyStateViewModel("clock", "No active event timeslots", "Create or activate an event date before maintaining its timeslots.")' />
+    }
+    else
+    {
+        <div class="space-y-6">
+            @foreach (var group in Model.EventGroups)
+            {
+                <section class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+                    <div class="border-b border-line bg-soft px-5 py-4"><h2 class="font-semibold text-ink">@group.Event.Name</h2><p class="mt-1 text-sm text-muted">@group.Event.Date.ToString("dddd, MMMM d, yyyy") · @group.Timeslots.Count half-hour blocks</p></div>
+                    <div class="overflow-x-auto"><table class="min-w-full text-left"><thead class="border-b border-line text-sm text-muted"><tr><th class="px-5 py-3 font-semibold">Time</th><th class="px-5 py-3 font-semibold">Capacity</th><th class="px-5 py-3 font-semibold">Available for</th><th class="px-5 py-3 text-right font-semibold"><span class="sr-only">Actions</span></th></tr></thead><tbody class="divide-y divide-line">
+                        @foreach (var slot in group.Timeslots)
+                        {
+                            var audiences = string.Join(", ", new[] { slot.IsStudent ? "Students" : null, slot.IsInterviewer ? "Interviewers" : null, slot.IsVolunteer ? "Volunteers" : null }.Where(value => value is not null));
+                            <tr><th scope="row" class="whitespace-nowrap px-5 py-4 font-semibold text-ink">@slot.Time.ToString("h:mm tt")</th><td class="px-5 py-4 text-ink">@slot.MaxSignUps</td><td class="px-5 py-4 text-muted">@(audiences.Length == 0 ? "No participant workflows" : audiences)</td><td class="whitespace-nowrap px-5 py-4 text-right"><div class="inline-flex gap-4"><a asp-action="Details" asp-route-id="@slot.Id" class="text-sm font-semibold text-ink hover:underline">View</a><a asp-action="Edit" asp-route-id="@slot.Id" class="text-sm font-semibold text-ink hover:underline">Edit</a><a asp-action="Delete" asp-route-id="@slot.Id" class="text-sm font-semibold text-negative hover:underline">Delete</a></div></td></tr>
+                        }
+                    </tbody></table></div>
+                </section>
+            }
         </div>
-        <div>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.Timeslots[0].Timeslot.Time)
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.Timeslots[0].Timeslot.Event.Date)
-                        </th>
-                        <th>
-                            @Html.DisplayNameFor(model => model.Timeslots[0].Timeslot.MaxSignUps)
-                        </th>
-                        <th>Details</th>
-                        <th>Edit</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var item in Model.Timeslots) 
-                {
-                    <tr>
-                        <td style="color:white;">
-                            @Html.DisplayFor(modelItem => item.Timeslot.Id)
-                        </td>
-                        <td>
-                            @Html.DisplayFor(modelItem => item.Timeslot.Time)
-                        </td>
-                        <td class="date-column">
-                            @Html.DisplayFor(modelItem => item.Timeslot.Event.Date)
-                        </td>
-                        <td>
-                            @Html.DisplayFor(modelItem => item.Timeslot.MaxSignUps)
-                        </td>
-                        <td>
-                        
-                            <a asp-action="Details" asp-route-id="@item.Timeslot.Id">Details</a> @*|
-                            <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>*@
-                        </td>
-                        <td>
-                            @if (item.Timeslot.Time.Minute == 0)
-                            {
-                                <a asp-action="Edit" asp-route-id="@item.Timeslot.Id">Edit</a>
-                            }
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    </div>
-    </div>
-    <div class="col-md-1"></div>
-</div>
+    }
+</section>

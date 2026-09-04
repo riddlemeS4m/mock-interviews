@@ -1,0 +1,18 @@
+@model MockInterviews.Models.Entities.Question
+
+<div asp-validation-summary="ModelOnly" class="border-l-4 border-negative pl-4 text-sm text-negative"></div>
+
+<div>
+    <label asp-for="Q" class="block text-sm font-semibold text-ink">Question</label>
+    <textarea asp-for="Q"
+              rows="4"
+              class="mt-2 block w-full rounded-md border border-line px-3 py-2"
+              data-dialog-initial-focus></textarea>
+    <span asp-validation-for="Q" class="text-sm text-negative"></span>
+</div>
+
+<div class="mt-5">
+    <label asp-for="A" class="block text-sm font-semibold text-ink">Answer <span class="font-normal text-muted">(optional)</span></label>
+    <textarea asp-for="A" rows="5" class="mt-2 block w-full rounded-md border border-line px-3 py-2"></textarea>
+    <span asp-validation-for="A" class="text-sm text-negative"></span>
+</div>

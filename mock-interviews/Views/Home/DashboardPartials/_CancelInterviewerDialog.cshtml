@@ -1,0 +1,6 @@
+<p class="leading-6 text-muted">This permanently removes all availability in this signup.</p>
+<form asp-controller="SignupInterviewerTimeslots" asp-action="UserDeleteRangeConfirmed" method="post" class="mt-7 flex flex-wrap justify-end gap-3">
+    <input type="hidden" name="id" data-dialog-field="id" />
+    <button type="button" ui-variant="Secondary" data-dialog-close>Keep availability</button>
+    <button type="submit" ui-variant="Destructive"><ui-icon name="trash-2" class="size-4" />Cancel availability</button>
+</form>

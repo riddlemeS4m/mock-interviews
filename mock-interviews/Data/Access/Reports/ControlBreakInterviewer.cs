@@ -17,7 +17,12 @@ namespace MockInterviews.Data.Access.Reports
 
         public async Task<List<TimeRangeViewModel>> ToTimeRanges(List<InterviewerTimeslot> signupInterviewTimeslots)
         {
-            signupInterviewTimeslots = signupInterviewTimeslots.OrderBy(x => x.InterviewerSignupId).ThenBy(x => x.TimeslotId).ToList();
+            signupInterviewTimeslots = signupInterviewTimeslots
+                .OrderBy(x => x.InterviewerSignupId)
+                .ThenBy(x => x.Timeslot.Event.Date)
+                .ThenBy(x => x.Timeslot.EventId)
+                .ThenBy(x => x.Timeslot.Time)
+                .ToList();
             var groupedEvents = new List<TimeRangeViewModel>();
             var name = new ApplicationUser();
 
@@ -36,7 +41,8 @@ namespace MockInterviews.Data.Access.Reports
                     var nextEvent = signupInterviewTimeslots[i].Timeslot;
 
                     if (signupInterviewTimeslots[i].InterviewerSignupId == currentSI.Id
-                        && signupInterviewTimeslots[i].TimeslotId == currentEvent.Id + 1)
+                        && signupInterviewTimeslots[i].Timeslot.EventId == currentEvent.EventId
+                        && signupInterviewTimeslots[i].Timeslot.Time == currentEvent.Time.AddMinutes(30))
                     {
                         currentEvent = nextEvent;
                         ints.Add(signupInterviewTimeslots[i].Id);

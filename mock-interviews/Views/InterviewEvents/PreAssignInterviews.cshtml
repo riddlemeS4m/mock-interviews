@@ -1,207 +1,127 @@
-@using MockInterviews.Data.Constants
-@using MockInterviews.Data.Seeds
-@model IEnumerable<MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventManageViewModel>
+@using MockInterviews.Models.ViewModels.InterviewEventsController
+@using MockInterviews.Models.ViewModels.Shared
+@model PreAssignmentPageViewModel
 
 @{
-    ViewData["Title"] = "Pre-Assign Interviews";
-    var noOfTables = TimeslotSeed.Interviewer.Where(x => x == true).Count() * 2;
-    var uniqueDates = Model.Select(m => m.InterviewEvent.Timeslot.Event.Date).Distinct().OrderBy(d => d).ToList();
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
+    ViewData["Title"] = "Pre-assign interviews";
 }
 
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11; border-radius: 10px;">
-  <div id="liveToast" class="toast d-none" role="alert" aria-live="assertive" aria-atomic="true" style="padding: 15px; border-radius: 10px;">
-    <div class="toast-header">
-      <img src="~/favicon.png" style="width: 2rem; height: 2rem;" class="rounded me-2" alt="...">
-      <strong class="me-auto">UA MIS</strong>
-      <small style="margin-right: 5px; margin-left: 10px;">Just now</small>
-      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-    </div>
-    <div class="toast-body" style="text-align: center;">
-    </div>
-  </div>
-</div>
-
-<h1>Pre-Assign Interviews <span id="date-filter-active"></span></h1>
-<div class="row">
-@if (Model.Any() && Model.Count() != 0)
-{
-    <div class="col-md-1"></div>
-    <div class="col-md-10">
-    <!-- Filter Buttons -->
-    <div id="dateFilters" style="margin-bottom: 20px; text-align: center;">
-        <hr />
-        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-        <button class="filter-btn btn btn-primary mt-2 mb-2 active" style="min-width: 200px;" data-date="all">All</button>
-        @foreach (var date in uniqueDates)
-        {
-            <button class="filter-btn btn btn-secondary mt-2 mb-2" style="min-wdith: 200px;" data-date="@date.ToString("MM/dd/yy")">@date.ToString("MMMM dd, yyyy")</button>
-        }
-        </div>
-        <hr />
+<section class="space-y-8">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader"
+                 model='new UiPageHeaderViewModel("Pre-assign interviews", "Plan waiting interviews by exact event timeslot. Each timeslot saves as one atomic update.")' />
+        <a asp-action="Index" ui-variant="Secondary" class="shrink-0">
+            <ui-icon name="users" class="size-4" />
+            Assignment board
+        </a>
     </div>
 
-    @{var index = 0;}
-
-    @for (int i = 0; i < noOfTables; i++)
+    @if (TempData["StatusMessage"] is string statusMessage)
     {
-        var currTime = Model.ElementAt(index).InterviewEvent.Timeslot.Time;
-        var nextTime = Model.ElementAt(index).InterviewEvent.Timeslot.Time;
-        var tableId = $"table-{i}"; 
-
-        <div class="interview-table" id="@tableId">
-            <h3 class="time-column" style="text-align: center;">@nextTime</h3>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Class</th>
-                        <th>Scheduled Start</th>
-                        <th>Date</th>
-                        <th>Interviewer</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @while (nextTime == currTime)
-                    {
-                        var item = Model.ElementAt(index);
-
-                        <tr id="@item.InterviewEvent.Id" data-date="@Model.ElementAt(index).InterviewEvent.Timeslot.Event.Date.ToString("MM/dd/yy")">
-                            <td>@item.StudentName</td>
-                            <td>@item.StudentClass</td>
-                            <td class="time-column">@item.InterviewEvent.Timeslot.Time</td>
-                            <td class="date-column">@item.InterviewEvent.Timeslot.Event.Date</td>
-                            <td>
-                                <select class="form-select form-select-sm" style="color: black;" asp-items='@item.RequestedInterviewers' style="width: 172px;"></select>
-                            </td>
-                        </tr>
-
-                        index++;
-
-                        if (index >= Model.Count())
-                        {
-                            break;
-                        }
-
-                        nextTime = Model.ElementAt(index).InterviewEvent.Timeslot.Time;
-                    }
-                </tbody>
-            </table>
-
-            <!-- Submit Button for Each Table -->
-            <div style="margin: auto; text-align: center;">
-                <button class="submit-btn btn btn-primary mt-2" style="text-align: center;" data-table-id="@tableId">Submit <span class="time-column">@currTime</span></button>
-            </div>
-        </div>
-        <br /><br />
+        <partial name="DesignSystem/_Feedback"
+                 model="new UiFeedbackViewModel(UiFeedbackKind.Success, statusMessage, string.Empty)" />
     }
-    </div>
-    <div class="col-md-1"></div>
-}
-</div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div asp-validation-summary="ModelOnly" ui-validation-summary></div>
+    }
+
+    @if (Model.Timeslots.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("calendar-days", "No waiting interviews", "There are no active, not-arrived interviews available to pre-assign.")' />
+    }
+    else
+    {
+        var dateGroups = Model.Timeslots.GroupBy(timeslot => timeslot.EventDate.Date).ToList();
+        @if (dateGroups.Count > 1)
+        {
+            <nav class="flex flex-wrap gap-2" aria-label="Filter pre-assignments by date" data-preassignment-date-filters>
+                <button type="button" ui-variant="Secondary" aria-pressed="false" data-preassignment-date-filter="all">All dates</button>
+                @foreach (var dateGroup in dateGroups)
+                {
+                    <button type="button" ui-variant="Secondary" aria-pressed="false" data-preassignment-date-filter="@dateGroup.Key.ToString("yyyy-MM-dd")">@dateGroup.Key.ToString("MMM d, yyyy")</button>
+                }
+            </nav>
+        }
+
+        @foreach (var dateGroup in dateGroups)
+        {
+            <section class="space-y-4" aria-labelledby="preassignment-date-@dateGroup.Key.ToString("yyyyMMdd")" data-preassignment-date="@dateGroup.Key.ToString("yyyy-MM-dd")">
+                <div class="flex items-center gap-3">
+                    <ui-icon name="calendar-days" class="size-5 text-muted" />
+                    <h2 id="preassignment-date-@dateGroup.Key.ToString("yyyyMMdd")" class="text-xl font-semibold text-ink">@dateGroup.Key.ToString("dddd, MMMM d")</h2>
+                </div>
+
+                @foreach (var timeslot in dateGroup)
+                {
+                    var groupId = $"preassignment-timeslot-{timeslot.TimeslotId}";
+                    <form asp-action="PreAssignInterviews" method="post" class="overflow-hidden rounded-card border border-line bg-surface shadow-card" aria-labelledby="@groupId">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="TimeslotId" value="@timeslot.TimeslotId" />
+                        <div class="flex flex-col gap-3 border-b border-line bg-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h3 id="@groupId" class="flex items-center gap-2 text-lg font-semibold text-ink">
+                                    <ui-icon name="clock" class="size-5 text-muted" />
+                                    @timeslot.ScheduledTime.ToString("h:mm tt")
+                                </h3>
+                                <p class="mt-1 text-sm text-muted">@timeslot.EventName · @timeslot.Interviews.Count waiting student@(timeslot.Interviews.Count == 1 ? string.Empty : "s")</p>
+                            </div>
+                            <button type="submit" ui-variant="Primary">Save this timeslot</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-left text-sm">
+                                <thead class="border-b border-line text-muted">
+                                    <tr>
+                                        <th scope="col" class="px-5 py-3 font-semibold">Student</th>
+                                        <th scope="col" class="px-5 py-3 font-semibold">Interview</th>
+                                        <th scope="col" class="min-w-72 px-5 py-3 font-semibold">Eligible interviewer</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-line">
+                                    @for (var index = 0; index < timeslot.Interviews.Count; index++)
+                                    {
+                                        var interview = timeslot.Interviews[index];
+                                        var selectId = $"preassignment-{timeslot.TimeslotId}-{interview.InterviewId}";
+                                        <tr>
+                                            <th scope="row" class="px-5 py-4 font-semibold text-ink">
+                                                @interview.StudentName
+                                                @if (!string.IsNullOrWhiteSpace(interview.StudentClass))
+                                                {
+                                                    <span class="mt-0.5 block text-xs font-normal text-muted">@interview.StudentClass</span>
+                                                }
+                                            </th>
+                                            <td class="px-5 py-4 text-ink">@interview.InterviewType</td>
+                                            <td class="px-5 py-4">
+                                                <input type="hidden" name="Assignments[@index].InterviewId" value="@interview.InterviewId" />
+                                                <input type="hidden" name="Assignments[@index].ExpectedInterviewerTimeslotId" value="@interview.AssignedInterviewerTimeslotId" />
+                                                <label for="@selectId" class="sr-only">Interviewer for @interview.StudentName</label>
+                                                <select id="@selectId" name="Assignments[@index].InterviewerId" ui-control>
+                                                    <option value="">Unassigned</option>
+                                                    @foreach (var candidate in interview.Candidates)
+                                                    {
+                                                        <option value="@candidate.InterviewerId" selected="@(candidate.InterviewerId == interview.AssignedInterviewerId ? "selected" : null)">@candidate.Name · @candidate.Room</option>
+                                                    }
+                                                </select>
+                                                @if (interview.Candidates.Count == 0)
+                                                {
+                                                    <p class="mt-2 text-xs text-muted">No type-compatible interviewer volunteered for this exact timeslot.</p>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                }
+            </section>
+        }
+    }
+</section>
 
 @section Scripts {
-    <script>
-        $(document).ready(function () {
-            $(".filter-btn").click(function () {
-                let selectedDate = $(this).data("date");
-
-                $(".filter-btn").removeClass("active");
-                $(this).addClass("active");
-
-                if(selectedDate !== "all") {
-                    $("#date-filter-active").text(`for ${selectedDate}`);
-                } else {
-                    $("#date-filter-active").text("");
-                }
-                
-
-                $("tr[data-date]").each(function () {
-                    let rowDate = $(this).data("date");
-
-                    if (selectedDate === "all" || rowDate === selectedDate) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            });
-        });
-
-        $("table").on("change", "select", function () {
-            let selectedValue = $(this).val();
-            let $currentTable = $(this).closest("table");
-
-            if (selectedValue !== "0") {
-                $currentTable.find("select").not(this).each(function () {
-                    if ($(this).val() === selectedValue) {
-                        $(this).val("0").trigger("change");
-                    }
-                });
-            }
-        });
-
-        $(document).ready(function () {
-            $("select[aria-controls^='DataTables_Table_']").each(function () {
-                $(this).val("50").trigger("change");
-            });
-        });
-
-        $(document).ready(function () {
-            let $dateButtons = $(".filter-btn").not("[data-date='all']");
-
-            if ($dateButtons.length > 0) {
-                $dateButtons.first().trigger("click");
-            }
-        });
-
-        $(document).ready(function () {
-            $(".submit-btn").click(function () {
-                let tableId = $(this).data("table-id");
-                let $table = $("#" + tableId);
-
-                let dataToSend = [];
-
-                $table.find("tbody tr").each(function () {
-                    let interviewEventId = $(this).attr("id");
-                    let selectedValue = $(this).find("select").val();
-
-                    if (interviewEventId && selectedValue) {
-                        dataToSend.push({
-                            interviewEventId: interviewEventId,
-                            selectedValue: selectedValue
-                        });
-                    }
-                });
-
-                if (dataToSend.length > 0) {
-                    $.ajax({
-                        url: "/InterviewEvents/PreAssignInterviews",
-                        type: "POST",
-                        contentType: "application/json",
-                        data: JSON.stringify(dataToSend),
-                        success: function () {
-                            showToast("Success!");
-                        },
-                        error: function () {
-                            showToast("There was an error.");
-                        }
-                    });
-                }
-            });
-
-            const showToast = (message) => {
-                let $toast = $("#liveToast");
-
-                $toast.removeClass("d-none").addClass("bg-light");
-
-                $toast.find(".toast-body").text(message);
-
-                let toastInstance = new bootstrap.Toast($toast[0]);
-                toastInstance.show();
-            }
-
-            $("#liveToast").addClass("d-none");
-        });
-
-    </script>
+    <script src="~/js/pre-assignment.js" asp-append-version="true"></script>
 }

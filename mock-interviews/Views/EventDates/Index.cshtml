@@ -1,58 +1,26 @@
-﻿@model IEnumerable<MockInterviews.Models.Entities.Event>
+@using MockInterviews.Data.Constants
+@using MockInterviews.Models.ViewModels.EventDatesController
+@using MockInterviews.Models.ViewModels.Shared
+@model EventDateIndexViewModel
+@{ ViewData["Title"] = "Event dates"; }
 
-@{
-    ViewData["Title"] = "Index";
-}
-
-<h1>Event Dates</h1>
-
-<p>
-    <a asp-controller="EventDates" asp-action="Create">Create New Event</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th></th>
-            <th>
-                @Html.DisplayNameFor(model => model.Date)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.For221)
-            </th>
-            <th>
-                Active?
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td style="color: white;">
-                    @Html.DisplayFor(modelItem => item.Id)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Date)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Name)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.For221)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.IsActive)
-                </td>
-                <td>
-                    <a asp-controller="EventDates" asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                    @* <a asp-controller="EventDates" asp-action="Details" asp-route-id="@item.Id">Details</a> |*@
-                    <a asp-controller="EventDates" asp-action="Delete" asp-route-id="@item.Id">Cancel</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<section class="space-y-8">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader" model='new UiPageHeaderViewModel("Event dates", "Create and maintain interview event days and the schedules they contain.")' />
+        <a asp-action="Create" ui-variant="Primary" class="shrink-0" data-dialog-target="event-create-dialog"><ui-icon name="plus" class="size-4" />Add event</a>
+    </div>
+    @if (TempData["StatusMessage"] is string statusMessage) { <partial name="DesignSystem/_Feedback" model="new UiFeedbackViewModel(UiFeedbackKind.Success, statusMessage, string.Empty)" /> }
+    @if (TempData["ErrorMessage"] is string errorMessage) { <partial name="DesignSystem/_Feedback" model="new UiFeedbackViewModel(UiFeedbackKind.Error, errorMessage, string.Empty)" /> }
+    @if (Model.Events.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState" model='new UiEmptyStateViewModel("calendar-days", "No event dates yet", "Add an event date to create its standard schedule of half-hour timeslots.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card"><div class="overflow-x-auto"><table class="min-w-full text-left"><thead class="border-b border-line bg-soft text-sm text-muted"><tr><th class="px-5 py-3 font-semibold">Event</th><th class="px-5 py-3 font-semibold">Date</th><th class="px-5 py-3 font-semibold">Eligible students</th><th class="px-5 py-3 font-semibold">Status</th><th class="px-5 py-3 text-right font-semibold"><span class="sr-only">Actions</span></th></tr></thead><tbody class="divide-y divide-line">
+        @foreach (var item in Model.Events) { var groups = item.For221 == For221.b ? "MIS 221 and MIS 321+" : item.For221 == For221.y ? "MIS 221" : "MIS 321+"; <tr><th scope="row" class="px-5 py-4 font-semibold text-ink">@item.Name</th><td class="whitespace-nowrap px-5 py-4 text-ink">@item.Date.ToString("MMM d, yyyy")</td><td class="px-5 py-4 text-muted">@groups</td><td class="px-5 py-4"><span class="inline-flex items-center gap-2 text-sm text-ink"><span class="size-2 rounded-full @(item.IsActive ? "bg-positive" : "bg-muted")"></span>@(item.IsActive ? "Active" : "Inactive")</span></td><td class="whitespace-nowrap px-5 py-4 text-right"><div class="inline-flex gap-4"><a asp-action="Details" asp-route-id="@item.Id" class="text-sm font-semibold text-ink hover:underline" data-dialog-target="event-details-dialog" data-dialog-value-name="@item.Name" data-dialog-value-date="@item.Date.ToString("MMMM d, yyyy")" data-dialog-value-groups="@groups" data-dialog-value-status="@(item.IsActive ? "Active" : "Inactive")">View</a><a asp-action="Edit" asp-route-id="@item.Id" class="text-sm font-semibold text-ink hover:underline">Edit</a><a asp-action="Delete" asp-route-id="@item.Id" class="text-sm font-semibold text-negative hover:underline" data-dialog-target="event-delete-dialog" data-dialog-value-id="@item.Id" data-dialog-value-name="@item.Name">Delete</a></div></td></tr> }
+        </tbody></table></div></div>
+    }
+</section>
+<partial name="_Dialogs" model="Model" />
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

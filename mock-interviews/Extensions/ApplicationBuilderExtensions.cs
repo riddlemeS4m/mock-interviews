@@ -49,7 +49,7 @@ public static class ApplicationBuilderExtensions
         app.MapAreaControllerRoute(
             name: "system",
             areaName: "System",
-            pattern: "System",
+            pattern: "System/{action=Index}/{id?}",
             defaults: new { controller = "System", action = "Index" });
         app.MapControllerRoute(
             name: "default",
@@ -57,7 +57,6 @@ public static class ApplicationBuilderExtensions
         app.MapRazorPages();
         app.MapHealthChecks("/health");
         app.MapHub<AssignInterviewsHub>("/interviewhub");
-        app.MapHub<AvailableInterviewersHub>("/interviewershub");
 
         return app;
     }

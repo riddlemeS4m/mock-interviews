@@ -1,283 +1,189 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels.ReportsController;
 using MockInterviews.Models.ViewModels.TimeslotsController;
-using MockInterviews.Services;
 
-namespace MockInterviews.Controllers
+namespace MockInterviews.Controllers;
+
+[Authorize(Roles = RolesConstants.AdministrationRoles)]
+public class TimeslotsController(
+    MockInterviewsDbContext context,
+    UserManager<ApplicationUser> userManager,
+    ILogger<TimeslotsController> logger) : Controller
 {
-    [Authorize(Roles = RolesConstants.AdminRole)]
-    public class TimeslotsController : Controller
+    // GET: Timeslots
+    public async Task<IActionResult> Index()
     {
-        private readonly MockInterviewsDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly TimeslotService _timeslotService;
-        private readonly ILogger<TimeslotsController> _logger;
+        var timeslots = await context.Timeslots.AsNoTracking().Include(slot => slot.Event)
+            .Where(slot => slot.Event.IsActive)
+            .OrderBy(slot => slot.Event.Date).ThenBy(slot => slot.Event.Name).ThenBy(slot => slot.Time)
+            .ToListAsync();
+        var groups = timeslots.GroupBy(slot => slot.EventId)
+            .Select(group => new EventTimeslotGroupViewModel(group.First().Event, group.ToList()))
+            .ToList();
+        return View(new TimeslotIndexViewModel(groups));
+    }
 
-        public TimeslotsController(MockInterviewsDbContext context,
-            UserManager<ApplicationUser> userManager,
-            TimeslotService timeslotService,
-            ILogger<TimeslotsController> logger)
+    // GET: Timeslots/Details/5
+    public async Task<IActionResult> Details(int? id)
+    {
+        var timeslot = id is null ? null : await context.Timeslots.AsNoTracking().Include(slot => slot.Event)
+            .SingleOrDefaultAsync(slot => slot.Id == id && slot.Event.IsActive);
+        if (timeslot is null)
         {
-            _context = context;
-            _userManager = userManager;
-            _timeslotService = timeslotService;
-            _logger = logger;
+            return NotFound();
         }
 
-        // GET: Timeslots
-        public async Task<IActionResult> Index()
+        var interviewerIds = await context.InterviewerTimeslots.Where(item => item.TimeslotId == timeslot.Id)
+            .Select(item => item.InterviewerSignup.InterviewerId).ToListAsync();
+        var studentIds = await context.Interviews.Where(item => item.TimeslotId == timeslot.Id).Select(item => item.StudentId).ToListAsync();
+        var volunteerIds = await context.VolunteerTimeslots.Where(item => item.TimeslotId == timeslot.Id).Select(item => item.StudentId).ToListAsync();
+        var users = await userManager.Users.Where(user => interviewerIds.Concat(studentIds).Concat(volunteerIds).Contains(user.Id))
+            .ToDictionaryAsync(user => user.Id, user => $"{user.FirstName} {user.LastName}");
+        string Name(string userId) => users.GetValueOrDefault(userId, "Deleted user");
+
+        return View(new TimeslotDetailsViewModel
         {
-            var timeslots = await _context.Timeslots
-                .Include(t => t.Event)
-                .Where(t => t.Event.IsActive)
-                .ToListAsync();
-            var eventdates = await _context.Events
-                .Where(x => x.IsActive)
-                .ToListAsync();
+            Timeslot = timeslot,
+            InterviewerNames = interviewerIds.Select(Name).ToList(),
+            StudentNames = studentIds.Select(Name).ToList(),
+            VolunteerNames = volunteerIds.Select(Name).ToList()
+        });
+    }
 
-            var countlist = new List<ParticipantCountViewModel>();
-            foreach (Timeslot timeslot in timeslots)
-            {
-                countlist.Add(new ParticipantCountViewModel
-                {
-                    Timeslot = timeslot,
-                    StudentCount = 0,
-                    InterviewerCount = 0,
-                    VolunteerCount = 0
-                });
-            }
+    // GET: Timeslots/Create
+    public async Task<IActionResult> Create() => View(await BuildCreateViewModelAsync());
 
-            var viewModel = new TimeslotViewModel()
-            {
-                Timeslots = countlist,
-                EventDates = eventdates
-            };
-
-            return View(viewModel);
+    // POST: Timeslots/Create
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create([Bind("Time,EventId,IsActive,IsVolunteer,IsInterviewer,IsStudent,MaxSignUps")] Timeslot timeslot)
+    {
+        if (!await context.Events.AnyAsync(@event => @event.Id == timeslot.EventId && @event.IsActive))
+        {
+            ModelState.AddModelError(nameof(timeslot.EventId), "Choose a current active event.");
+        }
+        if (timeslot.MaxSignUps < 0)
+        {
+            ModelState.AddModelError(nameof(timeslot.MaxSignUps), "Maximum signups must be zero or greater.");
+        }
+        if (!ModelState.IsValid)
+        {
+            return View(await BuildCreateViewModelAsync(timeslot));
         }
 
-        // GET: Timeslots/Details/5
-        public async Task<IActionResult> Details(int? id)
+        timeslot.Time = DateTime.SpecifyKind(timeslot.Time, DateTimeKind.Utc);
+        context.Timeslots.Add(timeslot);
+        await context.SaveChangesAsync();
+        TempData["StatusMessage"] = "Timeslot was created.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    // GET: Timeslots/Edit/5
+    public async Task<IActionResult> Edit(int? id)
+    {
+        var timeslot = id is null ? null : await context.Timeslots.AsNoTracking().Include(slot => slot.Event)
+            .SingleOrDefaultAsync(slot => slot.Id == id && slot.Event.IsActive);
+        return timeslot is null ? NotFound() : View(TimeslotEditViewModel.FromTimeslot(timeslot));
+    }
+
+    // POST: Timeslots/Edit/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, TimeslotEditViewModel input)
+    {
+        if (id != input.Id)
         {
-            if (id == null || _context.Timeslots == null)
-            {
-                return NotFound();
-            }
-
-            var timeslot = await _context.Timeslots.Include(t => t.Event)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (timeslot == null)
-            {
-                return NotFound();
-            }
-
-            var interviewerList = await _context.InterviewerTimeslots
-                .Include(x => x.InterviewerSignup)
-                .Where(x => x.TimeslotId == timeslot.Id)
-                .ToListAsync();
-            var interviewerNamesList = new List<string>();
-            if (interviewerList != null && interviewerList.Count != 0)
-            {
-                var interviewerIds = interviewerList
-                .Select(x => x.InterviewerSignup.InterviewerId)
-                .ToList();
-                foreach (var interviewerid in interviewerIds)
-                {
-                    var interviewer = await _userManager.FindByIdAsync(interviewerid);
-                    interviewerNamesList.Add(interviewer is null ? "Deleted user" : interviewer.FirstName + " " + interviewer.LastName);
-                }
-            }
-
-            var studentList = await _context.Interviews
-               .Where(x => x.TimeslotId == timeslot.Id)
-               .ToListAsync();
-            var studentNamesList = new List<string>();
-            if (studentList != null && studentList.Count != 0)
-            {
-                var studentIds = studentList
-                .Select(x => x.StudentId)
-                .ToList();
-                foreach (var interviewerid in studentIds)
-                {
-                    var student = await _userManager.FindByIdAsync(interviewerid);
-                    studentNamesList.Add(student is null ? "Deleted user" : student.FirstName + " " + student.LastName);
-                }
-            }
-
-            var volunteerList = await _context.VolunteerTimeslots
-               .Where(x => x.TimeslotId == timeslot.Id)
-               .ToListAsync();
-            var volunteerNamesList = new List<string>();
-            if (volunteerList != null && volunteerList.Count != 0)
-            {
-                var volunteerIds = volunteerList
-                .Select(x => x.StudentId)
-                .ToList();
-                foreach (var interviewerid in volunteerIds)
-                {
-                    var volunteer = await _userManager.FindByIdAsync(interviewerid);
-                    volunteerNamesList.Add(volunteer is null ? "Deleted user" : volunteer.FirstName + " " + volunteer.LastName);
-                }
-            }
-
-            var viewModel = new TimeslotDetailsViewModel
-            {
-                Timeslot = timeslot,
-                InterviewerNames = interviewerNamesList,
-                StudentNames = studentNamesList,
-                VolunteerNames = volunteerNamesList
-            };
-
-            return View(viewModel);
+            return NotFound();
+        }
+        var timeslot = await context.Timeslots.Include(slot => slot.Event)
+            .SingleOrDefaultAsync(slot => slot.Id == id && slot.Event.IsActive);
+        if (timeslot is null)
+        {
+            return NotFound();
         }
 
-        // GET: Timeslots/Create
-        public IActionResult Create()
+        if (!ModelState.IsValid)
         {
-            return View();
+            input.EventName = timeslot.Event.Name;
+            input.EventDate = timeslot.Event.Date;
+            input.Time = timeslot.Time;
+            return View(input);
         }
 
-        // POST: Timeslots/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Time,IsActive,IsVolunteer,IsInterviewer,IsStudent")] Timeslot timeslot)
+        timeslot.MaxSignUps = input.MaxSignUps;
+        await context.SaveChangesAsync();
+        TempData["StatusMessage"] = "Timeslot capacity was updated.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    // GET: Timeslots/Delete/5
+    public async Task<IActionResult> Delete(int? id)
+    {
+        var timeslot = id is null ? null : await context.Timeslots.AsNoTracking().Include(slot => slot.Event)
+            .SingleOrDefaultAsync(slot => slot.Id == id);
+        return timeslot is null ? NotFound() : View(timeslot);
+    }
+
+    // POST: Timeslots/Delete/5
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        var timeslot = await context.Timeslots.SingleOrDefaultAsync(slot => slot.Id == id);
+        if (timeslot is null)
         {
-            if (ModelState.IsValid)
-            {
-                _context.Add(timeslot);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(timeslot);
-        }
-
-        [Authorize(Roles = RolesConstants.AdminRole)]
-        // GET: Timeslots/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null || _context.Timeslots == null)
-            {
-                return NotFound();
-            }
-
-            var timeslot = await _context.Timeslots.FindAsync(id);
-            if (timeslot == null)
-            {
-                return NotFound();
-            }
-            return View(timeslot);
-        }
-
-        // POST: Timeslots/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [Authorize(Roles = RolesConstants.AdminRole)]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Time,IsActive,IsVolunteer,IsInterviewer,IsStudent,MaxSignUps,EventId")] Timeslot timeslot)
-        {
-            if (id != timeslot.Id)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(timeslot);
-                    await _context.SaveChangesAsync();
-
-                    var pairedtimeslot = await _context.Timeslots.FindAsync(id + 1);
-                    if (pairedtimeslot != null)
-                    {
-                        pairedtimeslot.MaxSignUps = timeslot.MaxSignUps;
-                        _context.Update(pairedtimeslot);
-                        await _context.SaveChangesAsync();
-                    }
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!TimeslotExists(timeslot.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(TimeslotsController.Index), "Timeslots");
-            }
-            return View(timeslot);
-        }
-
-
-        [Authorize(Roles = RolesConstants.AdminRole)]
-        // GET: Timeslots/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null || _context.Timeslots == null)
-            {
-                return NotFound();
-            }
-
-            var timeslot = await _context.Timeslots
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (timeslot == null)
-            {
-                return NotFound();
-            }
-
-            return View(timeslot);
-        }
-
-        // POST: Timeslots/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var timeslot = await _context.Timeslots.FindAsync(id);
-            if (timeslot != null)
-            {
-                _context.Timeslots.Remove(timeslot);
-            }
-
-            await _context.SaveChangesAsync();
+            TempData["ErrorMessage"] = "That timeslot no longer exists.";
             return RedirectToAction(nameof(Index));
         }
 
-        public IActionResult UpdateMaxTimeslots()
+        try
         {
-            return View();
+            context.Timeslots.Remove(timeslot);
+            await context.SaveChangesAsync();
+            TempData["StatusMessage"] = "Timeslot was deleted.";
+        }
+        catch (DbUpdateException exception)
+        {
+            logger.LogWarning(exception, "Unable to delete timeslot {TimeslotId}", id);
+            TempData["ErrorMessage"] = "That timeslot could not be deleted because it has related scheduling records.";
+        }
+        return RedirectToAction(nameof(Index));
+    }
+
+    // GET: Timeslots/UpdateMaxTimeslots
+    public IActionResult UpdateMaxTimeslots() => View(new UpdateMaximumSignupsViewModel());
+
+    // POST: Timeslots/UpdateMaxSignups
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateMaxSignups(UpdateMaximumSignupsViewModel input)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(nameof(UpdateMaxTimeslots), input);
         }
 
-        public async Task<IActionResult> UpdateMaxSignupsConfirmed(int maxsignups)
+        var timeslots = await context.Timeslots.ToListAsync();
+        foreach (var timeslot in timeslots)
         {
-            var timeslots = await _context.Timeslots.ToListAsync();
-            foreach (var timeslot in timeslots)
-            {
-                timeslot.MaxSignUps = maxsignups;
-            }
-            await _context.SaveChangesAsync();
-
-            return RedirectToAction(nameof(Index));
+            timeslot.MaxSignUps = input.MaxSignUps;
         }
+        await context.SaveChangesAsync();
+        TempData["StatusMessage"] = $"Capacity was updated for all {timeslots.Count} timeslots.";
+        return RedirectToAction(nameof(Index));
+    }
 
-
-        private bool TimeslotExists(int id)
-        {
-            return (_context.Timeslots?.Any(e => e.Id == id)).GetValueOrDefault();
-        }
+    private async Task<Timeslot> BuildCreateViewModelAsync(Timeslot? timeslot = null)
+    {
+        ViewBag.EventOptions = new SelectList(await context.Events.AsNoTracking().Where(@event => @event.IsActive)
+            .OrderBy(@event => @event.Date).ToListAsync(), nameof(Event.Id), nameof(Event.Name));
+        return timeslot ?? new Timeslot { IsActive = true, IsVolunteer = true };
     }
 }

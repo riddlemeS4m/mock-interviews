@@ -12,4 +12,9 @@ public sealed class SystemController : Controller
     {
         return View();
     }
+
+    public IActionResult Design()
+    {
+        return View();
+    }
 }

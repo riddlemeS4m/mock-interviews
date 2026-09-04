@@ -1,115 +1,36 @@
-﻿@using MockInterviews.Data;
-@using MockInterviews.Data.Constants;
-@model MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventManageViewModel
+@using MockInterviews.Models.ViewModels.Shared
+@model MockInterviews.Models.ViewModels.InterviewEventsController.AssignmentBoardInterviewViewModel
 
 @{
-    ViewData["Title"] = "Edit";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
+    ViewData["Title"] = "Assign interviewer";
 }
 
-@if (User.Identity?.IsAuthenticated == true && User.IsInRole(RolesConstants.AdminRole))
-{
-    <h1>Assign to @Model.StudentName</h1>
-
-    <hr />
-    <div class="row">
-        <div class="col-md-4">
-            <form asp-action="Edit">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <input type="hidden" asp-for="InterviewEvent.Id" />
-                <input type="hidden" asp-for="InterviewEvent.StudentId" />
-                <input type="hidden" asp-for="InterviewEvent.TimeslotId" />
-
-                <div class="form-group">
-                    <label asp-for="InterviewEvent.Type" class="control-label"></label>
-                    <select id="interviewType" asp-for="InterviewEvent.Type" class="form-control" asp-items='@InterviewTypeConstants.GetInterviewTypesOptions()'>
-                        <option value="">-- Select One --</option>
-                    </select>
-                    <span asp-validation-for="InterviewEvent.Type" class="text-danger"></span>
-                </div>
-                <div class="form-group">
-                    <label asp-for="InterviewEvent.Status" class="control-label"></label>
-                    @if (Model.InterviewEvent.InterviewerTimeslotId == null)
+<section class="mx-auto max-w-xl space-y-6">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Assign interviewer", $"{Model.StudentName} · {Model.EventDate:MMM d} at {Model.ScheduledTime:h:mm tt}")' />
+    <div class="rounded-card border border-line bg-surface p-6 shadow-card">
+        <form asp-action="Edit" method="post" class="space-y-5">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.InterviewId" />
+            <div>
+                <label for="interviewerId" ui-label>Eligible interviewer</label>
+                <select id="interviewerId" name="interviewerId" ui-control>
+                    <option value="">Select an interviewer</option>
+                    @foreach (var candidate in Model.NormalCandidates)
                     {
-                        <select asp-for="InterviewEvent.Status" class="form-control" asp-items='@StatusConstants.GetUnassignedStatusOptions()'>
-                            <option value="">-- Select One --</option>
-                        </select>
+                        <option value="@candidate.InterviewerId">@candidate.Name · @candidate.Room</option>
                     }
-                    else
-                    {
-                        <select asp-for="InterviewEvent.Status" class="form-control" asp-items='@StatusConstants.GetCompleteStatusOptions()'>
-                            <option value="">-- Select One --</option>
-                        </select>
-                    }
-                    <span asp-validation-for="InterviewEvent.Status" class="text-danger"></span>
-                </div>
-
-                <div class="form-group">
-                    <label asp-for="InterviewerId" class="control-label"></label>
-                    <select id="interviewerId" asp-for="InterviewerId" class="form-control" asp-items="@Model.RequestedInterviewers"></select>
-                    <span asp-validation-for="InterviewerId" class="text-danger"></span>
-                </div>
-                <div class="form-group">
-                    <input type="submit" value="Save" class="btn btn-primary" /> | <a asp-action="Index">Back to Home</a>
-                </div>
-            </form>
-        </div>
+                </select>
+                @if (Model.NormalCandidates.Count == 0)
+                {
+                    <p class="mt-2 text-sm text-muted">No normal assignment is available. Use a deliberate override only when an exception is required.</p>
+                }
+            </div>
+            <div class="flex flex-wrap justify-end gap-3">
+                <a asp-action="Index" ui-variant="Secondary">Cancel</a>
+                <button type="submit" ui-variant="Primary" disabled="@(Model.NormalCandidates.Count == 0 ? "disabled" : null)">Assign and start</button>
+            </div>
+        </form>
     </div>
-}
-else
-{
-    <h1>Complete @Model.StudentName's Interview</h1>
-
-    <hr />
-
-    <div class="row">
-        <div class="col-md-4">
-            <form id="main-form" asp-action="Edit">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                <input type="hidden" asp-for="InterviewEvent.Id" />
-                <input type="hidden" asp-for="InterviewEvent.StudentId" />
-                <input type="hidden" asp-for="InterviewEvent.TimeslotId" />
-
-                <div class="form-group" style="visibility:hidden">
-                    <label asp-for="InterviewEvent.Type" class="control-label"></label>
-                    <select asp-for="InterviewEvent.Type" class="form-control" asp-items='@InterviewTypeConstants.GetInterviewTypesOptions()'>
-                        <option value="">-- Select One --</option>
-                    </select>
-                    <span asp-validation-for="InterviewEvent.Type" class="text-danger"></span>
-                </div>
-                <div class="form-group">
-                    <label asp-for="InterviewEvent.Status" class="control-label"></label>
-                    @if (Model.InterviewEvent.InterviewerTimeslotId == null)
-                    {
-                        <select asp-for="InterviewEvent.Status" class="form-control" asp-items='@StatusConstants.GetUnassignedStatusOptions()'>
-                            <option value="">-- Select One --</option>
-                        </select>
-                    }
-                    else
-                    {
-                        <select asp-for="InterviewEvent.Status" class="form-control" asp-items='@StatusConstants.GetInterviewerCompleteStatusOptions()'>
-                            <option value="">-- Select One --</option>
-                        </select>
-                    }
-                    <span asp-validation-for="InterviewEvent.Status" class="text-danger"></span>
-                </div>
-
-                <div class="form-group" style="visibility:hidden">
-                    <label asp-for="InterviewerId" class="control-label"></label>
-                    <select asp-for="InterviewerId" class="form-control" asp-items="@Model.RequestedInterviewers"></select>
-                    <span asp-validation-for="InterviewerId" class="text-danger"></span>
-                </div>
-                <div class="form-group">
-                    <input id="submit-button" type="submit" value="Save" class="btn btn-primary" /> | <a asp-action="Index" asp-controller="Home">Back to Home</a>
-                </div>
-            </form>
-        </div>
-    </div>
-}
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-
-    <script>
-        editInterviewAssignments(@Json.Serialize(Model.TechnicalInterviewers), @Json.Serialize(Model.BehavioralInterviewers));
-    </script>
-}
+</section>

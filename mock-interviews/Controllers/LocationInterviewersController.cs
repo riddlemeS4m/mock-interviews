@@ -11,7 +11,7 @@ using MockInterviews.Models.ViewModels.LocationInterviewersController;
 
 namespace MockInterviews.Controllers
 {
-    [Authorize(Roles = RolesConstants.AdminRole)]
+    [Authorize(Roles = RolesConstants.AdministrationRoles)]
     public class LocationInterviewersController : Controller
     {
         private readonly MockInterviewsDbContext _context;
@@ -99,68 +99,7 @@ namespace MockInterviews.Controllers
         // GET: LocationInterviewers/Create
         public async Task<IActionResult> Create()
         {
-            // Get a list of all Interviewers
-            var availableInterviewers = await _context.InterviewerTimeslots
-                .Include(i => i.InterviewerSignup)
-                .Include(i => i.Timeslot)
-                .ThenInclude(i => i.Event)
-                .Where(i => i.Timeslot.Event.IsActive == true)
-                .Select(i => new SelectListItem
-                {
-                    Value = i.InterviewerSignup.InterviewerId,
-                    Text = $"{i.InterviewerSignup.FirstName} {i.InterviewerSignup.LastName}"
-                })
-                .Distinct()
-                .ToListAsync();
-
-
-            var availableLocations = await _context.Locations
-                .Select(i => new SelectListItem
-                {
-                    Value = i.Id.ToString(),
-                    Text = $"{i.Room}"
-                })
-                .ToListAsync();
-
-            var availableDates = await _context.Events
-                .Where(i => i.IsActive)
-                .Select(i => new SelectListItem
-                {
-                    Value = i.Id.ToString(),
-                    Text = $"{i.Date:d}"
-                })
-                .ToListAsync();
-
-            // Add message to dropdown list if no InterviewerIds or LocationIds are available
-            if (availableInterviewers.Count == 0)
-            {
-                availableInterviewers.Add(new SelectListItem { Text = "No Interviewers available", Value = "" });
-            }
-            else
-            {
-                availableInterviewers = availableInterviewers.OrderBy(item => item.Text).ToList();
-            }
-
-            if (availableLocations.Count == 0)
-            {
-                availableLocations.Add(new SelectListItem { Text = "No Locations available", Value = "" });
-            }
-            else
-            {
-                availableLocations = availableLocations.OrderBy(item => item.Text).ToList();
-            }
-
-            // Create the view model
-            var viewModel = new LocationInterviewerCreateViewModel
-            {
-                LocationInterviewer = new InterviewerLocation(),
-                InterviewerNames = availableInterviewers,
-                Dates = availableDates,
-                Locations = availableLocations
-            };
-
-
-            return View(viewModel);
+            return View(await BuildEditorAsync(new InterviewerLocation()));
         }
 
         // POST: LocationInterviewers/Create
@@ -170,80 +109,19 @@ namespace MockInterviews.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,InterviewerId,LocationId,EventId")] InterviewerLocation locationInterviewer, bool InPerson)
         {
-            if (locationInterviewer == null)
-            {
-                return NotFound();
-            }
+            locationInterviewer.Preference = InPerson
+                ? InterviewLocationConstants.InPerson
+                : InterviewLocationConstants.IsVirtual;
 
-            if (InPerson)
-            {
-                locationInterviewer.Preference = InterviewLocationConstants.InPerson;
-            }
-            else
-            {
-                locationInterviewer.Preference = InterviewLocationConstants.IsVirtual;
-            }
-
-            if (ModelState.IsValid)
+            if (await IsValidAssignmentAsync(locationInterviewer))
             {
                 _context.Add(locationInterviewer);
                 await _context.SaveChangesAsync();
+                TempData["StatusMessage"] = "Room assignment created.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Get a list of all Interviewers
-            var interviewers = await _userManager.GetUsersInRoleAsync(RolesConstants.InterviewerRole);
-
-            var availableInterviewers = interviewers
-                .Select(i => new SelectListItem
-                {
-                    Value = i.Id,
-                    Text = $"{i.FirstName} {i.LastName}"
-                })
-                .ToList();
-
-            var availableLocations = _context.Locations
-                    .Select(i => new SelectListItem
-                    {
-                        Value = i.Id.ToString(),
-                        Text = $"{i.Room}"
-                    })
-                    .ToList();
-
-            var availableDates = _context.Events
-                .Select(i => new SelectListItem
-                {
-                    Value = i.Id.ToString(),
-                    Text = $"{i.Date:d}"
-                })
-                    .ToList();
-
-            // Add message to dropdown list if no InterviewerIds or LocationIds are available
-            if (availableInterviewers.Count == 0)
-            {
-                availableInterviewers.Add(new SelectListItem { Text = "No Interviewers available", Value = "" });
-            }
-            else
-            {
-                availableInterviewers = availableInterviewers.OrderBy(item => item.Text).ToList();
-            }
-
-            if (availableLocations.Count == 0)
-            {
-                availableLocations.Add(new SelectListItem { Text = "No Locations available", Value = "" });
-            }
-
-            // Create the view model
-            var viewModel = new LocationInterviewerCreateViewModel
-            {
-                LocationInterviewer = new InterviewerLocation(),
-                InterviewerNames = availableInterviewers,
-                Dates = availableDates,
-                Locations = availableLocations
-            };
-
-
-            return View(viewModel);
+            return View(await BuildEditorAsync(locationInterviewer));
         }
 
         // GET: LocationInterviewers/Edit/5
@@ -260,50 +138,14 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            // Get a list of LocationIds already assigned to LocationInterviewers for today
-            var assignedLocationIds = await _context.InterviewerLocations
-                .Where(li => li.EventId == locationInterviewer.EventId)
-                .Select(li => li.LocationId)
-                .Distinct()
-                .ToListAsync();
-
-            // Get a list of all Locations except those already assigned to LocationInterviewers
-
-
-            var availableLocations = await _context.Locations
-                //.Where(l => (!assignedLocationIds.Contains(l.Id) || l.Id == locationInterviewer.LocationId) && (l.InPerson == inPerson && l.IsVirtual == isVirtual))
-                .Select(i => new SelectListItem
-                {
-                    Value = i.Id.ToString(),
-                    Text = $"{i.Room}"
-                })
-                .ToListAsync();
-
-            availableLocations = availableLocations.OrderBy(item => item.Text).ToList();
-
-            if (availableLocations.Count == 0)
-            {
-                availableLocations.Add(new SelectListItem { Text = "No Locations available", Value = "" });
-            }
-            else
-            {
-                availableLocations.Insert(0, new SelectListItem { Text = "Unassigned", Value = "" });
-            }
-
             var interviewer = await _userManager.FindByIdAsync(locationInterviewer.InterviewerId);
             if (interviewer is null)
             {
                 return NotFound();
             }
 
-            // Create the view model
-            var viewModel = new LocationInterviewerCreateViewModel
-            {
-                LocationInterviewer = locationInterviewer,
-                InterviewerName = interviewer.FirstName + " " + interviewer.LastName,
-                Locations = availableLocations
-            };
-
+            var viewModel = await BuildEditorAsync(locationInterviewer);
+            viewModel.InterviewerName = interviewer.FirstName + " " + interviewer.LastName;
             return View(viewModel);
         }
 
@@ -319,35 +161,24 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            var existingAssignment = await _context.InterviewerLocations.FindAsync(id);
+            if (existingAssignment is null)
             {
-                try
-                {
-                    _context.Update(locationInterviewer);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!LocationInterviewerExists(locationInterviewer.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                return NotFound();
+            }
+
+            existingAssignment.LocationId = locationInterviewer.LocationId;
+            if (await IsValidAssignmentAsync(existingAssignment))
+            {
+                await _context.SaveChangesAsync();
+                TempData["StatusMessage"] = "Room assignment updated.";
                 return RedirectToAction(nameof(Index));
             }
 
-
-            // Create the view model
-            var viewModel = new LocationInterviewerCreateViewModel
-            {
-                LocationInterviewer = locationInterviewer
-            };
-
-            return View(viewModel);
+            locationInterviewer.InterviewerId = existingAssignment.InterviewerId;
+            locationInterviewer.EventId = existingAssignment.EventId;
+            locationInterviewer.Preference = existingAssignment.Preference;
+            return View(await BuildEditorAsync(locationInterviewer));
         }
 
         // GET: LocationInterviewers/Delete/5
@@ -394,7 +225,67 @@ namespace MockInterviews.Controllers
             }
 
             await _context.SaveChangesAsync();
+            TempData["StatusMessage"] = "Room assignment deleted.";
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<LocationInterviewerCreateViewModel> BuildEditorAsync(InterviewerLocation assignment)
+        {
+            var interviewerRows = await _context.InterviewerTimeslots
+                .Where(timeslot => timeslot.Timeslot.Event.IsActive)
+                .Select(timeslot => new
+                {
+                    timeslot.InterviewerSignup.InterviewerId,
+                    timeslot.InterviewerSignup.FirstName,
+                    timeslot.InterviewerSignup.LastName
+                })
+                .ToListAsync();
+
+            return new LocationInterviewerCreateViewModel
+            {
+                LocationInterviewer = assignment,
+                InterviewerNames = interviewerRows
+                    .GroupBy(interviewer => interviewer.InterviewerId)
+                    .Select(group => new SelectListItem
+                    {
+                        Value = group.Key,
+                        Text = $"{group.First().FirstName} {group.First().LastName}"
+                    })
+                    .OrderBy(interviewer => interviewer.Text)
+                    .ToList(),
+                Locations = await _context.Locations
+                    .OrderBy(location => location.Room)
+                    .Select(location => new SelectListItem { Value = location.Id.ToString(), Text = location.Room })
+                    .ToListAsync(),
+                Dates = await _context.Events
+                    .Where(@event => @event.IsActive)
+                    .OrderBy(@event => @event.Date)
+                    .Select(@event => new SelectListItem { Value = @event.Id.ToString(), Text = $"{@event.Name} ({@event.Date:d})" })
+                    .ToListAsync()
+            };
+        }
+
+        private async Task<bool> IsValidAssignmentAsync(InterviewerLocation assignment)
+        {
+            if (string.IsNullOrWhiteSpace(assignment.InterviewerId)
+                || assignment.EventId is null
+                || !await _context.Events.AnyAsync(@event => @event.Id == assignment.EventId && @event.IsActive)
+                || !await _context.InterviewerTimeslots.AnyAsync(timeslot =>
+                    timeslot.InterviewerSignup.InterviewerId == assignment.InterviewerId
+                    && timeslot.Timeslot.Event.IsActive))
+            {
+                ModelState.AddModelError(string.Empty, "Choose an interviewer with active availability and an active event.");
+                return false;
+            }
+
+            if (assignment.LocationId is not null
+                && !await _context.Locations.AnyAsync(location => location.Id == assignment.LocationId))
+            {
+                ModelState.AddModelError(nameof(assignment.LocationId), "Choose an existing room or location.");
+                return false;
+            }
+
+            return true;
         }
 
         private bool LocationInterviewerExists(int id)

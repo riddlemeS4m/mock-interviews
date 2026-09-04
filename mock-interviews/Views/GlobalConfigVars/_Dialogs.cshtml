@@ -1,0 +1,13 @@
+@model MockInterviews.Models.ViewModels.GlobalConfigVarsController.ConfigurationIndexViewModel
+
+@{
+    var editDialog = new MockInterviews.Models.ViewModels.Shared.UiDialogViewModel(
+        "configuration-edit-dialog",
+        "Edit configuration",
+        "Update the value without changing the setting key.",
+        "/Views/GlobalConfigVars/_EditDialogContent.cshtml",
+        Model.Editor,
+        Model.ActiveDialog == "configuration-edit-dialog");
+}
+
+<partial name="DesignSystem/_Dialog" model="editDialog" />

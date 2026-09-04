@@ -7,382 +7,253 @@ using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.ViewModels.MSTeamsStudentUploadsController;
 
-namespace MockInterviews.Controllers
+namespace MockInterviews.Controllers;
+
+[Authorize(Roles = RolesConstants.AdministrationRoles)]
+public class MSTeamsStudentUploadsController(MockInterviewsDbContext context, ILogger<MSTeamsStudentUploadsController> logger) : Controller
 {
-    public class MSTeamsStudentUploadsController : Controller
+    // GET: MSTeamsStudentUploads
+    public async Task<IActionResult> Index()
+        => View(new RosterIndexViewModel(await context.RosteredStudents.AsNoTracking().OrderBy(student => student.Name).ToListAsync()));
+
+    // GET: MSTeamsStudentUploads/Details/5
+    public async Task<IActionResult> Details(int? id)
     {
-        private readonly MockInterviewsDbContext _context;
+        var student = id is null ? null : await context.RosteredStudents.AsNoTracking().SingleOrDefaultAsync(item => item.Id == id);
+        return student is null ? NotFound() : View(student);
+    }
 
-        public MSTeamsStudentUploadsController(MockInterviewsDbContext context)
+    // GET: MSTeamsStudentUploads/Create
+    public IActionResult Create() => View(new MSTeamsStudentUploadViewModel());
+
+    // POST: MSTeamsStudentUploads/Create
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(MSTeamsStudentUploadViewModel input)
+    {
+        var records = await ParsePrimaryRosterAsync(input.RosterData);
+        if (records is null)
         {
-            _context = context;
+            return View(input);
         }
 
-        // GET: MSTeamsStudentUploads
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        context.RosteredStudents.RemoveRange(context.RosteredStudents);
+        await context.RosteredStudents.AddRangeAsync(records);
+        await context.SaveChangesAsync();
+        await transaction.CommitAsync();
 
-        public async Task<IActionResult> Index()
+        TempData["StatusMessage"] = $"Program roster replaced with {records.Count} students.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [NonAction]
+    public IActionResult UploadMastersStudents() => NotFound();
+
+    // GET: MSTeamsStudentUploads/Upload221Students
+    public IActionResult Upload221Students() => View(new MSTeamsStudentUploadViewModel());
+
+    // POST: MSTeamsStudentUploads/Upload221Students
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Upload221Students(MSTeamsStudentUploadViewModel input)
+    {
+        var records = await Parse221RosterAsync(input.RosterData);
+        if (records is null)
         {
-            return View(await _context.RosteredStudents.ToListAsync());
+            return View(input);
         }
 
-        // GET: MSTeamsStudentUploads/Details/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
-
-        public async Task<IActionResult> Details(int? id)
+        var existingStudents = await context.RosteredStudents.ToListAsync();
+        var byEmail = existingStudents.ToDictionary(student => NormalizeEmail(student.Email), StringComparer.OrdinalIgnoreCase);
+        foreach (var record in records)
         {
-            if (id == null || _context.RosteredStudents == null)
+            if (byEmail.TryGetValue(NormalizeEmail(record.Email), out var existing))
             {
-                return NotFound();
+                existing.In221 = true;
             }
-
-            var mSTeamsStudentUpload = await _context.RosteredStudents
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (mSTeamsStudentUpload == null)
+            else
             {
-                return NotFound();
+                context.RosteredStudents.Add(record);
+                byEmail.Add(NormalizeEmail(record.Email), record);
             }
+        }
+        await context.SaveChangesAsync();
 
-            return View(mSTeamsStudentUpload);
+        TempData["StatusMessage"] = $"MIS 221 membership was added for {records.Count} students. Existing MIS 221 flags were retained.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    // GET: MSTeamsStudentUploads/Edit/5
+    public async Task<IActionResult> Edit(int? id)
+    {
+        var student = id is null ? null : await context.RosteredStudents.AsNoTracking().SingleOrDefaultAsync(item => item.Id == id);
+        return student is null ? NotFound() : View(RosterStudentEditViewModel.FromStudent(student));
+    }
+
+    // POST: MSTeamsStudentUploads/Edit/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, RosterStudentEditViewModel input)
+    {
+        if (id != input.Id)
+        {
+            return NotFound();
+        }
+        if (string.IsNullOrWhiteSpace(input.Name))
+        {
+            ModelState.AddModelError(nameof(input.Name), "A student name is required.");
         }
 
-        // GET: MSTeamsStudentUploads/Create
-        [Authorize(Roles = RolesConstants.AdminRole)]
-
-        public IActionResult Create()
+        var student = await context.RosteredStudents.SingleOrDefaultAsync(item => item.Id == id);
+        if (student is null)
         {
-            var viewModel = new MSTeamsStudentUploadViewModel();
-            return View(viewModel);
+            return NotFound();
         }
 
-        // POST: MSTeamsStudentUploads/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> Create(MSTeamsStudentUploadViewModel viewModel)
+        var normalizedEmail = NormalizeEmail(input.Email);
+        if (await context.RosteredStudents.AnyAsync(item => item.Id != id && item.Email.ToUpper() == normalizedEmail))
         {
-            var RosterData = viewModel.RosterData;
-
-            if (ModelState.IsValid)
-            {
-                if (RosterData == null || RosterData.Length == 0)
-                {
-                    return RedirectToAction("Index", "Home");
-                }
-
-                try
-                {
-                    _context.RosteredStudents.RemoveRange(_context.RosteredStudents);
-                    await _context.SaveChangesAsync();
-
-                    var records = new List<RosteredStudent>();
-
-                    using (var stream = RosterData.OpenReadStream())
-                    using (var parser = new TextFieldParser(stream))
-                    {
-                        parser.TextFieldType = FieldType.Delimited;
-                        parser.SetDelimiters(",");
-
-                        while (!parser.EndOfData)
-                        {
-                            // Read current line as an array of fields
-                            var fields = parser.ReadFields();
-
-                            if (fields is { Length: >= 3 })
-                            {
-                                var record = new RosteredStudent
-                                {
-                                    MicrosoftId = fields[0],
-                                    Email = fields[1],
-                                    Name = fields[2]
-                                };
-                                records.Add(record);
-                            }
-                        }
-                    }
-
-                    var filteredRecords = records
-                        .Where(record => record.Email[(record.Email.IndexOf('@') + 1)..] == "crimson.ua.edu")
-                        .ToList();
-
-                    // Now, you have a list of Roster objects (records)
-                    // You can save them to the database using Entity Framework Core
-
-                    // Example: Save records to the database
-                    await _context.RosteredStudents.AddRangeAsync(filteredRecords);
-                    await _context.SaveChangesAsync();
-
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (Exception ex)
-                {
-                    return BadRequest($"Error processing CSV file: {ex.Message}");
-                }
-            }
-
-            return BadRequest("Something went wrong.");
+            ModelState.AddModelError(nameof(input.Email), "Another roster record already uses this email address.");
+        }
+        if (!ModelState.IsValid)
+        {
+            return View(input);
         }
 
-        public IActionResult UploadMastersStudents()
+        student.Email = input.Email.Trim().ToLowerInvariant();
+        student.Name = input.Name.Trim();
+        student.In221 = input.In221;
+        await context.SaveChangesAsync();
+        TempData["StatusMessage"] = "Roster record was updated.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    // GET: MSTeamsStudentUploads/Delete/5
+    public async Task<IActionResult> Delete(int? id)
+    {
+        var student = id is null ? null : await context.RosteredStudents.AsNoTracking().SingleOrDefaultAsync(item => item.Id == id);
+        return student is null ? NotFound() : View(student);
+    }
+
+    // POST: MSTeamsStudentUploads/Delete/5
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        var student = await context.RosteredStudents.SingleOrDefaultAsync(item => item.Id == id);
+        if (student is null)
         {
-            var viewModel = new MSTeamsStudentUploadViewModel();
-            return View(viewModel);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> UploadMastersStudents(MSTeamsStudentUploadViewModel viewModel)
-        {
-            var RosterData = viewModel.RosterData;
-
-            if (ModelState.IsValid)
-            {
-                if (RosterData == null || RosterData.Length == 0)
-                {
-                    return RedirectToAction("Index", "Home");
-                }
-
-                try
-                {
-                    var records = new List<RosteredStudent>();
-
-                    using (var stream = RosterData.OpenReadStream())
-                    using (var parser = new TextFieldParser(stream))
-                    {
-                        parser.TextFieldType = FieldType.Delimited;
-                        parser.SetDelimiters(",");
-
-                        while (!parser.EndOfData)
-                        {
-                            //expected format is LastName in column 1, FirstName in column 2, and Email in column 3
-                            var fields = parser.ReadFields();
-
-                            if (fields is { Length: >= 3 })
-                            {
-                                var record = new RosteredStudent
-                                {
-                                    Email = fields[2],
-                                    Name = fields[1] + " " + fields[0],
-                                    InMasters = true
-                                };
-                                records.Add(record);
-                            }
-                        }
-                    }
-
-                    foreach (var record in records)
-                    {
-                        var studentExists = await _context.RosteredStudents.FirstOrDefaultAsync(x => x.Email == record.Email);
-                        if (studentExists == null)
-                        {
-                            if (record.Email != "Email" && record.Email[(record.Email.IndexOf('@') + 1)..] != "crimson.ua.edu")
-                            {
-                                await _context.RosteredStudents.AddAsync(record);
-                            }
-                        }
-                        else if (studentExists != null)
-                        {
-                            studentExists.InMasters = true;
-                            _context.RosteredStudents.Update(studentExists);
-                        }
-                    }
-
-                    await _context.SaveChangesAsync();
-
-                    return RedirectToAction("Index", "Home");
-                }
-                catch (Exception ex)
-                {
-                    return BadRequest($"Error processing CSV file: {ex.Message}");
-                }
-            }
-
-            return BadRequest("Something went wrong.");
-        }
-
-        public IActionResult Upload221Students()
-        {
-            var viewModel = new MSTeamsStudentUploadViewModel();
-            return View(viewModel);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = RolesConstants.AdminRole)]
-        public async Task<IActionResult> Upload221Students(MSTeamsStudentUploadViewModel viewModel)
-        {
-            var RosterData = viewModel.RosterData;
-
-            if (ModelState.IsValid)
-            {
-                if (RosterData == null || RosterData.Length == 0)
-                {
-                    return BadRequest("Uploaded file was empty.");
-                }
-
-                try
-                {
-                    var records = new List<RosteredStudent>();
-
-                    using (var stream = RosterData.OpenReadStream())
-                    using (var parser = new TextFieldParser(stream))
-                    {
-                        parser.TextFieldType = FieldType.Delimited;
-                        parser.SetDelimiters(",");
-
-                        while (!parser.EndOfData)
-                        {
-                            // Expected format is LastName in column 1, Firstname in column 2, Username in column 3, and Email in column 7
-                            var fields = parser.ReadFields();
-
-                            // This import reads the seventh field as the email address.
-                            if (fields is { Length: >= 7 })
-                            {
-                                var record = new RosteredStudent
-                                {
-                                    Email = fields[6],
-                                    Name = fields[1] + " " + fields[0],
-                                    In221 = true
-                                };
-                                records.Add(record);
-                            }
-                        }
-                    }
-
-                    foreach (var record in records)
-                    {
-                        var studentExists = await _context.RosteredStudents.FirstOrDefaultAsync(x => x.Email == record.Email);
-                        if (studentExists == null)
-                        {
-                            if (record.Email != "Email" && record.Email[(record.Email.IndexOf('@') + 1)..] != "crimson.ua.edu")
-                            {
-                                await _context.RosteredStudents.AddAsync(record);
-                            }
-                        }
-                        else if (studentExists != null)
-                        {
-                            studentExists.In221 = true;
-                            _context.RosteredStudents.Update(studentExists);
-                        }
-                    }
-
-                    await _context.SaveChangesAsync();
-
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (Exception ex)
-                {
-                    return BadRequest($"Error processing CSV file: {ex.Message}");
-                }
-            }
-
-            return BadRequest("Something went wrong.");
-        }
-
-        // GET: MSTeamsStudentUploads/Edit/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
-
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null || _context.RosteredStudents == null)
-            {
-                return NotFound();
-            }
-
-            var mSTeamsStudentUpload = await _context.RosteredStudents.FindAsync(id);
-            if (mSTeamsStudentUpload == null)
-            {
-                return NotFound();
-            }
-            return View(mSTeamsStudentUpload);
-        }
-
-        // POST: MSTeamsStudentUploads/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = RolesConstants.AdminRole)]
-
-        public async Task<IActionResult> Edit(int id, [Bind("Id,MicrosoftId,Email,Name")] RosteredStudent mSTeamsStudentUpload)
-        {
-            if (id != mSTeamsStudentUpload.Id)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(mSTeamsStudentUpload);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!MSTeamsStudentUploadExists(mSTeamsStudentUpload.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(mSTeamsStudentUpload);
-        }
-
-        // GET: MSTeamsStudentUploads/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
-
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null || _context.RosteredStudents == null)
-            {
-                return NotFound();
-            }
-
-            var mSTeamsStudentUpload = await _context.RosteredStudents
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (mSTeamsStudentUpload == null)
-            {
-                return NotFound();
-            }
-
-            return View(mSTeamsStudentUpload);
-        }
-
-        // POST: MSTeamsStudentUploads/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = RolesConstants.AdminRole)]
-
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var mSTeamsStudentUpload = await _context.RosteredStudents.FindAsync(id);
-            if (mSTeamsStudentUpload != null)
-            {
-                _context.RosteredStudents.Remove(mSTeamsStudentUpload);
-            }
-
-            await _context.SaveChangesAsync();
+            TempData["ErrorMessage"] = "That roster record no longer exists.";
             return RedirectToAction(nameof(Index));
         }
+        context.RosteredStudents.Remove(student);
+        await context.SaveChangesAsync();
+        TempData["StatusMessage"] = "Roster record was deleted.";
+        return RedirectToAction(nameof(Index));
+    }
 
-        private bool MSTeamsStudentUploadExists(int id)
+    private async Task<List<RosteredStudent>?> ParsePrimaryRosterAsync(IFormFile? file)
+    {
+        var rows = await ReadRowsAsync(file, 3, "Program roster files need Microsoft ID, email, and name columns.");
+        if (rows is null) return null;
+        var records = new List<RosteredStudent>();
+        foreach (var row in rows)
         {
-            return (_context.RosteredStudents?.Any(e => e.Id == id)).GetValueOrDefault();
+            if (IsHeader(row[1])) continue;
+            if (!TryGetEmail(row[1], out var email) || string.IsNullOrWhiteSpace(row[2]))
+            {
+                ModelState.AddModelError(nameof(MSTeamsStudentUploadViewModel.RosterData), "Every program roster row needs a valid email address and name.");
+                return null;
+            }
+            records.Add(new RosteredStudent { MicrosoftId = row[0].Trim(), Email = email, Name = row[2].Trim() });
+        }
+        return ValidateDuplicates(records);
+    }
+
+    private async Task<List<RosteredStudent>?> Parse221RosterAsync(IFormFile? file)
+    {
+        var rows = await ReadRowsAsync(file, 7, "MIS 221 roster files need at least seven columns, with email in column seven.");
+        if (rows is null) return null;
+        var records = new List<RosteredStudent>();
+        foreach (var row in rows)
+        {
+            if (IsHeader(row[6])) continue;
+            if (!TryGetEmail(row[6], out var email) || string.IsNullOrWhiteSpace(row[0]) || string.IsNullOrWhiteSpace(row[1]))
+            {
+                ModelState.AddModelError(nameof(MSTeamsStudentUploadViewModel.RosterData), "Every MIS 221 roster row needs first name, last name, and a valid email address.");
+                return null;
+            }
+            records.Add(new RosteredStudent { Email = email, Name = $"{row[1].Trim()} {row[0].Trim()}", In221 = true });
+        }
+        return ValidateDuplicates(records);
+    }
+
+    private async Task<List<string[]>?> ReadRowsAsync(IFormFile? file, int columnCount, string columnError)
+    {
+        if (file is null || file.Length == 0)
+        {
+            ModelState.AddModelError(nameof(MSTeamsStudentUploadViewModel.RosterData), "Choose a non-empty CSV file.");
+            return null;
+        }
+        if (!string.Equals(Path.GetExtension(file.FileName), ".csv", StringComparison.OrdinalIgnoreCase))
+        {
+            ModelState.AddModelError(nameof(MSTeamsStudentUploadViewModel.RosterData), "Choose a CSV file.");
+            return null;
         }
 
-        public async Task<IActionResult> AttendanceReportAll()
+        try
         {
-
-            return View("AttendanceReportAll");
+            var rows = new List<string[]>();
+            using var stream = file.OpenReadStream();
+            using var parser = new TextFieldParser(stream) { TextFieldType = FieldType.Delimited, TrimWhiteSpace = false };
+            parser.SetDelimiters(",");
+            while (!parser.EndOfData)
+            {
+                var row = parser.ReadFields();
+                if (row is null || row.All(string.IsNullOrWhiteSpace)) continue;
+                if (row.Length < columnCount)
+                {
+                    ModelState.AddModelError(nameof(MSTeamsStudentUploadViewModel.RosterData), columnError);
+                    return null;
+                }
+                rows.Add(row);
+            }
+            if (rows.Count == 0)
+            {
+                ModelState.AddModelError(nameof(MSTeamsStudentUploadViewModel.RosterData), "The CSV file did not contain any roster rows.");
+                return null;
+            }
+            return rows;
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Unable to read uploaded roster file {FileName}", file.FileName);
+            ModelState.AddModelError(nameof(MSTeamsStudentUploadViewModel.RosterData), "The CSV file could not be read.");
+            return null;
         }
     }
+
+    private List<RosteredStudent>? ValidateDuplicates(List<RosteredStudent> records)
+    {
+        var duplicate = records.GroupBy(record => NormalizeEmail(record.Email), StringComparer.OrdinalIgnoreCase).FirstOrDefault(group => group.Count() > 1);
+        if (duplicate is not null)
+        {
+            ModelState.AddModelError(nameof(MSTeamsStudentUploadViewModel.RosterData), $"The CSV contains duplicate email address '{duplicate.First().Email}'.");
+            return null;
+        }
+        return records;
+    }
+
+    private static bool IsHeader(string value) => string.Equals(value.Trim(), "Email", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryGetEmail(string value, out string email)
+    {
+        var trimmed = value.Trim();
+        var valid = System.Net.Mail.MailAddress.TryCreate(trimmed, out var parsed) && parsed.Address == trimmed;
+        email = valid ? trimmed.ToLowerInvariant() : string.Empty;
+        return valid;
+    }
+
+    private static string NormalizeEmail(string email) => email.Trim().ToUpperInvariant();
 }

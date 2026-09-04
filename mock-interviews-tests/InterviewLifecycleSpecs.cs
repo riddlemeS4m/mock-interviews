@@ -1,9 +1,49 @@
 using MockInterviews.IntegrationTests.Infrastructure;
+using MockInterviews.Services;
 
 namespace MockInterviews.IntegrationTests;
 
 public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory factory) : IntegrationTestBase(factory)
 {
+    [Fact]
+    public async Task System_admin_can_check_in_with_antiforgery_while_get_and_forged_posts_do_not_mutate()
+    {
+        var interview = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var item = new Interview
+            {
+                StudentId = "student-1",
+                TimeslotId = slots[0].Id,
+                Status = StatusConstants.Default,
+                Type = InterviewTypeConstants.Behavioral
+            };
+            context.Interviews.Add(item);
+            await context.SaveChangesAsync();
+            return item;
+        });
+        using var systemAdmin = Factory.CreateAuthenticatedClient("system-admin", RolesConstants.SystemAdminRole);
+
+        var get = await systemAdmin.GetAsync($"/InterviewEvents/StudentCheckIn/{interview.Id}");
+        var forgedPost = await systemAdmin.PostAsync($"/InterviewEvents/StudentCheckIn/{interview.Id}", new FormUrlEncodedContent([]));
+
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, get.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, forgedPost.StatusCode);
+        Assert.Equal(StatusConstants.Default, await Factory.InDatabaseScopeAsync(async context =>
+            (await context.Interviews.SingleAsync()).Status));
+
+        var checkIn = await systemAdmin.PostFormWithAntiforgeryAsync(
+            "/InterviewEvents/Index",
+            $"/InterviewEvents/StudentCheckIn/{interview.Id}",
+            []);
+
+        Assert.Equal(HttpStatusCode.NoContent, checkIn.StatusCode);
+        var stored = await Factory.InDatabaseScopeAsync(async context => await context.Interviews.SingleAsync());
+        Assert.Equal(StatusConstants.CheckedIn, stored.Status);
+        Assert.NotNull(stored.CheckedInAt);
+    }
+
     [Fact]
     public async Task Assignment_uses_exact_availability_and_starts_a_checked_in_interview()
     {
@@ -25,7 +65,8 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
                 FirstName = "Test",
                 LastName = "Interviewer",
                 InPerson = true,
-                Type = "Behavioral"
+                Type = "Behavioral",
+                CheckedIn = true
             };
             context.AddRange(interview, signup);
             await context.SaveChangesAsync();
@@ -39,14 +80,12 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
         });
         using var admin = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
 
-        var checkIn = await admin.GetAsync($"/InterviewEvents/StudentCheckIn/{data.interview.Id}");
-        var unavailableAssignment = await admin.PostAsync("/InterviewEvents/EditInline", new FormUrlEncodedContent(new[]
+        var checkIn = await admin.PostFormWithAntiforgeryAsync("/InterviewEvents/Index", $"/InterviewEvents/StudentCheckIn/{data.interview.Id}", []);
+        var unavailableAssignment = await admin.PostFormWithAntiforgeryAsync("/InterviewEvents/Index", "/InterviewEvents/EditInline", new[]
         {
-            new KeyValuePair<string, string>("Id", data.interview.Id.ToString()),
-            new KeyValuePair<string, string>("Status", StatusConstants.CheckedIn),
-            new KeyValuePair<string, string>("InterviewerId", "interviewer-1"),
-            new KeyValuePair<string, string>("Type", "Behavioral")
-        }));
+            new KeyValuePair<string, string>("id", data.interview.Id.ToString()),
+            new KeyValuePair<string, string>("interviewerId", "interviewer-1")
+        });
 
         Assert.Equal(HttpStatusCode.NoContent, checkIn.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, unavailableAssignment.StatusCode);
@@ -71,21 +110,182 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
             await context.SaveChangesAsync();
         });
 
-        var assignment = await admin.PostAsync("/InterviewEvents/EditInline", new FormUrlEncodedContent(new[]
+        var assignment = await admin.PostFormWithAntiforgeryAsync("/InterviewEvents/Index", "/InterviewEvents/EditInline", new[]
         {
-            new KeyValuePair<string, string>("Id", data.interview.Id.ToString()),
-            new KeyValuePair<string, string>("Status", StatusConstants.CheckedIn),
-            new KeyValuePair<string, string>("InterviewerId", "interviewer-1"),
-            new KeyValuePair<string, string>("Type", "Behavioral")
-        }));
+            new KeyValuePair<string, string>("id", data.interview.Id.ToString()),
+            new KeyValuePair<string, string>("interviewerId", "interviewer-1")
+        });
 
-        Assert.Equal(HttpStatusCode.OK, assignment.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, assignment.StatusCode);
         var stored = await Factory.InDatabaseScopeAsync(async context => await context.Interviews.SingleAsync());
         Assert.Equal(StatusConstants.Ongoing, stored.Status);
         Assert.NotNull(stored.CheckedInAt);
         Assert.NotNull(stored.StartedAt);
         Assert.NotNull(stored.InterviewerTimeslotId);
         Assert.NotNull(stored.LocationId);
+    }
+
+    [Fact]
+    public async Task Simultaneous_assignments_cannot_start_two_interviews_with_the_same_interviewer()
+    {
+        var ids = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            await TestData.AddUserAsync(context, "student-2");
+            await TestData.AddUserAsync(context, "interviewer-1");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var signup = new InterviewerSignup { InterviewerId = "interviewer-1", FirstName = "Test", LastName = "Interviewer", CheckedIn = true, IsBehavioral = true };
+            var first = new Interview { StudentId = "student-1", TimeslotId = slots[0].Id, Status = StatusConstants.CheckedIn, CheckedInAt = DateTime.UtcNow, Type = InterviewTypeConstants.Behavioral };
+            var second = new Interview { StudentId = "student-2", TimeslotId = slots[1].Id, Status = StatusConstants.CheckedIn, CheckedInAt = DateTime.UtcNow, Type = InterviewTypeConstants.Behavioral };
+            context.AddRange(signup, first, second);
+            await context.SaveChangesAsync();
+            context.InterviewerTimeslots.AddRange(
+                new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = slots[0].Id },
+                new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = slots[1].Id });
+            await context.SaveChangesAsync();
+            return (firstInterviewId: first.Id, secondInterviewId: second.Id);
+        });
+        using var firstScope = Factory.Services.CreateScope();
+        using var secondScope = Factory.Services.CreateScope();
+        var firstService = firstScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+        var secondService = secondScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+
+        var results = await Task.WhenAll(
+            firstService.AssignAsync(ids.firstInterviewId, "interviewer-1"),
+            secondService.AssignAsync(ids.secondInterviewId, "interviewer-1"));
+
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Success);
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Validation && result.Message == "The selected interviewer is already conducting an interview.");
+        Assert.Equal(1, await Factory.InDatabaseScopeAsync(context => context.Interviews.CountAsync(interview => interview.Status == StatusConstants.Ongoing)));
+    }
+
+    [Fact]
+    public async Task Simultaneous_assignments_cannot_overwrite_the_same_interview_with_different_interviewers()
+    {
+        var interviewId = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            await TestData.AddUserAsync(context, "interviewer-1");
+            await TestData.AddUserAsync(context, "interviewer-2");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var interview = new Interview { StudentId = "student-1", TimeslotId = slots[0].Id, Status = StatusConstants.CheckedIn, CheckedInAt = DateTime.UtcNow, Type = InterviewTypeConstants.Behavioral };
+            var first = new InterviewerSignup { InterviewerId = "interviewer-1", FirstName = "First", LastName = "Interviewer", CheckedIn = true, IsBehavioral = true };
+            var second = new InterviewerSignup { InterviewerId = "interviewer-2", FirstName = "Second", LastName = "Interviewer", CheckedIn = true, IsBehavioral = true };
+            context.AddRange(interview, first, second);
+            await context.SaveChangesAsync();
+            context.InterviewerTimeslots.AddRange(
+                new InterviewerTimeslot { InterviewerSignupId = first.Id, TimeslotId = slots[0].Id },
+                new InterviewerTimeslot { InterviewerSignupId = second.Id, TimeslotId = slots[0].Id });
+            await context.SaveChangesAsync();
+            return interview.Id;
+        });
+        using var firstScope = Factory.Services.CreateScope();
+        using var secondScope = Factory.Services.CreateScope();
+        var firstService = firstScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+        var secondService = secondScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+
+        var results = await Task.WhenAll(
+            firstService.AssignAsync(interviewId, "interviewer-1"),
+            secondService.AssignAsync(interviewId, "interviewer-2"));
+
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Success);
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Conflict);
+        var stored = await Factory.InDatabaseScopeAsync(context => context.Interviews.SingleAsync());
+        Assert.Equal(StatusConstants.Ongoing, stored.Status);
+        Assert.NotNull(stored.InterviewerTimeslotId);
+    }
+
+    [Fact]
+    public async Task Simultaneous_conflicting_lifecycle_commands_apply_only_one_transition()
+    {
+        var interviewId = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            await TestData.AddUserAsync(context, "interviewer-1");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var interview = new Interview { StudentId = "student-1", TimeslotId = slots[0].Id, Status = StatusConstants.CheckedIn, CheckedInAt = DateTime.UtcNow, Type = InterviewTypeConstants.Behavioral };
+            var signup = new InterviewerSignup { InterviewerId = "interviewer-1", FirstName = "Test", LastName = "Interviewer", CheckedIn = true, IsBehavioral = true };
+            context.AddRange(interview, signup);
+            await context.SaveChangesAsync();
+            context.InterviewerTimeslots.Add(new InterviewerTimeslot { InterviewerSignupId = signup.Id, TimeslotId = slots[0].Id });
+            await context.SaveChangesAsync();
+            return interview.Id;
+        });
+        using var assignmentScope = Factory.Services.CreateScope();
+        using var noShowScope = Factory.Services.CreateScope();
+        var assignmentService = assignmentScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+        var noShowService = noShowScope.ServiceProvider.GetRequiredService<AssignmentLifecycleService>();
+
+        var results = await Task.WhenAll(
+            assignmentService.AssignAsync(interviewId, "interviewer-1"),
+            noShowService.MarkNoShowAsync(interviewId));
+
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Success);
+        Assert.Single(results, result => result.Status == AssignmentCommandStatus.Conflict);
+        var stored = await Factory.InDatabaseScopeAsync(context => context.Interviews.SingleAsync());
+        if (stored.Status == StatusConstants.Ongoing)
+        {
+            Assert.NotNull(stored.StartedAt);
+            Assert.Null(stored.EndedAt);
+        }
+        else
+        {
+            Assert.Equal(StatusConstants.NoShow, stored.Status);
+            Assert.NotNull(stored.EndedAt);
+            Assert.Null(stored.StartedAt);
+        }
+    }
+
+    [Fact]
+    public async Task Override_uses_a_real_same_event_availability_without_changing_the_interviews_schedule()
+    {
+        var data = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1");
+            await TestData.AddUserAsync(context, "interviewer-1");
+            var (_, slots) = await TestData.AddEventWithTimeslotsAsync(context);
+            var signup = new InterviewerSignup
+            {
+                InterviewerId = "interviewer-1",
+                FirstName = "Override",
+                LastName = "Interviewer",
+                IsTechnical = true,
+                CheckedIn = false
+            };
+            var interview = new Interview
+            {
+                StudentId = "student-1",
+                TimeslotId = slots[0].Id,
+                Status = StatusConstants.CheckedIn,
+                CheckedInAt = DateTime.UtcNow,
+                Type = InterviewTypeConstants.Behavioral
+            };
+            context.AddRange(signup, interview);
+            await context.SaveChangesAsync();
+            var availability = new InterviewerTimeslot
+            {
+                InterviewerSignupId = signup.Id,
+                TimeslotId = slots[1].Id
+            };
+            context.InterviewerTimeslots.Add(availability);
+            await context.SaveChangesAsync();
+            return (interview, availability, slots);
+        });
+        using var admin = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
+
+        var overrideResult = await admin.PostFormWithAntiforgeryAsync("/InterviewEvents/Index", "/InterviewEvents/Override", new[]
+        {
+            new KeyValuePair<string, string>("id", data.interview.Id.ToString()),
+            new KeyValuePair<string, string>("interviewerId", "interviewer-1")
+        });
+
+        Assert.Equal(HttpStatusCode.Found, overrideResult.StatusCode);
+        var stored = await Factory.InDatabaseScopeAsync(async context => await context.Interviews.SingleAsync());
+        Assert.Equal(StatusConstants.Ongoing, stored.Status);
+        Assert.Equal(data.slots[0].Id, stored.TimeslotId);
+        Assert.Equal(data.availability.Id, stored.InterviewerTimeslotId);
+        Assert.NotNull(stored.StartedAt);
+        Assert.Equal(1, await Factory.InDatabaseScopeAsync(async context => await context.InterviewerTimeslots.CountAsync()));
     }
 
     [Fact]
@@ -134,11 +334,11 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
         using var assigned = Factory.CreateAuthenticatedClient("assigned", RolesConstants.InterviewerRole);
         using var admin = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
 
-        var forbidden = await unassigned.GetAsync($"/InterviewEvents/StudentComplete/{interviews[0].Id}");
-        var adminComplete = await admin.GetAsync($"/InterviewEvents/StudentComplete/{interviews[0].Id}");
-        var complete = await assigned.GetAsync($"/InterviewEvents/StudentComplete/{interviews[1].Id}");
+        var getDoesNotMutate = await unassigned.GetAsync($"/InterviewEvents/StudentComplete/{interviews[0].Id}");
+        var adminComplete = await admin.PostFormWithAntiforgeryAsync("/InterviewEvents/Index", $"/InterviewEvents/StudentComplete/{interviews[0].Id}", []);
+        var complete = await assigned.PostFormWithAntiforgeryAsync("/Home/Interviewer", $"/InterviewEvents/StudentComplete/{interviews[1].Id}", []);
 
-        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, getDoesNotMutate.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, adminComplete.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, complete.StatusCode);
         var stored = await Factory.InDatabaseScopeAsync(async context => await context.Interviews.OrderBy(item => item.Id).ToListAsync());
@@ -161,7 +361,9 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
             {
                 InterviewerId = "interviewer-1",
                 FirstName = "Interview",
-                LastName = "Person"
+                LastName = "Person",
+                CheckedIn = true,
+                IsBehavioral = true
             };
             var interview = new Interview
             {
@@ -183,14 +385,15 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
         using var admin = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
         var request = new[]
         {
-            new
-            {
-                InterviewEventId = data.interview.Id.ToString(),
-                SelectedValue = "interviewer-1"
-            }
+            new KeyValuePair<string, string>("TimeslotId", data.slots[0].Id.ToString()),
+            new KeyValuePair<string, string>("Assignments[0].InterviewId", data.interview.Id.ToString()),
+            new KeyValuePair<string, string>("Assignments[0].InterviewerId", "interviewer-1")
         };
 
-        var unavailable = await admin.PostAsJsonAsync("/InterviewEvents/PreAssignInterviews", request);
+        var unavailable = await admin.PostFormWithAntiforgeryAsync(
+            "/InterviewEvents/PreAssignInterviews",
+            "/InterviewEvents/PreAssignInterviews",
+            request);
         Assert.Equal(HttpStatusCode.OK, unavailable.StatusCode);
         Assert.Null(await Factory.InDatabaseScopeAsync(async context =>
             (await context.Interviews.SingleAsync()).InterviewerTimeslotId));
@@ -205,9 +408,12 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
             await context.SaveChangesAsync();
         });
 
-        var assigned = await admin.PostAsJsonAsync("/InterviewEvents/PreAssignInterviews", request);
+        var assigned = await admin.PostFormWithAntiforgeryAsync(
+            "/InterviewEvents/PreAssignInterviews",
+            "/InterviewEvents/PreAssignInterviews",
+            request);
 
-        Assert.Equal(HttpStatusCode.OK, assigned.StatusCode);
+        Assert.Equal(HttpStatusCode.Found, assigned.StatusCode);
         Assert.NotNull(await Factory.InDatabaseScopeAsync(async context =>
             (await context.Interviews.SingleAsync()).InterviewerTimeslotId));
     }
@@ -234,10 +440,10 @@ public sealed class InterviewLifecycleSpecs(MockInterviewsWebApplicationFactory 
         using var interviewer = Factory.CreateAuthenticatedClient("interviewer-1", RolesConstants.InterviewerRole);
         using var admin = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
 
-        var forbidden = await interviewer.GetAsync($"/InterviewEvents/StudentNoShow/{interview.Id}");
-        var noShow = await admin.GetAsync($"/InterviewEvents/StudentNoShow/{interview.Id}");
+        var getDoesNotMutate = await interviewer.GetAsync($"/InterviewEvents/StudentNoShow/{interview.Id}");
+        var noShow = await admin.PostFormWithAntiforgeryAsync("/InterviewEvents/Index", $"/InterviewEvents/StudentNoShow/{interview.Id}", []);
 
-        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, getDoesNotMutate.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, noShow.StatusCode);
         var stored = await Factory.InDatabaseScopeAsync(async context => await context.Interviews.SingleAsync());
         Assert.Equal(StatusConstants.NoShow, stored.Status);

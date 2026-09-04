@@ -1,0 +1,86 @@
+@using MockInterviews.Data.Constants
+@model IReadOnlyList<StudentInterviewScheduleItemViewModel>
+
+<section aria-labelledby="student-interviews-heading">
+    <div class="mb-3 flex items-center gap-3">
+        <ui-icon name="calendar-days" class="size-5 text-muted" />
+        <h2 id="student-interviews-heading" class="text-xl font-semibold text-ink">Interviews</h2>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("calendar-days", "No interviews scheduled", "Your assigned interview times will appear here.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-line text-left text-sm">
+                    <thead class="bg-soft/60 text-xs font-semibold uppercase tracking-wide text-muted">
+                        <tr>
+                            <th scope="col" class="px-5 py-3">Date and time</th>
+                            <th scope="col" class="px-5 py-3">Type</th>
+                            <th scope="col" class="px-5 py-3">Status</th>
+                            <th scope="col" class="px-5 py-3">Location</th>
+                            <th scope="col" class="px-5 py-3">Interviewer</th>
+                            <th scope="col" class="px-5 py-3 text-right"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var interview in Model)
+                        {
+                            <tr>
+                                <td class="whitespace-nowrap px-5 py-4">
+                                    <time datetime="@interview.Date.ToString("yyyy-MM-dd")" class="font-medium text-ink">@interview.Date.ToString("MMM d, yyyy")</time>
+                                    <span class="block text-muted">@interview.Time.ToString("h:mm tt")</span>
+                                </td>
+                                <td class="px-5 py-4 text-ink">@interview.InterviewType</td>
+                                <td class="px-5 py-4">
+                                    <span class="inline-flex items-center gap-2 text-ink">
+                                        <span class="size-2 rounded-full bg-muted" aria-hidden="true"></span>
+                                        @interview.Status
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 text-ink">@interview.Location</td>
+                                <td class="px-5 py-4 text-ink">@interview.InterviewerName</td>
+                                <td class="whitespace-nowrap px-5 py-4 text-right">
+                                    @if (interview.Status == StatusConstants.Completed)
+                                    {
+                                        <a asp-controller="InterviewEvents"
+                                           asp-action="ProvideFeedback"
+                                           asp-route-id="@interview.InterviewId"
+                                           class="text-sm font-semibold text-ink hover:underline">Give feedback</a>
+                                    }
+                                    else if (interview.Status == StatusConstants.Default)
+                                    {
+                                        <span class="inline-flex items-center gap-3">
+                                            <a asp-controller="InterviewEvents"
+                                               asp-action="StudentSelfCheckIn"
+                                               class="text-sm font-semibold text-ink hover:underline">Check in</a>
+                                            <a asp-controller="InterviewEvents"
+                                               asp-action="UserDelete"
+                                               asp-route-id="@interview.InterviewId"
+                                               class="text-sm font-semibold text-negative hover:underline"
+                                               data-dialog-target="dashboard-cancel-interview"
+                                               data-dialog-value-id="@interview.InterviewId">Cancel</a>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="InterviewEvents"
+                                           asp-action="UserDelete"
+                                           asp-route-id="@interview.InterviewId"
+                                           class="text-sm font-semibold text-negative hover:underline"
+                                           data-dialog-target="dashboard-cancel-interview"
+                                           data-dialog-value-id="@interview.InterviewId">Cancel</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>

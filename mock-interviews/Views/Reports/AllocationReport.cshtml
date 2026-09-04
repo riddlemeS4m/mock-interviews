@@ -1,125 +1,36 @@
-﻿@model MockInterviews.Models.ViewModels.ReportsController.AllocationReportViewModel
+@model MockInterviews.Models.ViewModels.ReportsController.AllocationReportViewModel
 
 @{
-    ViewData["Title"] = "Allocation Report";
+    ViewData["Title"] = "Allocation report";
 }
 
-<h1>Allocation Report</h1>
-<hr />
-<h3>@Html.DisplayNameFor(model => model.Top10Underserved)</h3>
-<p></p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Top10Underserved[0].Timeslot.Time)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Top10Underserved[0].Timeslot.Event.Date)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Top10Underserved[0].StudentCount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Top10Underserved[0].InterviewerCount)
-            </th>
-@*            <th>
-                @Html.DisplayNameFor(model => model.Top10Underserved[0].VolunteerCount)
-            </th>
-*@            <th>
-                @Html.DisplayNameFor(model => model.Top10Underserved[0].Timeslot.MaxSignUps)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Top10Underserved[0].Difference)
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.Top10Underserved)
-        {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Timeslot.Time)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Timeslot.Event.Date)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.StudentCount)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.InterviewerCount)
-                </td>
-@*                <td>
-                    @Html.DisplayFor(modelItem => item.VolunteerCount)
-                </td>
-*@                <td>
-                    @Html.DisplayFor(modelItem => item.Timeslot.MaxSignUps)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Difference) Interviewers Needed
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
-<p></p>
-<h3>@Html.DisplayNameFor(model => model.Top10Available)</h3>
-<p></p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Top10Available[0].Timeslot.Time)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Top10Available[0].Timeslot.Event.Date)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Top10Available[0].StudentCount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Top10Available[0].InterviewerCount)
-            </th>
-            @*            <th>
-            @Html.DisplayNameFor(model => model.Top10Underserved[0].VolunteerCount)
-            </th>
-            *@
-            <th>
-                @Html.DisplayNameFor(model => model.Top10Available[0].Timeslot.MaxSignUps)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Top10Available[0].Difference)
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.Top10Available)
-        {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Timeslot.Time)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Timeslot.Event.Date)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.StudentCount)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.InterviewerCount)
-                </td>
-                @*                <td>
-            @Html.DisplayFor(modelItem => item.VolunteerCount)
-            </td>
-            *@
-                <td>
-                    @Html.DisplayFor(modelItem => item.Timeslot.MaxSignUps)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Difference) Interviewers Needed
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<section class="space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Allocation report", "The ten timeslots with the largest interviewer gaps and the ten with the greatest availability.")' />
+
+    @if (Model.Top10Underserved.Count == 0 && Model.Top10Available.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiEmptyStateViewModel("calendar-days", "No allocation data", "Active interviewer timeslots will appear here when event schedules are available.")' />
+    }
+    else
+    {
+        <div class="grid gap-8 xl:grid-cols-2">
+            <section class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+                <div class="border-b border-line px-5 py-4">
+                    <h2 class="text-lg font-semibold text-ink">Most underserved</h2>
+                    <p class="mt-1 text-sm text-muted">Highest student-to-interviewer gap.</p>
+                </div>
+                <partial name="_AllocationTable" model="Model.Top10Underserved" />
+            </section>
+
+            <section class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+                <div class="border-b border-line px-5 py-4">
+                    <h2 class="text-lg font-semibold text-ink">Most available</h2>
+                    <p class="mt-1 text-sm text-muted">Lowest student-to-interviewer gap.</p>
+                </div>
+                <partial name="_AllocationTable" model="Model.Top10Available" />
+            </section>
+        </div>
+    }
+</section>

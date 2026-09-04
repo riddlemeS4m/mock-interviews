@@ -1,37 +1,22 @@
-﻿@model MockInterviews.Models.ViewModels.UsersController.ExternalUserProfileViewModel
+﻿@model ExternalUserProfileViewModel
 @{
-    ViewData["Title"] = Model.FirstName + " " + Model.LastName + "'s Profile";
-    //ViewData["ActivePage"] = ManageNavPages.Index;
+    var fullName = $"{Model.FirstName} {Model.LastName}";
+    ViewData["Title"] = $"{fullName}'s profile";
 }
 
-<h3>@Model.FirstName @Model.LastName</h3>
+<section class="mx-auto max-w-3xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel(fullName, "Student profile details for this interview.")' />
 
-<div class="row">
-    <div class="col-md-6">
-        @*<label>Phone number:</label>
-        @if(Model.Input.PhoneNumber != null)
-        {
-            <span>@Model.Input.PhoneNumber</span>
-        }
-        else
-        {
-            <span>No phone number specified</span>
-        }
-        <div>
-        </div>*@
-
-            <div>
-                <label>Class:</label>
-                <span>@Model.Class</span>
-            </div>
-            <div style="padding-top: 15px;">
-                <label>Profile Picture:</label>
-                <br />
-                <img src="~/images/SabanHeadshot.jpg"
-                     alt="Default profile picture"
-                     style="width: 350px; height: 350px; object-fit: cover" />
-            </div>
+    <div class="grid gap-6 rounded-card border border-line bg-surface p-6 shadow-card sm:grid-cols-[auto_1fr] sm:items-center">
+        <img src="~/images/SabanHeadshot.jpg"
+             alt="Default profile picture for @fullName"
+             class="size-32 rounded-full object-cover sm:size-40" />
+        <dl>
+            <dt class="text-sm font-semibold text-muted">Class</dt>
+            <dd class="mt-1 text-lg font-semibold text-ink">@Model.Class</dd>
+        </dl>
     </div>
-    <a asp-controller="Home" asp-action="Index">Back to Home</a>
 
-</div>
+    <a asp-controller="Home" asp-action="Landing" ui-variant="Quiet">Back to home</a>
+</section>

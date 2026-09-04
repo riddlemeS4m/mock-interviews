@@ -1,158 +1,77 @@
-﻿@model MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsController.SignupInterviewerTimeslotsViewModel;
+@model MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsController.SignupInterviewerTimeslotsViewModel
 
 @{
-    ViewData["Title"] = "Manual Interviewer Signup";
-    var noOfDays = Model.EventDates.Count();
-    string result = Math.Floor(12.0 / noOfDays).ToString();
+    ViewData["Title"] = "Add interviewer availability";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Manual Interviewer Signup</h1>
-<hr />
-<div class="row">
-    <div class="col-md-3"></div>
-    <div class="col-md-6">
-        <form asp-action="CreateForInterviewer">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="InterviewerId" class="control-label"></label>
-                <select asp-for="InterviewerId" class="form-control" asp-items='@Model.Interviewers'>
+<section class="mx-auto max-w-5xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Add interviewer availability", "Select an interviewer, their interview preferences, and every 30-minute time they can offer.")' />
+
+    @if (Model.EventDays.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("calendar-days", "No interviewer times available", "There are no active interviewer times available right now.")' />
+    }
+    else
+    {
+        <form asp-action="CreateForInterviewer" method="post" class="space-y-8" data-interviewer-form>
+            <div asp-validation-summary="All" class="border-l-4 border-l-negative pl-4 text-sm text-negative"></div>
+
+            <div class="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
+                <label asp-for="InterviewerId" class="block text-sm font-semibold text-ink">Interviewer</label>
+                <select asp-for="InterviewerId" asp-items="Model.Interviewers" class="mt-2 block min-h-11 w-full rounded-md border border-line bg-surface px-3 py-2 text-ink shadow-sm sm:max-w-xl">
+                    <option value="">Select an interviewer</option>
                 </select>
-                <span asp-validation-for="InterviewerId" class="text-danger"></span>
-            </div>
-            <br />
-
-            <div id="center-everything">
-                <label asp-for="SignupInterviewer.InPerson" class="control-label">Will they be in person or virtual?</label>
-                <br />
-                <div class="form-check form-check-inline">
-                    <input id="InPerson"
-                           class="form-check-input"
-                           type="radio"
-                           name="SignupInterviewer.InPerson"
-                           value="true"
-                           checked="@Model.SignupInterviewer.InPerson"
-                           data-val="true"
-                           data-val-required="Please select at least one">
-                    <label class="form-check-label" for="InPerson">In Person</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input id="InPerson"
-                           class="form-check-input"
-                           type="radio"
-                           name="SignupInterviewer.InPerson"
-                           value="false"
-                           checked="@Model.SignupInterviewer.IsVirtual"
-                           data-val="true"
-                           data-val-required="Please select at least one">
-                    <label id="annoyingLabel" class="form-check-label" for="IsVirtual">Virtual</label>
-                </div>
-                <div>
-                    <span asp-validation-for="SignupInterviewer.InPerson" class="text-danger"></span>
-                </div>
-            </div>
-            <br />
-
-            <div id="center-everything">
-                <div id="lunch-question" style="display: none;">
-                    <label asp-for="SignupInterviewer.Lunch" class="control-label">Do they want lunch?</label>
-                    <br />
-                    <div class="form-check form-check-inline">
-                        <input id="LunchTrue" class="form-check-input" type="radio" name="Lunch" value="true" data-val="false">
-                        <label class="form-check-label" for="LunchTrue">Yes</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input id="LunchFalse" class="form-check-input" type="radio" name="Lunch" value="false" data-val="false">
-                        <label class="form-check-label" for="LunchFalse">No</label>
-                    </div>
-                    <div>
-                        <span asp-validation-for="SignupInterviewer.Lunch" class="text-danger"></span>
-                    </div>
-                    <br /><br />
-                </div>
+                <span asp-validation-for="InterviewerId" class="mt-1 block text-sm text-negative"></span>
             </div>
 
-            <div id="center-everything">
-                <label class="control-label">What types of interviews can they do?</label>
-                <br />
-                <div class="form-check form-check-inline">
-                    <input id="IsTechnical" class="form-check-input" type="checkbox" name="SignupInterviewer.IsTechnical" value="true" data-val="true" data-val-required="Please select at least one">
-                    <label for="IsTechnical" class="form-check-label">Technical Interviews</label>
-                </div>
-                <br />
-                <div class="form-check form-check-inline">
-                    <input id="IsBehavioral" class="form-check-input" type="checkbox" name="SignupInterviewer.IsBehavioral" value="true" data-val="true" data-val-required="Please select at least one">
-                    <label for="IsBehavioral" class="form-check-label">Behavioral Interviews</label>
-                </div>
-                <br />
-                <div class="form-check form-check-inline">
-                    <input id="IsCase" class="form-check-input" type="checkbox" name="SignupInterviewer.IsCase" value="true" data-val="true" data-val-required="Please select at least one">
-                    <label for="IsCase" class="form-check-label">Case Interviews</label>
-                </div>
-                <div>
-                    <span asp-validation-for="SignupInterviewer.IsTechnical" class="text-danger"></span>
-                </div>
+            <div class="grid gap-6 lg:grid-cols-2">
+                <fieldset class="rounded-card border border-line bg-surface p-5 shadow-card">
+                    <legend class="font-semibold text-ink">Interview location</legend>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                        <label for="manual-location-in-person" class="flex cursor-pointer items-start gap-3 rounded-md border border-line p-4 has-[:checked]:border-ink has-[:checked]:bg-soft">
+                            <input id="manual-location-in-person" type="radio" name="SignupInterviewer.InPerson" value="true" checked="@(Model.SignupInterviewer.InPerson ? "checked" : null)" class="mt-1 size-4" data-location-mode />
+                            <span><span class="block font-semibold text-ink">In person</span><span class="mt-1 block text-sm text-muted">Meet students on site.</span></span>
+                        </label>
+                        <label for="manual-location-virtual" class="flex cursor-pointer items-start gap-3 rounded-md border border-line p-4 has-[:checked]:border-ink has-[:checked]:bg-soft">
+                            <input id="manual-location-virtual" type="radio" name="SignupInterviewer.InPerson" value="false" checked="@(!Model.SignupInterviewer.InPerson ? "checked" : null)" class="mt-1 size-4" data-location-mode />
+                            <span><span class="block font-semibold text-ink">Virtual</span><span class="mt-1 block text-sm text-muted">Meet students remotely.</span></span>
+                        </label>
+                    </div>
+                    <span asp-validation-for="SignupInterviewer.InPerson" class="mt-2 block text-sm text-negative"></span>
+                    <label class="mt-5 flex items-start gap-3" data-lunch-option>
+                        <input type="checkbox" name="Lunch" value="true" checked="@(Model.Lunch ? "checked" : null)" class="mt-1 size-4" />
+                        <span><span class="block font-semibold text-ink">Lunch requested</span><span class="mt-1 block text-sm text-muted">Available only for in-person interviewers.</span></span>
+                    </label>
+                </fieldset>
+
+                <fieldset class="rounded-card border border-line bg-surface p-5 shadow-card">
+                    <legend class="font-semibold text-ink">Interview types</legend>
+                    <p class="mt-1 text-sm text-muted">Choose every type the interviewer can conduct.</p>
+                    <div class="mt-4 space-y-3">
+                        <label class="flex items-center gap-3"><input asp-for="SignupInterviewer.IsTechnical" class="size-4" /><span class="font-medium text-ink">Technical</span></label>
+                        <label class="flex items-center gap-3"><input asp-for="SignupInterviewer.IsBehavioral" class="size-4" /><span class="font-medium text-ink">Behavioral</span></label>
+                        <label class="flex items-center gap-3"><input asp-for="SignupInterviewer.IsCase" class="size-4" /><span class="font-medium text-ink">Case</span></label>
+                    </div>
+                    <span asp-validation-for="SignupInterviewer.IsTechnical" class="mt-2 block text-sm text-negative"></span>
+                </fieldset>
             </div>
 
-            <br /><br />
-            <div class="row" id="center-everything">
-                @for (int i = 0; i < noOfDays; i++)
-                {
-                    <div class="@("col-md-" + result)">
-                        <button type="button"
-                                class="selectAllButton btn btn-primary"
-                                data-target="@("SelectedEventIds" + (i + 1))">
-                            Select Day @(i + 1)
-                        </button>
-                    </div>
-                    <br />
-                }
-            </div>
-            <br />
+            <partial name="ParticipantScheduling/_EventDayTimeslotSelector"
+                     model='new TimeslotSelectorViewModel(Model.EventDays, "SelectedTimeslotIds", true, true, "manual-interviewer-timeslot")' />
 
-            <div class="row" id="center-everything">
-                @for (int i = 0; i < noOfDays; i++)
-                {
-                    <div class="@("col-md-"+result)">
-                        <h3>@Model.EventDates[i].Name</h3>
-                        <h4 class="date-column">@Model.EventDates[i].Date</h4>
-                        @foreach (var timeslot in Model.Timeslots)
-                        {
-                            if (timeslot.EventId == Model.EventDates[i].Id)
-                            {
-                                <div>
-                                    <input type="checkbox"
-                                           class="form-check-input"
-                                           id="@timeslot.Id"
-                                           name="@("SelectedEventIds"+(i+1).ToString())"
-                                           value="@timeslot.Id"
-                                           data-val="true"
-                                           data-val-required="Please select at least one timeslot">
-                                    <input type="hidden" name="Timeslots[@timeslot.Id]" value="@timeslot.Id">
-                                    <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
-                                </div>
-                            }
-                        }
-                    </div>
-                }
-                <br /><br />
-                <div>
-                    <span asp-validation-for="SelectedEventIds" class="text-danger"></span>
-                </div>
-                <br />
-                <div class="form-group" id="center-everything">
-                    <input type="submit" value="Sign Up" class="btn btn-primary" /> | <a class="btn btn-secondary" asp-controller="SignupInterviewers" asp-action="Index">Go Back</a>
-                </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="submit" ui-variant="Primary">Save interviewer availability</button>
+                <a asp-controller="SignupInterviewers" asp-action="Index" ui-variant="Quiet">Back to interviewer check-in</a>
             </div>
-            <br />
         </form>
-    </div>
-    <div class="col-md-3"></div>
-</div>
+    }
+</section>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-
-    <script>
-        selectAll();
-    </script>
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/timeslot-selection.js" asp-append-version="true"></script>
+    <script src="~/js/interviewer-availability.js" asp-append-version="true"></script>
 }

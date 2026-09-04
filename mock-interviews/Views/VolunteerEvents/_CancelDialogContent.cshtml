@@ -1,0 +1,23 @@
+<dl class="space-y-4 text-sm">
+    <div class="grid gap-1 sm:grid-cols-2">
+        <dt class="font-semibold text-ink">Volunteer</dt>
+        <dd class="text-muted" data-dialog-field="name"></dd>
+    </div>
+    <div class="grid gap-1 sm:grid-cols-2">
+        <dt class="font-semibold text-ink">Date</dt>
+        <dd class="text-muted" data-dialog-field="date"></dd>
+    </div>
+    <div class="grid gap-1 sm:grid-cols-2">
+        <dt class="font-semibold text-ink">Time</dt>
+        <dd class="text-muted" data-dialog-field="time"></dd>
+    </div>
+</dl>
+
+<form asp-action="DeleteRangeConfirmed" method="post" class="mt-7 flex flex-wrap justify-end gap-3">
+    <span data-dialog-field="ids" data-dialog-split="," data-dialog-input-name="timeslots"></span>
+    <button type="button" ui-variant="Secondary" data-dialog-close>Keep availability</button>
+    <button type="submit" ui-variant="Destructive">
+        <ui-icon name="trash-2" class="size-4" />
+        Cancel availability
+    </button>
+</form>

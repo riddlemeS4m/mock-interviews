@@ -1,24 +1,51 @@
-﻿@model MockInterviews.Models.ViewModels.InterviewEventsController.AttendanceReportViewModel
+@model MockInterviews.Models.ViewModels.InterviewEventsController.AttendanceReportViewModel
 
 @{
-    ViewData["Title"] = "AttendanceReport";
+    ViewData["Title"] = "Attendance report";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Attendance Report</h1>
-<hr />
-@foreach(var item in Model.ClassReports)
-{
-    <h3>@item.ClassName: @item.StudentCount</h3>
-}
-<hr />
-@foreach (var item in Model.SummaryStats)
-{
-    if(item.ClassName != "Total")
+<section class="space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Attendance report", "Student interview signups compared with the current program roster.")' />
+
+    <div class="grid gap-4 sm:grid-cols-3">
+        @foreach (var summary in Model.SummaryStats)
+        {
+            <article class="rounded-card border border-line bg-surface p-5 shadow-card">
+                <p class="text-sm font-semibold text-muted">@summary.ClassName</p>
+                <p class="mt-2 text-3xl font-semibold tracking-tight text-ink">@summary.StudentCount@(summary.ClassName == "Total" ? string.Empty : "%")</p>
+            </article>
+        }
+    </div>
+
+    @if (Model.ClassReports.Count == 0)
     {
-        <h3>@item.ClassName: @item.StudentCount%</h3>
+        <partial name="DesignSystem/_EmptyState"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiEmptyStateViewModel("users", "No student signups", "Class breakdowns will appear after students schedule interviews.")' />
     }
     else
     {
-        <h3>@item.ClassName: @item.StudentCount</h3>
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="border-b border-line bg-soft text-sm text-muted">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">Class</th>
+                            <th class="px-5 py-3 font-semibold">Students signed up</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var report in Model.ClassReports)
+                        {
+                            <tr>
+                                <th scope="row" class="px-5 py-4 font-semibold text-ink">@report.ClassName</th>
+                                <td class="px-5 py-4 text-muted">@report.StudentCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     }
-}
+</section>

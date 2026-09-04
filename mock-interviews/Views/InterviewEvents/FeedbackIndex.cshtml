@@ -1,71 +1,68 @@
-﻿@model MockInterviews.Models.ViewModels.HomeController.IndexViewModel
+@model FeedbackListViewModel
 
 @{
-    ViewBag.Title = "FeedbackIndex";
+    ViewData["Title"] = "Interview feedback";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Feedback Portal</h1>
+<section class="space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Interview feedback", "Share feedback after each completed interview. Your comments help us improve future mock interviews.")' />
 
-<h4 id="center-everything">Tell us about how your interview went.</h4>
-<hr />
-@if(Model.StudentScheduledInterviews.Count() <= 1)
-{
-    <div class="alert alert-danger" role="alert" id="center-everything">
-        You must have completed both interviews to be able to provide feedback.
-    </div>
-}
-else
-{
-    <table class="table" id="center-everything">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Interviewer</th>
-                <th>Focus</th>
-                <th>Rating</th>
-                <th>Interviewer Feedback</th>
-                <th>Process Feedback</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var interviewEventViewModel in Model.StudentScheduledInterviews)
-            {
-                <tr>
-                    <td>@interviewEventViewModel.InterviewEvent.Timeslot.Event.Date</td>
-                    <td>@interviewEventViewModel.InterviewEvent.Timeslot.Time</td>
-                    <td>@interviewEventViewModel.InterviewerName</td>
-                    <td>@interviewEventViewModel.InterviewEvent.Type</td>
-                    @if(interviewEventViewModel.InterviewEvent.InterviewerRating == null)
-                    {
-                        <td>Not Yet Rated</td>
-                    }
-                    else
-                    {
-                        <td>@interviewEventViewModel.InterviewEvent.InterviewerRating</td>
-                    }
-                    @if(interviewEventViewModel.InterviewEvent.InterviewerFeedback == null)
-                    {
-                        <td>None Given</td>
-                    }
-                    else
-                    {
-                        <td>@interviewEventViewModel.InterviewEvent.InterviewerFeedback</td>
-                    }
-                    @if(interviewEventViewModel.InterviewEvent.ProcessFeedback == null)
-                    {
-                        <td>None Given</td>
-                    }
-                    else
-                    {
-                        <td>@interviewEventViewModel.InterviewEvent.ProcessFeedback</td>
-                    }
-                    @*<td>
-                        <a asp-controller="InterviewEvents" asp-action="ProvideFeedback" asp-route-id="@interviewEventViewModel.InterviewEvent.Id">Submit Feedback</a>
-                    </td>*@
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new UiFeedbackViewModel(UiFeedbackKind.Success, statusMessage, string.Empty)" />
+    }
+
+    @if (Model.Interviews.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("clipboard-check", "No completed interviews yet", "Feedback becomes available here as soon as each interview is marked complete.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-line text-left text-sm">
+                    <thead class="bg-soft/60 text-xs font-semibold uppercase tracking-wide text-muted">
+                        <tr>
+                            <th scope="col" class="px-5 py-3">Interview</th>
+                            <th scope="col" class="px-5 py-3">Interviewer</th>
+                            <th scope="col" class="px-5 py-3">Rating</th>
+                            <th scope="col" class="px-5 py-3">Your feedback</th>
+                            <th scope="col" class="px-5 py-3 text-right"><span class="sr-only">Action</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var interview in Model.Interviews)
+                        {
+                            var hasFeedback = !string.IsNullOrWhiteSpace(interview.InterviewerRating);
+                            <tr>
+                                <td class="whitespace-nowrap px-5 py-4">
+                                    <time datetime="@interview.Date.ToString("yyyy-MM-dd")" class="font-semibold text-ink">@interview.Date.ToString("MMM d, yyyy")</time>
+                                    <span class="block text-muted">@interview.Time.ToString("h:mm tt") · @interview.InterviewType</span>
+                                </td>
+                                <td class="px-5 py-4 text-ink">@interview.InterviewerName</td>
+                                <td class="px-5 py-4 text-ink">@(hasFeedback ? $"{interview.InterviewerRating} / 5" : "Not rated")</td>
+                                <td class="max-w-md px-5 py-4 text-muted">
+                                    @if (hasFeedback)
+                                    {
+                                        <span>@(string.IsNullOrWhiteSpace(interview.InterviewerFeedback) ? "No written interviewer feedback" : interview.InterviewerFeedback)</span>
+                                    }
+                                    else
+                                    {
+                                        <span>No feedback submitted</span>
+                                    }
+                                </td>
+                                <td class="whitespace-nowrap px-5 py-4 text-right">
+                                    <a asp-action="ProvideFeedback" asp-route-id="@interview.InterviewId" class="text-sm font-semibold text-ink hover:underline">@(hasFeedback ? "Edit feedback" : "Give feedback")</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>

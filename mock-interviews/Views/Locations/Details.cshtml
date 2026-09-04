@@ -1,37 +1,31 @@
-﻿@using MockInterviews.Models.Entities
+@using MockInterviews.Models.Entities
 @model Location
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Room details";
 }
 
-<h1>Details</h1>
+<section class="max-w-3xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel(Model.Room, "Room and interview-format details.")' />
 
-<div>
-    <h4>Location</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Room)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Room)
-        </dd>
-        <dt class = "col-sm-2">
-           Virtual Interviewer
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.IsVirtual)
-        </dd>
-        <dt class = "col-sm-2">
-            In-Person Interviewer
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.InPerson)
-        </dd>
+    <dl class="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface shadow-card">
+        <div class="grid gap-1 px-6 py-4 sm:grid-cols-[12rem_1fr] sm:gap-6">
+            <dt class="text-sm font-medium text-muted">Room or location</dt>
+            <dd class="font-semibold text-ink">@Model.Room</dd>
+        </div>
+        <div class="grid gap-1 px-6 py-4 sm:grid-cols-[12rem_1fr] sm:gap-6">
+            <dt class="text-sm font-medium text-muted">Virtual interviewers</dt>
+            <dd class="text-ink">@(Model.IsVirtual ? "Supported" : "Not supported")</dd>
+        </div>
+        <div class="grid gap-1 px-6 py-4 sm:grid-cols-[12rem_1fr] sm:gap-6">
+            <dt class="text-sm font-medium text-muted">In-person interviewers</dt>
+            <dd class="text-ink">@(Model.InPerson ? "Supported" : "Not supported")</dd>
+        </div>
     </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
-</div>
+
+    <div class="flex flex-wrap gap-3">
+        <a asp-action="Edit" asp-route-id="@Model.Id" ui-variant="Primary">Edit room</a>
+        <a asp-action="Index" ui-variant="Secondary">Back to rooms</a>
+    </div>
+</section>

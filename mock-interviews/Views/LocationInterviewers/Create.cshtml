@@ -1,49 +1,32 @@
-﻿@model MockInterviews.Models.ViewModels.LocationInterviewersController.LocationInterviewerCreateViewModel
+@model MockInterviews.Models.ViewModels.LocationInterviewersController.LocationInterviewerCreateViewModel
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Assign room";
 }
 
-<h1>Create</h1>
+<section class="max-w-xl space-y-6">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Assign room", "Choose an active interviewer, event, and room.")' />
 
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-@*            <input type="hidden" asp-for="LocationInterviewer.InterviewerId" />
-*@            <div class="form-group">
-                <label asp-for="@Model.LocationInterviewer.InterviewerId" class="control-label"></label>
-                <select asp-for="@Model.LocationInterviewer.InterviewerId" class ="form-control" asp-items="@Model.InterviewerNames"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="@Model.LocationInterviewer.LocationId" class="control-label"></label>
-                <select asp-for="@Model.LocationInterviewer.LocationId" class ="form-control" asp-items="@Model.Locations"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="@Model.LocationInterviewer.EventId" class="control-label"></label>
-                <select asp-for="@Model.LocationInterviewer.EventId" class="form-control" asp-items="@Model.Dates"></select>
-            </div>
-            <p></p>
-            <div class="form-check form-check-inline">
-                <input id="InPersonTrue" class="form-check-input" type="radio" name="InPerson" value="true" data-val="true" data-val-required="Please select an option">
-                <label class="form-check-label" for="InPersonTrue">In Person</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input id="InPersonFalse" class="form-check-input" type="radio" name="InPerson" value="false" data-val="true" data-val-required="Please select an option">
-                <label class="form-check-label" for="InPersonFalse">Virtual</label>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
-
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+    <form asp-action="Create" method="post" class="space-y-5 rounded-card border border-line bg-surface p-6 shadow-card">
+        <div asp-validation-summary="ModelOnly" class="border-l-4 border-negative pl-4 text-sm text-negative"></div>
+        <div>
+            <label asp-for="LocationInterviewer.InterviewerId" class="block text-sm font-semibold text-ink">Interviewer</label>
+            <select asp-for="LocationInterviewer.InterviewerId" asp-items="Model.InterviewerNames" class="mt-2 block min-h-11 w-full rounded-md border border-line px-3 py-2"><option value="">Choose an interviewer</option></select>
+        </div>
+        <div>
+            <label asp-for="LocationInterviewer.EventId" class="block text-sm font-semibold text-ink">Event</label>
+            <select asp-for="LocationInterviewer.EventId" asp-items="Model.Dates" class="mt-2 block min-h-11 w-full rounded-md border border-line px-3 py-2"><option value="">Choose an event</option></select>
+        </div>
+        <div>
+            <label asp-for="LocationInterviewer.LocationId" class="block text-sm font-semibold text-ink">Room or location</label>
+            <select asp-for="LocationInterviewer.LocationId" asp-items="Model.Locations" class="mt-2 block min-h-11 w-full rounded-md border border-line px-3 py-2"><option value="">Leave unassigned</option></select>
+        </div>
+        <fieldset class="space-y-3">
+            <legend class="text-sm font-semibold text-ink">Preference</legend>
+            <label class="flex gap-3"><input type="radio" name="InPerson" value="true" checked />In person</label>
+            <label class="flex gap-3"><input type="radio" name="InPerson" value="false" />Virtual</label>
+        </fieldset>
+        <div class="flex gap-3"><a asp-action="Index" ui-variant="Secondary">Cancel</a><button type="submit" ui-variant="Primary">Assign room</button></div>
+    </form>
+</section>

@@ -1,0 +1,44 @@
+@model TimeslotSelectorViewModel
+
+<div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3" data-timeslot-selection>
+    @foreach (var day in Model.EventDays)
+    {
+        <fieldset class="rounded-card border border-line bg-surface p-5 shadow-card" data-timeslot-day>
+            <legend class="font-semibold text-ink">@day.Name</legend>
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-sm text-muted">@day.Date.ToString("dddd, MMMM d")</p>
+                </div>
+                @if (Model.ShowSelectAll && Model.AllowsMultipleSelection)
+                {
+                    <button type="button" ui-variant="Quiet" data-timeslot-select-all aria-pressed="false">Select all</button>
+                }
+            </div>
+            <div class="mt-4 space-y-2">
+                @foreach (var option in day.Options)
+                {
+                    var inputId = $"{Model.IdPrefix}-{option.Id}";
+                    <label for="@inputId" class="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border border-line px-3 py-2 text-ink hover:bg-canvas has-[:checked]:border-ink has-[:checked]:bg-soft @(option.Disabled ? "cursor-not-allowed opacity-60" : string.Empty)">
+                        <input id="@inputId"
+                               type="@(Model.AllowsMultipleSelection ? "checkbox" : "radio")"
+                               name="@Model.InputName"
+                               value="@option.Id"
+                               checked="@(option.Selected ? "checked" : null)"
+                               disabled="@(option.Disabled ? "disabled" : null)"
+                               class="size-4"
+                               data-timeslot-option />
+                        <span class="font-medium">@option.Start.ToString("h:mm tt")</span>
+                        @if (!string.IsNullOrWhiteSpace(option.DisabledReason))
+                        {
+                            <span class="text-sm text-muted">@option.DisabledReason</span>
+                        }
+                    </label>
+                }
+            </div>
+        </fieldset>
+    }
+</div>
+@if (ViewData.ModelState.TryGetValue(Model.InputName, out var selectionState) && selectionState.Errors.Count > 0)
+{
+    <p class="mt-3 text-sm text-negative" role="alert">@selectionState.Errors[0].ErrorMessage</p>
+}

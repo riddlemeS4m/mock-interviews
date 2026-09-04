@@ -19,7 +19,7 @@ public sealed class StudentInterviewSignupSpecs(MockInterviewsWebApplicationFact
         var page = await client.GetAsync("/InterviewEvents/Create");
         var response = await client.PostFormWithAntiforgeryAsync("/InterviewEvents/Create", new[]
         {
-            new KeyValuePair<string, string>("SelectedEventIds", slots[0].Id.ToString())
+            new KeyValuePair<string, string>("SelectedTimeslotIds", slots[0].Id.ToString())
         });
 
         Assert.Equal(HttpStatusCode.OK, page.StatusCode);
@@ -47,10 +47,10 @@ public sealed class StudentInterviewSignupSpecs(MockInterviewsWebApplicationFact
 
         var repeat = await client.PostFormWithAntiforgeryAsync("/VolunteerEvents/Create", "/InterviewEvents/Create", new[]
         {
-            new KeyValuePair<string, string>("SelectedEventIds", slots[0].Id.ToString())
+            new KeyValuePair<string, string>("SelectedTimeslotIds", slots[0].Id.ToString())
         });
         var countAfterRepeat = await Factory.InDatabaseScopeAsync(async context => await context.Interviews.CountAsync());
-        Assert.Equal(HttpStatusCode.BadRequest, repeat.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, repeat.StatusCode);
         Assert.Equal(2, countAfterRepeat);
         Assert.Single(Factory.SentEmails);
     }
@@ -80,9 +80,10 @@ public sealed class StudentInterviewSignupSpecs(MockInterviewsWebApplicationFact
         {
             var response = await client.PostFormWithAntiforgeryAsync("/InterviewEvents/Create", new[]
             {
-                new KeyValuePair<string, string>("SelectedEventIds", requestedSlotId.ToString())
+                new KeyValuePair<string, string>("SelectedTimeslotIds", requestedSlotId.ToString())
             });
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Contains("The requested interview timeslot is not available", await response.Content.ReadAsStringAsync());
         }
 
         var studentInterviews = await Factory.InDatabaseScopeAsync(async context => await context.Interviews
@@ -113,13 +114,36 @@ public sealed class StudentInterviewSignupSpecs(MockInterviewsWebApplicationFact
         var html = await page.Content.ReadAsStringAsync();
         var forged = await client.PostFormWithAntiforgeryAsync("/InterviewEvents/Create", new[]
         {
-            new KeyValuePair<string, string>("SelectedEventIds", events.ineligible.Timeslots[0].Id.ToString())
+            new KeyValuePair<string, string>("SelectedTimeslotIds", events.ineligible.Timeslots[0].Id.ToString())
         });
 
         Assert.Equal(HttpStatusCode.OK, page.StatusCode);
         Assert.Contains("MIS 221 Event", html);
         Assert.DoesNotContain("Upper Level Event", html);
-        Assert.Equal(HttpStatusCode.BadRequest, forged.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, forged.StatusCode);
+        Assert.False(await Factory.InDatabaseScopeAsync(context => context.Interviews.AnyAsync()));
+    }
+
+    [Fact]
+    public async Task Student_signup_requires_an_active_adjacent_slot()
+    {
+        var slots = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "student-1", Classes.SecondSem);
+            var (_, eventSlots) = await TestData.AddEventWithTimeslotsAsync(context);
+            eventSlots[1].IsActive = false;
+            await context.SaveChangesAsync();
+            return eventSlots;
+        });
+        using var client = Factory.CreateAuthenticatedClient("student-1", RolesConstants.StudentRole);
+
+        var response = await client.PostFormWithAntiforgeryAsync("/InterviewEvents/Create", new[]
+        {
+            new KeyValuePair<string, string>("SelectedTimeslotIds", slots[0].Id.ToString())
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("The requested interview timeslot is not available", await response.Content.ReadAsStringAsync());
         Assert.False(await Factory.InDatabaseScopeAsync(context => context.Interviews.AnyAsync()));
     }
 }

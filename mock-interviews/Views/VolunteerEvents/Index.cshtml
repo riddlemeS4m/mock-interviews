@@ -1,51 +1,96 @@
-﻿@model IEnumerable<MockInterviews.Models.ViewModels.Shared.TimeRangeViewModel>
+@model IEnumerable<MockInterviews.Models.ViewModels.Shared.TimeRangeViewModel>
 
 @{
-    ViewData["Title"] = "Volunteers";
+    ViewData["Title"] = "Volunteer availability";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Volunteers</h1>
+<section class="space-y-8">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Volunteer availability", "Review and cancel volunteer availability for active events.")' />
+    </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                Student Name
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Date)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.StartTime)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Date)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.StartTime) - @Html.DisplayFor(modelItem => item.EndTime)
-            </td>
-            <td>
-@*                <a asp-action="Details" asp-route-id="@item.VolunteerEvent.Id">Details</a> |
-*@                @Html.ActionLink("Delete",
-                "DeleteRange",   // <-- ActionMethod
-                "VolunteerEvents",  // <-- Controller Name.
-                new { timeslots = item.TimeslotIds.ToArray() }, // <-- Route arguments.
-                null
-                )
-            </td>
-        </tr>
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new MockInterviews.Models.ViewModels.Shared.UiFeedbackViewModel(MockInterviews.Models.ViewModels.Shared.UiFeedbackKind.Success, statusMessage, string.Empty)" />
+    }
+
+    @if (Model.Any())
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="border-b border-line p-5">
+                <label for="volunteer-search" class="sr-only">Search volunteer availability</label>
+                <div class="relative max-w-sm">
+                    <ui-icon name="search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                    <input id="volunteer-search"
+                           type="search"
+                           class="block min-h-11 w-full rounded-md border border-line bg-surface py-2 pr-3 pl-10 text-ink shadow-sm placeholder:text-muted focus:border-ink focus:outline-none focus:ring-3 focus:ring-ink/10"
+                           placeholder="Search volunteers"
+                           autocomplete="off"
+                           data-volunteer-search />
+                </div>
+                <p class="sr-only" aria-live="polite" data-volunteer-result-count>@Model.Count() availability blocks shown</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="border-b border-line bg-soft text-sm text-muted">
+                        <tr>
+                            <th scope="col" class="px-5 py-3 font-semibold">Volunteer</th>
+                            <th scope="col" class="px-5 py-3 font-semibold">Date</th>
+                            <th scope="col" class="px-5 py-3 font-semibold">Time</th>
+                            <th scope="col" class="px-5 py-3 text-right font-semibold"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var availability in Model)
+                        {
+                            var rangeIds = string.Join(',', availability.TimeslotIds);
+                            var timeLabel = $"{availability.StartTime}–{availability.EndTime}";
+
+                            <tr data-volunteer-row data-search-text="@($"{availability.Name} {availability.Date:MMMM d yyyy} {availability.StartTime} {availability.EndTime}")">
+                                <th scope="row" class="px-5 py-4 font-semibold text-ink">@availability.Name</th>
+                                <td class="px-5 py-4 text-muted">@availability.Date.ToString("MMM d, yyyy")</td>
+                                <td class="whitespace-nowrap px-5 py-4 text-muted">@timeLabel</td>
+                                <td class="whitespace-nowrap px-5 py-4 text-right">
+                                    <form asp-action="DeleteRange" method="get" class="inline">
+                                        @foreach (var timeslotId in availability.TimeslotIds)
+                                        {
+                                            <input type="hidden" name="timeslots" value="@timeslotId" />
+                                        }
+                                        <button type="submit"
+                                                class="text-sm font-semibold text-negative hover:underline"
+                                                data-dialog-target="volunteer-cancel-dialog"
+                                                data-dialog-value-name="@availability.Name"
+                                                data-dialog-value-date="@availability.Date.ToString("MMM d, yyyy")"
+                                                data-dialog-value-time="@timeLabel"
+                                                data-dialog-value-ids="@rangeIds">Cancel</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="hidden py-8 text-center" data-volunteer-search-empty>
+            <ui-icon name="search" class="mx-auto size-8 text-muted" />
+            <p class="mt-3 font-semibold text-ink">No matching volunteer availability</p>
+            <p class="mt-1 text-sm text-muted">Try a different volunteer name or date.</p>
+        </div>
+    }
+    else
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiEmptyStateViewModel("users", "No volunteer availability", "Volunteer availability for active events will appear here.")' />
+    }
+</section>
+
+<partial name="_Dialogs" />
+
+@section Scripts {
+    <script src="~/js/volunteer-events.js" asp-append-version="true"></script>
 }
-    </tbody>
-</table>

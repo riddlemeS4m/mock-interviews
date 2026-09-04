@@ -1,12 +1,8 @@
-﻿@page
+@page
 @model DownloadPersonalDataModel
 @{
-    ViewData["Title"] = "Download Your Data";
+    ViewData["Title"] = "Download personal data";
     ViewData["ActivePage"] = ManageNavPages.PersonalData;
 }
 
-<h3>@ViewData["Title"]</h3>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+<div class="max-w-xl"><h1 class="text-2xl font-semibold text-ink">Preparing your download</h1><p class="mt-2 text-muted">Your browser should begin downloading your account data shortly.</p><a asp-page="./PersonalData" ui-variant="Secondary" class="mt-6">Back to personal data</a></div>

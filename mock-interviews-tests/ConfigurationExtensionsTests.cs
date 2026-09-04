@@ -13,12 +13,18 @@ using Microsoft.Extensions.Options;
 using MockInterviews.Areas.SystemArea.Controllers;
 using MockInterviews.Controllers;
 using MockInterviews.Data;
+using MockInterviews.Data.Access.Emails;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
+using MockInterviews.Email;
 using MockInterviews.Extensions;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
 using MockInterviews.Options;
+using MockInterviews.Services;
+using Moq;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace MockInterviews.Tests;
 
@@ -136,8 +142,7 @@ public sealed class ConfigurationExtensionsTests
     [Fact]
     public void ValidateRequiredConfiguration_AcceptsCompleteConfiguration()
     {
-        var configuration = BuildConfiguration(ApplicationConfigurationExtensions.RequiredConfigurationKeys
-            .ToDictionary(key => key, _ => (string?)"configured"));
+        var configuration = BuildConfiguration(CompleteSmtpConfiguration());
 
         configuration.ValidateRequiredConfiguration();
     }
@@ -148,7 +153,7 @@ public sealed class ConfigurationExtensionsTests
         Assert.Equal(
             [
                 "ConnectionString:DefaultConnection",
-                "SendGrid:ApiKey",
+                "Email:Provider",
                 "SuperUser:Email",
                 "SeededAdminPwd"
             ],
@@ -166,11 +171,150 @@ public sealed class ConfigurationExtensionsTests
         var exception = Assert.Throws<InvalidOperationException>(configuration.ValidateRequiredConfiguration);
 
         Assert.Contains("ConnectionString:DefaultConnection", exception.Message);
-        Assert.Contains("SendGrid:ApiKey", exception.Message);
+        Assert.Contains("Email:Provider", exception.Message);
         Assert.Contains("SuperUser:Email", exception.Message);
         Assert.Contains("SeededAdminPwd", exception.Message);
         Assert.DoesNotContain("secret-value-that-must-not-appear", exception.Message);
         Assert.DoesNotContain("Postgres:development", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ValidateRequiredConfiguration_AllowsSmtpWithoutSendGridKey()
+    {
+        var configuration = BuildConfiguration(CompleteSmtpConfiguration());
+
+        configuration.ValidateRequiredConfiguration();
+    }
+
+    [Fact]
+    public void ValidateRequiredConfiguration_RequiresSendGridKeyOnlyForSendGrid()
+    {
+        var values = CompleteSmtpConfiguration();
+        values["Email:Provider"] = EmailOptions.SendGridProvider;
+        values.Remove("Email:Smtp:Host");
+        values.Remove("Email:Smtp:Port");
+        var exception = Assert.Throws<InvalidOperationException>(() => BuildConfiguration(values).ValidateRequiredConfiguration());
+
+        Assert.Contains("SendGrid:ApiKey", exception.Message);
+        Assert.DoesNotContain("Email:Smtp:Host", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("Email:Smtp:Host", "")]
+    [InlineData("Email:Smtp:Port", "0")]
+    public void ValidateRequiredConfiguration_RejectsInvalidSmtpSettings(string key, string value)
+    {
+        var values = CompleteSmtpConfiguration();
+        values[key] = value;
+
+        var exception = Assert.Throws<InvalidOperationException>(() => BuildConfiguration(values).ValidateRequiredConfiguration());
+
+        Assert.Contains(key, exception.Message);
+    }
+
+    [Fact]
+    public void ValidateRequiredConfiguration_RequiresPairedSmtpCredentials()
+    {
+        var values = CompleteSmtpConfiguration();
+        values["Email:Smtp:Username"] = "user";
+
+        var exception = Assert.Throws<InvalidOperationException>(() => BuildConfiguration(values).ValidateRequiredConfiguration());
+
+        Assert.Contains("Username", exception.Message);
+        Assert.Contains("Password", exception.Message);
+    }
+
+    [Fact]
+    public void ValidateRequiredConfiguration_RejectsUnsupportedEmailProvider()
+    {
+        var values = CompleteSmtpConfiguration();
+        values["Email:Provider"] = "CarrierPigeon";
+
+        var exception = Assert.Throws<InvalidOperationException>(() => BuildConfiguration(values).ValidateRequiredConfiguration());
+
+        Assert.Contains("Unsupported Email:Provider", exception.Message);
+    }
+
+    [Fact]
+    public void AddEmailTransport_RegistersOnlyTheSelectedSmtpTransport()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddEmailTransport(BuildConfiguration(CompleteSmtpConfiguration()));
+
+        using var serviceProvider = services.BuildServiceProvider();
+
+        Assert.IsType<SmtpEmailTransport>(serviceProvider.GetRequiredService<IEmailTransport>());
+        Assert.Null(serviceProvider.GetService<ISendGridClient>());
+    }
+
+    [Fact]
+    public async Task SendGridEmailTransport_MapsMessageAndFailsForRejectedResponses()
+    {
+        SendGridMessage? sent = null;
+        var client = new Mock<ISendGridClient>();
+        client.Setup(item => item.SendEmailAsync(It.IsAny<SendGridMessage>(), It.IsAny<CancellationToken>()))
+            .Callback<SendGridMessage, CancellationToken>((message, _) => sent = message)
+            .ReturnsAsync(new Response(HttpStatusCode.Accepted, null, null));
+        var transport = new SendGridEmailTransport(client.Object, NullLogger<SendGridEmailTransport>.Instance);
+        var message = new EmailMessage(
+            new MockInterviews.Email.EmailAddress("from@example.test", "From Name"),
+            new MockInterviews.Email.EmailAddress("to@example.test", "To Name"),
+            "Subject",
+            "Plain body",
+            "<p>HTML body</p>",
+            [new EmailAttachment("calendar.ics", "text/calendar", [1, 2, 3])]);
+
+        await transport.SendAsync(message);
+
+        Assert.NotNull(sent);
+        Assert.Equal("From Name", sent.From.Name);
+        Assert.Equal("To Name", sent.Personalizations.Single().Tos.Single().Name);
+        Assert.Contains(sent.Contents!, content => content.Type == "text/plain" && content.Value == "Plain body");
+        Assert.Contains(sent.Contents!, content => content.Type == "text/html" && content.Value == "<p>HTML body</p>");
+        Assert.Equal(Convert.ToBase64String([1, 2, 3]), sent.Attachments.Single().Content);
+
+        client.Setup(item => item.SendEmailAsync(It.IsAny<SendGridMessage>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Response(HttpStatusCode.BadRequest, null, null));
+        await Assert.ThrowsAsync<EmailDeliveryException>(() => transport.SendAsync(message));
+    }
+
+    [Fact]
+    public async Task TemplateAndIdentitySenders_UseNeutralMessages()
+    {
+        var recordingTransport = new RecordingEmailTransport();
+        var originalDirectory = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+            var email = new StudentSignupEmail();
+            await email.SendEmailAsync(
+                recordingTransport,
+                "from@example.test",
+                "Subject",
+                "to@example.test",
+                "Recipient",
+                "Schedule",
+                [Convert.ToBase64String("BEGIN:VCALENDAR"u8.ToArray())]);
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(originalDirectory);
+        }
+
+        var templateMessage = Assert.Single(recordingTransport.Messages);
+        var attachment = Assert.Single(templateMessage.Attachments);
+        Assert.Equal("text/calendar", attachment.ContentType);
+        Assert.Equal("BEGIN:VCALENDAR"u8.ToArray(), attachment.Content);
+
+        var identitySender = new IdentityEmailSender(
+            recordingTransport,
+            Microsoft.Extensions.Options.Options.Create(new SuperUserOptions { Email = "admin@example.test" }));
+        await identitySender.SendEmailAsync("identity@example.test", "Confirm", "<a>Confirm</a>");
+
+        var identityMessage = recordingTransport.Messages.Last();
+        Assert.Equal("identity@example.test", identityMessage.To.Address);
+        Assert.Equal("<a>Confirm</a>", identityMessage.HtmlBody);
     }
 
     [Theory]
@@ -214,6 +358,42 @@ public sealed class ConfigurationExtensionsTests
         Assert.Null(await schemes.GetSchemeAsync("Microsoft"));
     }
 
+    [Fact]
+    public async Task OptionalMicrosoftAuthentication_RegistersProviderOnlyWhenConfigured()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Authentication:Microsoft:ClientId"] = "client-id",
+                ["Authentication:Microsoft:ClientSecret"] = "client-secret"
+            })
+            .Build();
+        var services = new ServiceCollection();
+        services.AddIdentityAndAuth();
+        services.AddOptionalMicrosoftAuthentication(configuration);
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var schemes = serviceProvider.GetRequiredService<IAuthenticationSchemeProvider>();
+
+        Assert.NotNull(await schemes.GetSchemeAsync("Microsoft"));
+    }
+
+    [Fact]
+    public void OptionalMicrosoftAuthentication_RejectsPartialConfiguration()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Authentication:Microsoft:ClientId"] = "client-id"
+            })
+            .Build();
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => new ServiceCollection().AddOptionalMicrosoftAuthentication(configuration));
+
+        Assert.Contains("ClientSecret", exception.Message);
+    }
+
     [Theory]
     [InlineData("Development", false)]
     [InlineData("Production", true)]
@@ -232,6 +412,8 @@ public sealed class ConfigurationExtensionsTests
         Assert.Equal(requiresComplexPassword, options.Password.RequireUppercase);
         Assert.Equal(requiresComplexPassword, options.Password.RequireNonAlphanumeric);
         Assert.Equal(6, options.Password.RequiredLength);
+        Assert.True(options.SignIn.RequireConfirmedAccount);
+        Assert.True(options.SignIn.RequireConfirmedEmail);
     }
 
     [Fact]
@@ -247,7 +429,9 @@ public sealed class ConfigurationExtensionsTests
             null!,
             NullLogger<HomeController>.Instance,
             Microsoft.Extensions.Options.Options.Create(
-                new SuperUserOptions { Email = "admin@example.com" }))
+                new SuperUserOptions { Email = "admin@example.com" }),
+            new UserLandingPageResolver(),
+            null!)
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext }
         };
@@ -286,6 +470,28 @@ public sealed class ConfigurationExtensionsTests
     private static IConfiguration BuildConfiguration(IEnumerable<KeyValuePair<string, string?>> values)
     {
         return new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+    }
+
+    private static Dictionary<string, string?> CompleteSmtpConfiguration() => new()
+    {
+        ["ConnectionString:DefaultConnection"] = "configured",
+        ["Email:Provider"] = EmailOptions.SmtpProvider,
+        ["Email:Smtp:Host"] = "127.0.0.1",
+        ["Email:Smtp:Port"] = "1025",
+        ["SuperUser:Email"] = "admin@example.test",
+        ["SeededAdminPwd"] = "configured"
+    };
+
+    private sealed class RecordingEmailTransport : IEmailTransport
+    {
+        private readonly List<EmailMessage> _messages = [];
+        public IReadOnlyList<EmailMessage> Messages => _messages;
+
+        public Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
+        {
+            _messages.Add(message);
+            return Task.CompletedTask;
+        }
     }
 
     private static MockInterviewsDbContext CreateContext()

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using MockInterviews.Interfaces.IReports;
 using MockInterviews.Models.Entities;
 using MockInterviews.Models.Identity;
@@ -19,6 +20,10 @@ namespace MockInterviews.Data.Access.Reports
 
             if (volunteerEvents != null && volunteerEvents.Count != 0)
             {
+                var userIds = volunteerEvents.Select(volunteerEvent => volunteerEvent.StudentId).Distinct().ToArray();
+                var usersById = await _userManager.Users
+                    .Where(user => userIds.Contains(user.Id))
+                    .ToDictionaryAsync(user => user.Id);
                 var ints = new List<int>();
                 var currentStart = volunteerEvents.First().Timeslot;
                 var currentEnd = volunteerEvents.First().Timeslot;
@@ -29,8 +34,8 @@ namespace MockInterviews.Data.Access.Reports
                 {
                     var nextEvent = volunteerEvents[i].Timeslot;
 
-                    if (currentEnd.Id + 1 == nextEvent.Id
-                        && currentEnd.Event.Date == nextEvent.Event.Date
+                    if (currentEnd.EventId == nextEvent.EventId
+                        && currentEnd.Time.AddMinutes(30) == nextEvent.Time
                         && volunteerEvents[i].StudentId == studentid)
                     {
                         currentEnd = nextEvent;
@@ -38,7 +43,7 @@ namespace MockInterviews.Data.Access.Reports
                     }
                     else
                     {
-                        var name = await _userManager.FindByIdAsync(volunteerEvents[i - 1].StudentId);
+                        usersById.TryGetValue(volunteerEvents[i - 1].StudentId, out var name);
                         groupedEvents.Add(new TimeRangeViewModel
                         {
                             Date = currentStart.Event.Date,
@@ -58,7 +63,7 @@ namespace MockInterviews.Data.Access.Reports
                     }
                 }
 
-                var user = await _userManager.FindByIdAsync(studentid);
+                usersById.TryGetValue(studentid, out var user);
                 groupedEvents.Add(new TimeRangeViewModel
                 {
                     Date = currentStart.Event.Date,

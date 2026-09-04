@@ -1,65 +1,49 @@
-﻿@model IEnumerable<MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventViewModel>
+@model IEnumerable<MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventViewModel>
 
 @{
-    ViewData["Title"] = "AssessFeedback";
+    ViewData["Title"] = "Interview feedback assessment";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
+<section class="space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Interview feedback assessment", "Read-only participant feedback about interviewers and the interview process.")' />
 
-<h1>Interview Feedback</h1>
-
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.StudentName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.InterviewerName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.InterviewEvent.Type)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.InterviewEvent.InterviewerRating)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.InterviewEvent.InterviewerFeedback)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.InterviewEvent.ProcessFeedback)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            if (item.InterviewEvent.InterviewerRating != null)
-            {
-                <tr>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.StudentName)
-                    </td>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.InterviewerName)
-                    </td>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.InterviewEvent.Type)
-                    </td>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.InterviewEvent.InterviewerRating)
-                    </td>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.InterviewEvent.InterviewerFeedback)
-                    </td>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.InterviewEvent.ProcessFeedback)
-                    </td>
-                    <td>
-                        <a asp-action="Details" asp-route-id="@item.InterviewEvent.Id">Details</a>
-                    </td>
-                </tr>
-            }
-        }
-    </tbody>
-</table>
+    @if (!Model.Any())
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiEmptyStateViewModel("clipboard-check", "No feedback yet", "Submitted interview feedback will appear here.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                    <thead class="border-b border-line bg-soft text-muted">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">Student</th>
+                            <th class="px-5 py-3 font-semibold">Interviewer</th>
+                            <th class="px-5 py-3 font-semibold">Type</th>
+                            <th class="px-5 py-3 font-semibold">Rating</th>
+                            <th class="px-5 py-3 font-semibold">Interviewer feedback</th>
+                            <th class="px-5 py-3 font-semibold">Process feedback</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <th scope="row" class="px-5 py-4 font-semibold text-ink">@item.StudentName</th>
+                                <td class="px-5 py-4 text-muted">@item.InterviewerName</td>
+                                <td class="px-5 py-4 text-muted">@item.InterviewEvent.Type</td>
+                                <td class="px-5 py-4 text-muted">@item.InterviewEvent.InterviewerRating / 5</td>
+                                <td class="max-w-sm px-5 py-4 text-muted">@(item.InterviewEvent.InterviewerFeedback ?? "No written feedback")</td>
+                                <td class="max-w-sm px-5 py-4 text-muted">@(item.InterviewEvent.ProcessFeedback ?? "No written feedback")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>

@@ -1,41 +1,64 @@
-﻿@model IEnumerable<MockInterviews.Models.Entities.Setting>
+@using MockInterviews.Models.ViewModels.GlobalConfigVarsController
+@using MockInterviews.Models.ViewModels.Shared
+@model ConfigurationIndexViewModel
 
 @{
-    ViewData["Title"] = "Event Configuration";
+    ViewData["Title"] = "Configuration";
 }
 
-<h1>Event Configuration</h1>
+<section class="space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Global configuration", "Maintain the existing application settings and their values.")' />
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Value)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Value)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a>
-@*                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-*@            </td>
-        </tr>
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new UiFeedbackViewModel(UiFeedbackKind.Success, statusMessage, string.Empty)" />
+    }
+
+    @if (Model.Settings.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("settings", "No configuration settings", "Application settings will appear here when they are available.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="border-b border-line bg-soft text-sm text-muted">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">Setting</th>
+                            <th class="px-5 py-3 font-semibold">Current value</th>
+                            <th class="px-5 py-3 text-right font-semibold"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var setting in Model.Settings)
+                        {
+                            <tr>
+                                <th scope="row" class="px-5 py-4 font-mono text-sm font-semibold text-ink">@setting.Name</th>
+                                <td class="max-w-xl break-all px-5 py-4 text-muted">@setting.Value</td>
+                                <td class="px-5 py-4 text-right">
+                                    <a asp-action="Edit"
+                                       asp-route-id="@setting.Id"
+                                       class="text-sm font-semibold text-ink hover:underline"
+                                       data-dialog-target="configuration-edit-dialog"
+                                       data-dialog-value-id="@setting.Id"
+                                       data-dialog-value-name="@setting.Name"
+                                       data-dialog-value-value="@setting.Value">Edit</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>
+
+<partial name="_Dialogs" model="Model" />
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
 }
-    </tbody>
-</table>

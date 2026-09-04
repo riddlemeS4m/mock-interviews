@@ -4,11 +4,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using MockInterviews.Data.Seeds;
+using MockInterviews.Email;
 using MockInterviews.Extensions;
-using Moq;
 using Npgsql;
-using SendGrid;
-using SendGrid.Helpers.Mail;
 
 namespace MockInterviews.IntegrationTests.Infrastructure;
 
@@ -16,7 +14,7 @@ public sealed class MockInterviewsWebApplicationFactory : WebApplicationFactory<
 {
     private const string IntegrationDatabaseName = "mock_interviews_test_db";
     private readonly string _connectionString;
-    private readonly List<SendGridMessage> _sentEmails = [];
+    private readonly RecordingEmailTransport _emailTransport = new();
 
     public MockInterviewsWebApplicationFactory()
     {
@@ -29,12 +27,14 @@ public sealed class MockInterviewsWebApplicationFactory : WebApplicationFactory<
         // ConfigureAppConfiguration callback runs. Test-process environment values
         // make that early validation deterministic locally and in CI.
         Environment.SetEnvironmentVariable("ConnectionString__DefaultConnection", _connectionString);
-        Environment.SetEnvironmentVariable("SendGrid__ApiKey", "integration-test-key");
+        Environment.SetEnvironmentVariable("Email__Provider", "Smtp");
+        Environment.SetEnvironmentVariable("Email__Smtp__Host", "127.0.0.1");
+        Environment.SetEnvironmentVariable("Email__Smtp__Port", "1025");
         Environment.SetEnvironmentVariable("SuperUser__Email", "admin@example.test");
         Environment.SetEnvironmentVariable("SeededAdminPwd", "Integration123!");
     }
 
-    public IReadOnlyList<SendGridMessage> SentEmails => _sentEmails;
+    public IReadOnlyList<EmailMessage> SentEmails => _emailTransport.Messages;
 
     public async Task InitializeAsync()
     {
@@ -83,7 +83,7 @@ public sealed class MockInterviewsWebApplicationFactory : WebApplicationFactory<
             await context.Database.ExecuteSqlRawAsync(truncateSql);
         }
 
-        _sentEmails.Clear();
+        _emailTransport.Clear();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         await IdentitySeed.SeedRolesAsync(roleManager);
         var settings = scope.ServiceProvider.GetRequiredService<MockInterviews.Services.SettingsService>();
@@ -108,19 +108,16 @@ public sealed class MockInterviewsWebApplicationFactory : WebApplicationFactory<
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionString:DefaultConnection"] = _connectionString,
-            ["SendGrid:ApiKey"] = "integration-test-key",
+            ["Email:Provider"] = "Smtp",
+            ["Email:Smtp:Host"] = "127.0.0.1",
+            ["Email:Smtp:Port"] = "1025",
             ["SuperUser:Email"] = "admin@example.test",
             ["SeededAdminPwd"] = "Integration123!"
         }));
         builder.ConfigureTestServices(services =>
         {
-            services.RemoveAll<ISendGridClient>();
-            var emailClient = new Mock<ISendGridClient>();
-            emailClient
-                .Setup(client => client.SendEmailAsync(It.IsAny<SendGridMessage>(), It.IsAny<CancellationToken>()))
-                .Callback<SendGridMessage, CancellationToken>((message, _) => _sentEmails.Add(message))
-                .ReturnsAsync(new Response(HttpStatusCode.Accepted, null, null));
-            services.AddSingleton(emailClient.Object);
+            services.RemoveAll<IEmailTransport>();
+            services.AddSingleton<IEmailTransport>(_emailTransport);
 
             services.AddAuthentication(options =>
             {
@@ -131,6 +128,25 @@ public sealed class MockInterviewsWebApplicationFactory : WebApplicationFactory<
                 TestAuthenticationHandler.AuthenticationScheme,
                 _ => { });
         });
+    }
+
+    private sealed class RecordingEmailTransport : IEmailTransport
+    {
+        private readonly System.Collections.Concurrent.ConcurrentQueue<EmailMessage> _messages = new();
+
+        public IReadOnlyList<EmailMessage> Messages => _messages.ToArray();
+
+        public Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            _messages.Enqueue(message);
+            return Task.CompletedTask;
+        }
+
+        public void Clear()
+        {
+            while (_messages.TryDequeue(out _)) { }
+        }
     }
 
     private async Task MigrateDatabaseAsync()

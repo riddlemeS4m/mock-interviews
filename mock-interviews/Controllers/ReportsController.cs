@@ -10,7 +10,7 @@ using MockInterviews.Services;
 
 namespace MockInterviews.Controllers
 {
-    [Authorize(Roles = RolesConstants.AdminRole)]
+    [Authorize(Roles = RolesConstants.AdministrationRoles)]
     public class ReportsController : Controller
     {
         private readonly EventService _eventService;
@@ -28,45 +28,36 @@ namespace MockInterviews.Controllers
 
         public IActionResult Index()
         {
-            return View();
+            return RedirectToAction(nameof(EventStatistics));
         }
 
         public async Task<IActionResult> EventStatistics()
         {
-            var events = await _eventService.GetAllAsync();
+            var events = (await _eventService.GetAllAsync()).OrderBy(@event => @event.Date).ToList();
+            var eventIds = events.Select(@event => @event.Id).ToArray();
+            var studentCounts = await _context.Interviews
+                .Where(interview => eventIds.Contains(interview.Timeslot.EventId))
+                .GroupBy(interview => interview.Timeslot.EventId)
+                .Select(group => new { EventId = group.Key, Count = group.Select(interview => interview.StudentId).Distinct().Count() })
+                .ToDictionaryAsync(item => item.EventId, item => item.Count);
+            var interviewerCounts = await _context.InterviewerTimeslots
+                .Where(timeslot => eventIds.Contains(timeslot.Timeslot.EventId))
+                .GroupBy(timeslot => timeslot.Timeslot.EventId)
+                .Select(group => new { EventId = group.Key, Count = group.Select(timeslot => timeslot.InterviewerSignup.InterviewerId).Distinct().Count() })
+                .ToDictionaryAsync(item => item.EventId, item => item.Count);
+            var volunteerCounts = await _context.VolunteerTimeslots
+                .Where(timeslot => eventIds.Contains(timeslot.Timeslot.EventId))
+                .GroupBy(timeslot => timeslot.Timeslot.EventId)
+                .Select(group => new { EventId = group.Key, Count = group.Select(timeslot => timeslot.StudentId).Distinct().Count() })
+                .ToDictionaryAsync(item => item.EventId, item => item.Count);
 
-            var participantCounts = new List<ParticipantCountPerDateViewModel>();
-
-            foreach (var @event in events)
+            var participantCounts = events.Select(@event => new ParticipantCountPerDateViewModel
             {
-                var studentCount = await _context.Interviews
-                    .Where(e => e.Timeslot.EventId == @event.Id)
-                    .Select(e => e.StudentId)
-                    .Distinct()
-                    .CountAsync();
-
-                var interviewerCount = await _context.InterviewerTimeslots
-                    .Where(s => s.Timeslot.EventId == @event.Id)
-                    .Select(s => s.InterviewerSignup.InterviewerId)
-                    .Distinct()
-                    .CountAsync();
-
-                var volunteerCount = await _context.VolunteerTimeslots
-                    .Where(v => v.Timeslot.EventId == @event.Id)
-                    .Select(v => v.StudentId)
-                    .Distinct()
-                    .CountAsync();
-
-                var countViewModel = new ParticipantCountPerDateViewModel
-                {
-                    EventDate = @event,
-                    StudentCount = studentCount,
-                    InterviewerCount = interviewerCount,
-                    VolunteerCount = volunteerCount
-                };
-
-                participantCounts.Add(countViewModel);
-            }
+                EventDate = @event,
+                StudentCount = studentCounts.GetValueOrDefault(@event.Id),
+                InterviewerCount = interviewerCounts.GetValueOrDefault(@event.Id),
+                VolunteerCount = volunteerCounts.GetValueOrDefault(@event.Id)
+            }).ToList();
 
             var uniqueStudentCount = await _context.Interviews
                 .Where(x => x.Timeslot.Event.IsActive)
@@ -108,20 +99,7 @@ namespace MockInterviews.Controllers
                 .Where(x => x.IsActive)
                 .ToListAsync();
 
-            var countlist = new List<ParticipantCountViewModel>();
-            foreach (Timeslot timeslot in timeslots)
-            {
-                var studentCount = await _context.Interviews.Where(x => x.TimeslotId == timeslot.Id).CountAsync();
-                var volunteerCount = await _context.VolunteerTimeslots.Where(x => x.TimeslotId == timeslot.Id).CountAsync();
-                var interviewerCount = await _context.InterviewerTimeslots.Where(x => x.TimeslotId == timeslot.Id).CountAsync();
-                countlist.Add(new ParticipantCountViewModel
-                {
-                    Timeslot = timeslot,
-                    StudentCount = studentCount,
-                    InterviewerCount = interviewerCount,
-                    VolunteerCount = volunteerCount
-                });
-            }
+            var countlist = await BuildParticipantCountsAsync(timeslots);
 
             var viewModel = new TimeslotViewModel()
             {
@@ -141,21 +119,7 @@ namespace MockInterviews.Controllers
                     x.Event.IsActive)
                 .ToListAsync();
 
-            var countlist = new List<ParticipantCountViewModel>();
-            foreach (Timeslot timeslot in timeslots)
-            {
-                var studentCount = await _context.Interviews.Where(x => x.TimeslotId == timeslot.Id).CountAsync();
-                var volunteerCount = await _context.VolunteerTimeslots.Where(x => x.TimeslotId == timeslot.Id).CountAsync();
-                var interviewerCount = await _context.InterviewerTimeslots.Where(x => x.TimeslotId == timeslot.Id).CountAsync();
-                countlist.Add(new ParticipantCountViewModel
-                {
-                    Timeslot = timeslot,
-                    StudentCount = studentCount,
-                    InterviewerCount = interviewerCount,
-                    VolunteerCount = volunteerCount,
-                    Difference = studentCount - interviewerCount
-                });
-            }
+            var countlist = await BuildParticipantCountsAsync(timeslots, includeDifference: true);
 
             var top10underserved = countlist
                 .OrderByDescending(x => x.Difference)
@@ -174,6 +138,42 @@ namespace MockInterviews.Controllers
             };
 
             return View("AllocationReport", viewModel);
+        }
+
+        private async Task<List<ParticipantCountViewModel>> BuildParticipantCountsAsync(
+            List<Timeslot> timeslots,
+            bool includeDifference = false)
+        {
+            var timeslotIds = timeslots.Select(timeslot => timeslot.Id).ToArray();
+            var studentCounts = await _context.Interviews
+                .Where(interview => timeslotIds.Contains(interview.TimeslotId))
+                .GroupBy(interview => interview.TimeslotId)
+                .Select(group => new { TimeslotId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(item => item.TimeslotId, item => item.Count);
+            var interviewerCounts = await _context.InterviewerTimeslots
+                .Where(interviewerTimeslot => timeslotIds.Contains(interviewerTimeslot.TimeslotId))
+                .GroupBy(interviewerTimeslot => interviewerTimeslot.TimeslotId)
+                .Select(group => new { TimeslotId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(item => item.TimeslotId, item => item.Count);
+            var volunteerCounts = await _context.VolunteerTimeslots
+                .Where(volunteerTimeslot => timeslotIds.Contains(volunteerTimeslot.TimeslotId))
+                .GroupBy(volunteerTimeslot => volunteerTimeslot.TimeslotId)
+                .Select(group => new { TimeslotId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(item => item.TimeslotId, item => item.Count);
+
+            return timeslots.Select(timeslot =>
+            {
+                var studentCount = studentCounts.GetValueOrDefault(timeslot.Id);
+                var interviewerCount = interviewerCounts.GetValueOrDefault(timeslot.Id);
+                return new ParticipantCountViewModel
+                {
+                    Timeslot = timeslot,
+                    StudentCount = studentCount,
+                    InterviewerCount = interviewerCount,
+                    VolunteerCount = volunteerCounts.GetValueOrDefault(timeslot.Id),
+                    Difference = includeDifference ? studentCount - interviewerCount : null
+                };
+            }).ToList();
         }
     }
 }

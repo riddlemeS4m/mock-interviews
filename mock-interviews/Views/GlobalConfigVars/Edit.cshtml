@@ -1,38 +1,33 @@
-﻿@model MockInterviews.Models.Entities.Setting
+@model MockInterviews.Models.ViewModels.GlobalConfigVarsController.ConfigurationEditViewModel
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Edit configuration";
 }
 
-<h1>Edit Configuration</h1>
+<section class="max-w-xl space-y-6">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Edit configuration", "Update the value without changing the setting key.")' />
 
-<h4>Currently Editing:  '@Model.Name'</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" />
-            <input type="hidden" asp-for="Name" />
-            <p style="color:black;">
-                **For banners, a value of 0 hides the banner. A value of 1 shows the banner.
-            </p>
-            <div class="form-group">
-                <label asp-for="Value" class="control-label">@Model.Name</label>
-                <input asp-for="Value" class="form-control" />
-                <span asp-validation-for="Value" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
+    <form asp-action="Edit" method="post" class="space-y-5 rounded-card border border-line bg-surface p-6 shadow-card">
+        <input asp-for="Id" type="hidden" />
+        <input asp-for="Name" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="border-l-4 border-negative pl-4 text-sm text-negative"></div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+        <p class="font-mono text-sm font-semibold text-ink">@Model.Name</p>
+
+        <div>
+            <label asp-for="Value" class="block text-sm font-semibold text-ink"></label>
+            <input asp-for="Value" class="mt-2 block min-h-11 w-full rounded-md border border-line px-3 py-2" />
+            <span asp-validation-for="Value" class="text-sm text-negative"></span>
+        </div>
+
+        <div class="flex gap-3">
+            <a asp-action="Index" ui-variant="Secondary">Cancel</a>
+            <button type="submit" ui-variant="Primary">Save value</button>
+        </div>
+    </form>
+</section>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
 }

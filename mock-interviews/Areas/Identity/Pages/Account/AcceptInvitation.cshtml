@@ -1,0 +1,21 @@
+@page
+@model AcceptInvitationModel
+@{
+    ViewData["Title"] = "Set up account";
+}
+
+<div class="mx-auto max-w-md">
+    <h1 class="text-3xl font-semibold tracking-tight text-ink">Set up your account</h1>
+    <p class="mt-2 text-muted">Confirm <strong class="font-semibold text-ink">@Model.Email</strong> and choose a password to finish your invitation.</p>
+    <form method="post" class="mt-8 space-y-5 rounded-lg border border-line bg-surface p-6 shadow-sm">
+        <input asp-for="Input.UserId" type="hidden" />
+        <input asp-for="Input.EmailCode" type="hidden" />
+        <input asp-for="Input.PasswordCode" type="hidden" />
+        <div asp-validation-summary="ModelOnly" ui-validation-summary></div>
+        <div><label asp-for="Input.Password" ui-label></label><input asp-for="Input.Password" ui-control autocomplete="new-password" /><span asp-validation-for="Input.Password" ui-validation></span></div>
+        <div><label asp-for="Input.ConfirmPassword" ui-label></label><input asp-for="Input.ConfirmPassword" ui-control autocomplete="new-password" /><span asp-validation-for="Input.ConfirmPassword" ui-validation></span></div>
+        <button type="submit" ui-variant="Primary" class="w-full">Finish account setup</button>
+    </form>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

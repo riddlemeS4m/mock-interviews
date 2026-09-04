@@ -1,47 +1,24 @@
-﻿@model MockInterviews.Models.ViewModels.Shared.TimeRangeViewModel
+@model MockInterviews.Models.ViewModels.Shared.TimeRangeViewModel
 
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Cancel interviewer availability";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Cancel</h1>
+<section class="mx-auto max-w-2xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Cancel interviewer availability", "Confirm removal of this contiguous availability range.")' />
 
-<h3>Are you sure you want to cancel this?</h3>
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Date)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Date)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.StartTime)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.StartTime)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.EndTime)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.EndTime)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Location)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Location)
-        </dd>
-    </dl>
+    <div class="rounded-card border border-line bg-surface p-6 shadow-card">
+        <p class="text-ink">@Model.Date.ToString("MMMM d, yyyy") · @Model.StartTime–@Model.EndTime</p>
 
-    <form asp-action="DeleteRangeConfirmed" asp-controller="SignupInterviewerTimeslots">
-        @for (int i = 0; i < Model.TimeslotIds.Count; i++)
-        {
-            <input type="hidden" name="timeslots[@i]" value="@Model.TimeslotIds[i]" />
-        }
-        <input type="submit" value="Delete" class="btn btn-primary" /> |
-        @Html.ActionLink("Cancel", "Index", "SignupInterviewerTimeslots")
-    </form>
-</div>
+        <form asp-action="DeleteRangeConfirmed" method="post" class="mt-6 flex gap-3">
+            @foreach (var id in Model.TimeslotIds)
+            {
+                <input type="hidden" name="timeslots" value="@id" />
+            }
+            <button type="submit" ui-variant="Destructive">Cancel availability</button>
+            <a asp-action="Index" ui-variant="Quiet">Keep it</a>
+        </form>
+    </div>
+</section>

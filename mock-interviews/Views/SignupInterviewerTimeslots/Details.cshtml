@@ -1,59 +1,32 @@
-﻿@using MockInterviews.Data.Constants;
 @model MockInterviews.Models.Entities.InterviewerTimeslot
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Availability details";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Details</h1>
+<section class="mx-auto max-w-3xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Availability details", "Review this interviewer’s 30-minute availability block.")' />
 
-<div>
-    <h4>SignupInterviewerTimeslot</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.InterviewerSignup.FirstName)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.InterviewerSignup.FirstName) @Html.DisplayFor(model => model.InterviewerSignup.LastName)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Timeslot.Time)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Timeslot.Time)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Timeslot.Event.Date)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Timeslot.Event.Date)
-        </dd>
-        <dt>
-            @Html.DisplayNameFor(model => model.InterviewerSignup.Type)
-        </dt>
-        <dd>
-            @Html.DisplayFor(model => model.InterviewerSignup.Type)
-        </dd>
-        <dt>
-            @Html.DisplayNameFor(model => model.InterviewerSignup.InPerson)
-        </dt>
-
-        @if (Model.InterviewerSignup.IsVirtual && Model.InterviewerSignup.IsBehavioral)
-        {
-            <dd>@InterviewLocationConstants.InPerson/@InterviewLocationConstants.IsVirtual</dd>
-        }
-        else if (Model.InterviewerSignup.InPerson)
-        {
-            <dd>@InterviewLocationConstants.InPerson</dd>
-        }
-        else
-        {
-            <dd>@InterviewLocationConstants.IsVirtual</dd>
-        }
+    <dl class="grid gap-px overflow-hidden rounded-card border border-line bg-line shadow-card sm:grid-cols-2">
+        <div class="bg-surface p-5">
+            <dt class="text-sm text-muted">Interviewer</dt>
+            <dd class="mt-1 font-semibold text-ink">@Model.InterviewerSignup.FirstName @Model.InterviewerSignup.LastName</dd>
+        </div>
+        <div class="bg-surface p-5">
+            <dt class="text-sm text-muted">Time</dt>
+            <dd class="mt-1 font-semibold text-ink">@Model.Timeslot.Event.Date.ToString("MMM d, yyyy") · @Model.Timeslot.Time.ToString("h:mm tt")</dd>
+        </div>
+        <div class="bg-surface p-5">
+            <dt class="text-sm text-muted">Interview types</dt>
+            <dd class="mt-1 font-semibold text-ink">@Model.InterviewerSignup.Type</dd>
+        </div>
+        <div class="bg-surface p-5">
+            <dt class="text-sm text-muted">Preference</dt>
+            <dd class="mt-1 font-semibold text-ink">@(Model.InterviewerSignup.InPerson ? "In person" : "Virtual")</dd>
+        </div>
     </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
-</div>
+
+    <a asp-action="Index" ui-variant="Quiet">Back to availability</a>
+</section>

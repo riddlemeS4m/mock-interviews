@@ -8,6 +8,10 @@ if [[ -z "${CONDUCTOR_PORT:-}" ]]; then
 fi
 
 export ASPNETCORE_ENVIRONMENT=Development
+export Email__Provider=Smtp
+export Email__Smtp__Host=127.0.0.1
+export Email__Smtp__Port=$((CONDUCTOR_PORT + 2))
+export Email__Smtp__UseTls=false
 
 cd mock-interviews
 

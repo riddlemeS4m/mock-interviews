@@ -1,100 +1,30 @@
-﻿@using MockInterviews.Data;
-@using MockInterviews.Data.Constants;
-@model MockInterviews.Models.ViewModels.VolunteerEventsController.VolunteerEventSignupViewModel;
+@model MockInterviews.Models.ViewModels.VolunteerEventsController.VolunteerEventSignupViewModel
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Volunteer availability";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Sign up to Volunteer!</h1>
+<section class="mx-auto max-w-5xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Volunteer availability", "Choose every 30-minute volunteer time that works for you.")' />
 
-<hr />
-<div class="row">
-    <div class="col-md-2"></div>
-    <div class="col-md-8" id="center-everything">
-        <div>
-            <span asp-validation-for="SelectedEventIds1" class="text-danger"></span>
-        </div>
-        @if (!Model.SignedUp)
-        {
-            <div class="row">
-                <div class="col-md-6" style="padding-bottom: 10px;">
-                    <button type="button" class="selectAllButton btn btn-primary" data-target="SelectedEventIds1">Select Day @(Model.EventDates.IndexOf(Model.EventDates[0]) + 1)</button>
-                </div>
-                <br />
-                @if (Model.Timeslots[0].EventId != Model.Timeslots[^1].EventId)
-                {
-                    <div class="col-md-6">
-                        <button type="button" class="selectAllButton btn btn-primary" data-target="SelectedEventIds2">Select Day @(Model.EventDates.IndexOf(Model.EventDates[^1]) + 1)</button>
-                    </div>
-                }
-                <br />
-            </div>
-            <form asp-action="Create">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <h3>@Model.Timeslots[0].Event.Name</h3>
-                        <h4 class="date-column">@Model.Timeslots[0].Event.Date</h4>
-                        @foreach (var timeslot in Model.Timeslots)
-                        {
-                            if (timeslot.EventId == Model.Timeslots[0].EventId)
-                            {
-                                <div>
-                                    <input type="checkbox" id="@timeslot.Id" name="SelectedEventIds1" value="@timeslot.Id">
-                                    <input type="hidden" name="Timeslots[@timeslot.Id]" value="@timeslot.Id">
-                                    <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
-                                </div>
-                            }
-                        }
-                    </div>
-                    @if (Model.Timeslots[0].EventId != Model.Timeslots[^1].EventId)
-                    {
-                        <div class="col-md-6">
-                            <h3>@Model.Timeslots[^1].Event.Name</h3>
-                            <h4 class="date-column">@Model.Timeslots[^1].Event.Date</h4>
-                            @foreach (var timeslot in Model.Timeslots)
-                            {
-                                if (timeslot.EventId == Model.Timeslots[^1].EventId)
-                                {
-                                    <div>
-                                        <input type="checkbox" id="@timeslot.Id" name="SelectedEventIds2" value="@timeslot.Id">
-                                        <input type="hidden" name="Timeslots[@timeslot.Id]" value="@timeslot.Id">
-                                        <label class="time-column" for="@timeslot.Id">@timeslot.Time</label>
-                                    </div>
-                                }
-                            }
-                        </div>
-                    }
-
-                </div>
-                <div class="form-group">
-                    <input type="submit" value="Sign Up!" class="btn btn-primary" />
-                </div>
-                @if (User.IsInRole(RolesConstants.AdminRole))
-                {
-                    <div>
-                        <a asp-action="Index">Back to List</a>
-                    </div>
-                }
-            </form>
-        }
-        else
-        {
-            <div class="alert alert-danger" role="alert">
-                You've already signed up to volunteer for all available timeslots.
-            </div>
-        }
-
-    </div>
-    <div class="col-md-2"></div>
-</div>
+    @if (Model.SignedUp || Model.EventDays.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState" model='new UiEmptyStateViewModel("users", "No volunteer times available", "You have already selected all available volunteer times, or there are no open times right now.")' />
+    }
+    else
+    {
+        <form asp-action="Create" class="space-y-6">
+            <div asp-validation-summary="All" class="border-l-4 border-l-negative pl-4 text-sm text-negative"></div>
+            <partial name="ParticipantScheduling/_EventDayTimeslotSelector"
+                     model='new TimeslotSelectorViewModel(Model.EventDays, "SelectedTimeslotIds", true, true, "volunteer-timeslot")' />
+            <button type="submit" ui-variant="Primary">Save volunteer availability</button>
+        </form>
+    }
+</section>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    
-    <script>
-        selectAll();
-    </script>
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/timeslot-selection.js" asp-append-version="true"></script>
 }

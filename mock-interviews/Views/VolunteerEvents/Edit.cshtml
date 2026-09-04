@@ -1,39 +1,32 @@
-﻿@model MockInterviews.Models.Entities.VolunteerTimeslot
+@model MockInterviews.Models.Entities.VolunteerTimeslot
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Edit volunteer availability";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Edit</h1>
+<section class="mx-auto max-w-2xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Edit volunteer availability", "Update the selected volunteer time.")' />
 
-<h4>VolunteerEvent</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" />
-            <div class="form-group">
-                <label asp-for="StudentId" class="control-label"></label>
-                <select asp-for="StudentId" class="form-control" asp-items="ViewBag.StudentId"></select>
-                <span asp-validation-for="StudentId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="TimeslotId" class="control-label"></label>
-                <select asp-for="TimeslotId" class="form-control" asp-items="ViewBag.TimeslotId"></select>
-                <span asp-validation-for="TimeslotId" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
+    <form asp-action="Edit" method="post" class="space-y-6 rounded-card border border-line bg-surface p-6 shadow-card">
+        <div asp-validation-summary="ModelOnly" class="border-l-4 border-l-negative pl-4 text-sm text-negative"></div>
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="StudentId" />
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+        <div>
+            <label asp-for="TimeslotId" class="block text-sm font-semibold text-ink">Timeslot</label>
+            <select asp-for="TimeslotId" asp-items="ViewBag.TimeslotId" class="mt-2 min-h-11 w-full rounded-md border border-line px-3 py-2"></select>
+            <span asp-validation-for="TimeslotId" class="text-sm text-negative"></span>
+        </div>
+
+        <div class="flex gap-3">
+            <button type="submit" ui-variant="Primary">Save changes</button>
+            <a asp-action="Index" ui-variant="Quiet">Cancel</a>
+        </div>
+    </form>
+</section>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
 }

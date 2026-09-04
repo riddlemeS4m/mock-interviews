@@ -1,58 +1,59 @@
-﻿@model MockInterviews.Models.ViewModels.ReportsController.EventStatisticsViewModel
+@model MockInterviews.Models.ViewModels.ReportsController.EventStatisticsViewModel
 
 @{
-    ViewData["Title"] = "Event Statistics";
+    ViewData["Title"] = "Event statistics";
 }
 
-<h1>Event Statistics</h1>
-<hr />
+<section class="space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Event statistics", "Participant counts by event, with active-event totals across the program.")' />
 
-<div>
-    <h3>
-        Total Students signed up: @Model.TotalStudents
-    </h3>
-    <h3>
-        Total Interviewers signed up: @Model.TotalInterviewers
-    </h3>
-    <h3>
-        Total Volunteers signed up: @Model.TotalVolunteers
-    </h3>
-</div>
-<p></p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.EventStatistics[0].EventDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.EventStatistics[0].StudentCount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.EventStatistics[0].InterviewerCount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.EventStatistics[0].VolunteerCount)
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.EventStatistics)
-        {
-            <tr>
-                <td>
-                    @(item.EventDate?.Name ?? "Not assigned")
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.StudentCount)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.InterviewerCount)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.VolunteerCount)
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+    <div class="grid gap-4 sm:grid-cols-3">
+        <article class="rounded-card border border-line bg-surface p-5 shadow-card">
+            <p class="text-sm font-semibold text-muted">Students</p>
+            <p class="mt-2 text-3xl font-semibold tracking-tight text-ink">@Model.TotalStudents</p>
+        </article>
+        <article class="rounded-card border border-line bg-surface p-5 shadow-card">
+            <p class="text-sm font-semibold text-muted">Interviewers</p>
+            <p class="mt-2 text-3xl font-semibold tracking-tight text-ink">@Model.TotalInterviewers</p>
+        </article>
+        <article class="rounded-card border border-line bg-surface p-5 shadow-card">
+            <p class="text-sm font-semibold text-muted">Volunteers</p>
+            <p class="mt-2 text-3xl font-semibold tracking-tight text-ink">@Model.TotalVolunteers</p>
+        </article>
+    </div>
+
+    @if (Model.EventStatistics.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiEmptyStateViewModel("calendar-days", "No events yet", "Event-level participant counts will appear here after event dates are created.")' />
+    }
+    else
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="border-b border-line bg-soft text-sm text-muted">
+                        <tr>
+                            <th scope="col" class="px-5 py-3 font-semibold">Event</th>
+                            <th scope="col" class="px-5 py-3 font-semibold">Students</th>
+                            <th scope="col" class="px-5 py-3 font-semibold">Interviewers</th>
+                            <th scope="col" class="px-5 py-3 font-semibold">Volunteers</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var statistic in Model.EventStatistics)
+                        {
+                            <tr>
+                                <th scope="row" class="px-5 py-4 font-semibold text-ink">@(statistic.EventDate?.Name ?? "Not assigned")</th>
+                                <td class="px-5 py-4 text-muted">@statistic.StudentCount</td>
+                                <td class="px-5 py-4 text-muted">@statistic.InterviewerCount</td>
+                                <td class="px-5 py-4 text-muted">@statistic.VolunteerCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>

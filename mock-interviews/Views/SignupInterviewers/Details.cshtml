@@ -1,60 +1,36 @@
-﻿@model MockInterviews.Models.ViewModels.SignupInterviewersController.SignupInterviewerViewModel
+@model MockInterviews.Models.ViewModels.SignupInterviewersController.SignupInterviewerViewModel
 
 @{
-    ViewData["Title"] = "Interviewer Schedule";
+    ViewData["Title"] = "Interviewer details";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
+    var interviewer = Model.SignupInterviewer;
 }
 
-<h1>Details</h1>
+<section class="mx-auto max-w-3xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Interviewer details", "Review an interviewer’s active signup preferences.")' />
 
-<div>
-    <h4>SignupInterviewer</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SignupInterviewer.FirstName)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SignupInterviewer.FirstName)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SignupInterviewer.LastName)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SignupInterviewer.LastName)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SignupInterviewer.IsVirtual)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SignupInterviewer.IsVirtual)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SignupInterviewer.InPerson)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SignupInterviewer.InPerson)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SignupInterviewer.IsTechnical)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SignupInterviewer.IsTechnical)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SignupInterviewer.IsBehavioral)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SignupInterviewer.IsBehavioral)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SignupInterviewer.InterviewerId)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SignupInterviewer.InterviewerId)
-        </dd>
+    <dl class="grid gap-px overflow-hidden rounded-card border border-line bg-line shadow-card sm:grid-cols-2">
+        <div class="bg-surface p-5">
+            <dt class="text-sm text-muted">Name</dt>
+            <dd class="mt-1 font-semibold text-ink">@interviewer.FirstName @interviewer.LastName</dd>
+        </div>
+        <div class="bg-surface p-5">
+            <dt class="text-sm text-muted">Preference</dt>
+            <dd class="mt-1 font-semibold text-ink">@(interviewer.InPerson ? "In person" : "Virtual")</dd>
+        </div>
+        <div class="bg-surface p-5">
+            <dt class="text-sm text-muted">Interview types</dt>
+            <dd class="mt-1 font-semibold text-ink">@interviewer.Type</dd>
+        </div>
+        <div class="bg-surface p-5">
+            <dt class="text-sm text-muted">Lunch</dt>
+            <dd class="mt-1 font-semibold text-ink">@(interviewer.Lunch == true ? "Requested" : "Not requested")</dd>
+        </div>
     </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.SignupInterviewer.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
-</div>
+
+    <div class="flex gap-3">
+        <a asp-action="Edit" asp-route-id="@interviewer.Id" ui-variant="Secondary">Edit</a>
+        <a asp-action="Index" ui-variant="Quiet">Back to check-in</a>
+    </div>
+</section>

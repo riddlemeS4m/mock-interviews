@@ -1,42 +1,29 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
 using MockInterviews.Models.Entities;
-using MockInterviews.Models.Identity;
-using MockInterviews.Models.ViewModels.Shared;
 using MockInterviews.Models.ViewModels.SignupInterviewersController;
 using MockInterviews.Services.SignalR;
-using SendGrid;
 
 namespace MockInterviews.Controllers
 {
     public class SignupInterviewersController : Controller
     {
         private readonly MockInterviewsDbContext _context;
-        private readonly ISendGridClient _sendGridClient;
-        private readonly IHubContext<AvailableInterviewersHub> _hubContext;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ILogger<SignupInterviewersController> _logger;
+        private readonly IHubContext<AssignInterviewsHub> _hubContext;
 
         public SignupInterviewersController(MockInterviewsDbContext context,
-            ISendGridClient sendGridClient,
-            IHubContext<AvailableInterviewersHub> hubContext,
-            UserManager<ApplicationUser> userManager,
-            ILogger<SignupInterviewersController> logger)
+            IHubContext<AssignInterviewsHub> hubContext)
         {
             _context = context;
-            _sendGridClient = sendGridClient;
             _hubContext = hubContext;
-            _userManager = userManager;
-            _logger = logger;
         }
 
         // GET: SignupInterviewers
-        [Authorize(Roles = RolesConstants.AdminRole + "," + RolesConstants.InterviewerRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Index()
         {
             var sits = await _context.InterviewerTimeslots
@@ -56,7 +43,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: SignupInterviewers/Details/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null || _context.InterviewerSignups == null)
@@ -79,33 +66,8 @@ namespace MockInterviews.Controllers
             return View(vm);
         }
 
-        // GET: SignupInterviewers/Create
-        [Authorize(Roles = RolesConstants.InterviewerRole)]
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: SignupInterviewers/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [Authorize(Roles = RolesConstants.InterviewerRole)]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,FirstName,LastName,IsVirtual,InPerson,IsTechnical,IsBehavioral,InterviewerId")] InterviewerSignup signupInterviewer)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(signupInterviewer);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(signupInterviewer);
-        }
-
         // GET: SignupInterviewers/Edit/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null || _context.InterviewerSignups == null)
@@ -125,7 +87,7 @@ namespace MockInterviews.Controllers
         // POST: SignupInterviewers/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,FirstName,LastName,IsVirtual,InPerson,IsTechnical,IsBehavioral,InterviewerId")] InterviewerSignup signupInterviewer)
@@ -160,7 +122,7 @@ namespace MockInterviews.Controllers
         }
 
         // GET: SignupInterviewers/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null || _context.InterviewerSignups == null)
@@ -179,7 +141,7 @@ namespace MockInterviews.Controllers
         }
 
         // POST: SignupInterviewers/Delete/5
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -194,7 +156,9 @@ namespace MockInterviews.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [Authorize(Roles = RolesConstants.AdminRole)]
+        [Authorize(Roles = RolesConstants.AdministrationRoles)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CheckInInterviewer(int id)
         {
             if (_context.InterviewerSignups == null || id == 0)
@@ -217,7 +181,7 @@ namespace MockInterviews.Controllers
 
                 await UpdateHub();
 
-                //return NoContent();
+                TempData["StatusMessage"] = si.CheckedIn ? "Interviewer checked in." : "Interviewer checked out.";
                 return RedirectToAction(nameof(Index));
             }
             catch
@@ -230,50 +194,7 @@ namespace MockInterviews.Controllers
             return (_context.InterviewerSignups?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
-        private async Task UpdateHub()
-        {
-            var busyInterviewers = await _context.Interviews
-                .Include(x => x.InterviewerTimeslot)
-                // EF Core parses Include expressions without dereferencing an optional navigation.
-                .ThenInclude(x => x!.InterviewerSignup)
-                .Where(x => x.Status == StatusConstants.Ongoing && x.InterviewerTimeslot != null)
-                .Select(x => x.InterviewerTimeslot!.InterviewerSignup.InterviewerId)
-                .Distinct()
-                .ToListAsync();
-
-            var interviewers = await _context.InterviewerSignups
-                .Where(x => x.CheckedIn && !busyInterviewers.Contains(x.InterviewerId))
-                .Select(x => new AvailableInterviewer
-                {
-                    InterviewerId = x.InterviewerId,
-                    InterviewType = x.Type ?? string.Empty,
-                })
-            .ToListAsync();
-
-            foreach (var iv in interviewers)
-            {
-                iv.Name = await _userManager.Users
-                    .Where(x => x.Id == iv.InterviewerId)
-                    .Select(x => x.FirstName + " " + x.LastName)
-                    .FirstOrDefaultAsync() ?? "Deleted user";
-
-                var date = DateTime.UtcNow.Date;
-                //var date = new DateTime(2024, 2, 8);
-
-                iv.Room = await _context.InterviewerLocations
-                    .Include(x => x.Location)
-                    .Include(x => x.Event)
-                    .Where(x => x.InterviewerId == iv.InterviewerId &&
-                        x.Event != null && x.Event.Date == date && x.Location != null)
-                    .Select(x => x.Location!.Room)
-                    .FirstOrDefaultAsync() ?? "Not Assigned";
-            }
-
-            interviewers.Sort((x, y) => string.Compare(x.Name, y.Name));
-
-            _logger.LogInformation("Requesting all clients to update their available interviewers lists...");
-            await _hubContext.Clients.All.SendAsync("ReceiveAvailableInterviewersUpdate", interviewers);
-            _logger.LogInformation("Requested.");
-        }
+        private Task UpdateHub()
+            => _hubContext.Clients.All.SendAsync("BoardChanged");
     }
 }

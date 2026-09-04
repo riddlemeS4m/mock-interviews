@@ -1,32 +1,15 @@
-﻿@model MockInterviews.Models.ViewModels.LocationInterviewersController.LocationInterviewerWithName
+@model MockInterviews.Models.ViewModels.LocationInterviewersController.LocationInterviewerWithName
 
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Delete room assignment";
 }
 
-@*<h1>Delete</h1>*@
-
-<h3>Are you sure you want to delete this interviewer's location?</h3>
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.InterviewerName)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.InterviewerName)
-        </dd>
-        <dt class="col-sm-2">
-            Room
-        </dt>
-        <dd class="col-sm-10">
-            @(Model.LocationInterviewer.Location?.Room ?? "Not assigned")
-        </dd>
-    </dl>
-    
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="LocationInterviewer.Id" />
-        <input type="submit" value="Delete" class="btn btn-primary" /> |
-        <a asp-action="Index">Back to List</a>
-    </form>
-</div>
+<section class="max-w-xl space-y-6">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Delete room assignment", "This action cannot be undone.")' />
+    <div class="rounded-card border border-negative/30 bg-surface p-6 shadow-card">
+        <p class="leading-6 text-muted">Remove the room assignment for <strong class="text-ink">@Model.InterviewerName</strong>?</p>
+        <dl class="mt-5 space-y-3 text-sm"><div class="grid gap-1 sm:grid-cols-2"><dt class="font-semibold text-ink">Room</dt><dd class="text-muted">@(Model.LocationInterviewer.Location?.Room ?? "Unassigned")</dd></div></dl>
+        <form asp-action="Delete" method="post" class="mt-7 flex gap-3"><input name="id" value="@Model.LocationInterviewer.Id" type="hidden" /><a asp-action="Index" ui-variant="Secondary">Cancel</a><button type="submit" ui-variant="Destructive">Delete assignment</button></form>
+    </div>
+</section>

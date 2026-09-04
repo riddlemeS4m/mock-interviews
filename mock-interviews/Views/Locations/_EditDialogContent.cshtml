@@ -1,0 +1,15 @@
+@using MockInterviews.Models.Entities
+@model Location
+
+@{
+    ViewData["FieldIdPrefix"] = "location-edit";
+}
+
+<form asp-action="Edit" method="post">
+    <input asp-for="Id" type="hidden" data-dialog-field="id" />
+    <partial name="_FormFields" model="Model" />
+    <div class="mt-7 flex flex-wrap justify-end gap-3">
+        <button type="button" ui-variant="Secondary" data-dialog-close>Cancel</button>
+        <button type="submit" ui-variant="Primary">Save changes</button>
+    </div>
+</form>

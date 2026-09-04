@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using MockInterviews.Models.Identity;
+using MockInterviews.Services;
 
 namespace MockInterviews.Areas.Identity.Pages.Account
 {
@@ -15,11 +16,19 @@ namespace MockInterviews.Areas.Identity.Pages.Account
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<LoginModel> _logger;
+        private readonly AccountRoleProvisioner _roleProvisioner;
+        private readonly UserProfileCompletionService _profileCompletionService;
 
-        public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(
+            SignInManager<ApplicationUser> signInManager,
+            ILogger<LoginModel> logger,
+            AccountRoleProvisioner roleProvisioner,
+            UserProfileCompletionService profileCompletionService)
         {
             _signInManager = signInManager;
             _logger = logger;
+            _roleProvisioner = roleProvisioner;
+            _profileCompletionService = profileCompletionService;
         }
 
         /// <summary>
@@ -109,6 +118,17 @@ namespace MockInterviews.Areas.Identity.Pages.Account
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
+                    var user = await _signInManager.UserManager.FindByEmailAsync(Input.Email);
+                    if (user is not null)
+                    {
+                        await _roleProvisioner.ProvisionStudentRoleAsync(user);
+                        await _signInManager.RefreshSignInAsync(user);
+                        if (await _profileCompletionService.IsRequiredAsync(user))
+                        {
+                            return RedirectToPage("/Account/Manage/ProfileEdit", new { ReturnUrl = returnUrl });
+                        }
+                    }
+
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)

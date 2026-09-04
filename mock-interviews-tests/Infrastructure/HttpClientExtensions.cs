@@ -26,6 +26,22 @@ public static partial class HttpClientExtensions
             new KeyValuePair<string, string>("__RequestVerificationToken", token))));
     }
 
+    public static async Task<HttpResponseMessage> PostCsvWithAntiforgeryAsync(
+        this HttpClient client,
+        string path,
+        string csv)
+    {
+        var page = await client.GetAsync(path);
+        page.EnsureSuccessStatusCode();
+        var token = AntiforgeryToken().Match(await page.Content.ReadAsStringAsync()).Groups["token"].Value;
+        Assert.False(string.IsNullOrWhiteSpace(token));
+
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent(token), "__RequestVerificationToken");
+        content.Add(new StringContent(csv), "RosterData", "roster.csv");
+        return await client.PostAsync(path, content);
+    }
+
     [GeneratedRegex("<input[^>]*name=\"__RequestVerificationToken\"[^>]*value=\"(?<token>[^\"]+)\"", RegexOptions.IgnoreCase)]
     private static partial Regex AntiforgeryToken();
 }

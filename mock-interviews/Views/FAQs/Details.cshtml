@@ -1,31 +1,26 @@
-﻿@using MockInterviews.Models.Entities
-@model Question
+@model MockInterviews.Models.Entities.Question
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "FAQ details";
 }
 
-<h1>Details</h1>
+<section class="mx-auto max-w-2xl space-y-6">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("FAQ details", "Review this question and answer.")' />
 
-<div>
-    <h4>FAQs</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Q)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Q)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.A)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.A)
-        </dd>
+    <dl class="divide-y divide-line rounded-card border border-line bg-surface shadow-card">
+        <div class="p-5">
+            <dt class="text-sm text-muted">Question</dt>
+            <dd class="mt-1 font-semibold text-ink">@Model.Q</dd>
+        </div>
+        <div class="p-5">
+            <dt class="text-sm text-muted">Answer</dt>
+            <dd class="mt-1 text-ink">@(Model.A ?? "Awaiting answer")</dd>
+        </div>
     </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
-</div>
+
+    <div class="flex gap-3">
+        <a asp-action="Index" ui-variant="Secondary">Back</a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" ui-variant="Primary">Edit FAQ</a>
+    </div>
+</section>

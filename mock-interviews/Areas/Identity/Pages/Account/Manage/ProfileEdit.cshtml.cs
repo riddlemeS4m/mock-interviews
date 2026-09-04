@@ -38,6 +38,9 @@ namespace MockInterviews.Areas.Identity.Pages.Account.Manage
         [BindProperty]
         public InputModel Input { get; set; } = null!; // Populated by MVC model binding before page handlers access it.
 
+        [BindProperty(SupportsGet = true)]
+        public string? ReturnUrl { get; set; }
+
         /// <summary>
         ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
@@ -49,8 +52,10 @@ namespace MockInterviews.Areas.Identity.Pages.Account.Manage
             ///     directly from your code. This API may change or be removed in future releases.
             /// </summary>
             ///
+            [Required]
             [Display(Name = "First Name")]
             public string? FirstName { get; set; }
+            [Required]
             [Display(Name = "Last Name")]
             public string? LastName { get; set; }
             [Phone]
@@ -98,6 +103,11 @@ namespace MockInterviews.Areas.Identity.Pages.Account.Manage
             if (user == null)
             {
                 return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+            }
+
+            if (User.IsInRole(RolesConstants.InterviewerRole) && string.IsNullOrWhiteSpace(Input.Company))
+            {
+                ModelState.AddModelError("Input.Company", "Company is required for interviewers.");
             }
 
             if (!ModelState.IsValid)
@@ -150,6 +160,11 @@ namespace MockInterviews.Areas.Identity.Pages.Account.Manage
 
             await _signInManager.RefreshSignInAsync(user);
             StatusMessage = "Your profile has been updated";
+            if (!string.IsNullOrWhiteSpace(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
+            {
+                return LocalRedirect(ReturnUrl);
+            }
+
             return RedirectToPage();
         }
     }

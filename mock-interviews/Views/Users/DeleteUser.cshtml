@@ -1,39 +1,24 @@
-﻿@model MockInterviews.Models.Identity.ApplicationUser
+@model MockInterviews.Models.Identity.ApplicationUser
+
 @{
-    ViewData["Title"] = "DeleteUser";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Delete account";
 }
 
-<h1>Delete</h1>
+<section class="max-w-xl space-y-6">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Delete account", "This action cannot be undone.")' />
 
-<h3>Are you sure you want to delete @Model.FirstName's account?</h3>
-<div>
-    <hr />
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <dl class="row">
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.FirstName)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.FirstName)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.LastName)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.LastName)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Email)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Email)
-        </dd>
-    </dl>
+    <div class="rounded-card border border-negative/30 bg-surface p-6 shadow-card">
+        <div asp-validation-summary="ModelOnly" class="border-l-4 border-negative pl-4 text-sm text-negative"></div>
+        <p class="leading-6 text-muted">
+            Delete <strong class="text-ink">@Model.FirstName @Model.LastName</strong> (@Model.Email)?
+            Accounts with related interview, signup, or assignment records cannot be deleted.
+        </p>
 
-    <form asp-controller="Users" asp-action="DeleteUserConfirmed">
-        <input type="hidden" asp-for="@Model.Id" />
-        <input type="submit" value="Delete" class="btn btn-primary" /> @*|
-        <a asp-action="Index">Back to List</a>*@
-    </form>
-</div>
+        <form asp-action="DeleteUserConfirmed" method="post" class="mt-7 flex gap-3">
+            <input name="id" value="@Model.Id" type="hidden" />
+            <a asp-controller="UserRoles" asp-action="Index" ui-variant="Secondary">Cancel</a>
+            <button type="submit" ui-variant="Destructive">Delete account</button>
+        </form>
+    </div>
+</section>

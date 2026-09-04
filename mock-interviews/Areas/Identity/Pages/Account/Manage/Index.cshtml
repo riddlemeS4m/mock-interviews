@@ -1,64 +1,36 @@
-﻿@page
+@page
 @using MockInterviews.Data.Constants
 @model IndexModel
 @{
     ViewData["Title"] = "Profile";
     ViewData["ActivePage"] = ManageNavPages.Index;
+    var initials = $"{Model.Input.FirstName?.FirstOrDefault()}{Model.Input.LastName?.FirstOrDefault()}".ToUpperInvariant();
 }
 
-<h3>@Model.Input.FirstName @Model.Input.LastName</h3>
-
-<div class="row">
-    <div class="col-md-6" >
-        <div style="padding-bottom: 15px;">
-            <label>Phone number:</label>
-            @if(Model.Input.PhoneNumber != null)
-            {
-                <span>@Model.Input.PhoneNumber</span>
-            }
-            else
-            {
-                <span>No phone number specified</span>
-            }
-        </div>
-        <div>
-        </div>
-
-        @if (User.IsInRole(RolesConstants.StudentRole))
-        {
-            <div style="padding-bottom: 15px;">
-                <label>Class:</label>
-                @if(Model.Input.Class != 0)
-                {
-                    <span>@ClassConstants.GetClassText(Model.Input.Class)</span>
-                }
-                else
-                {
-                    <span>No class specified</span>
-                }
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-ink">Profile</h1>
+        <p class="mt-1 text-sm text-muted">The contact and participant information associated with your account.</p>
+    </div>
+    <div class="rounded-card border border-line bg-surface p-6 shadow-sm">
+        <div class="flex items-center gap-4 border-b border-line pb-6">
+            <div class="flex size-14 shrink-0 items-center justify-center rounded-full bg-ink text-lg font-semibold text-white" aria-hidden="true">@initials</div>
+            <div>
+                <h2 class="text-xl font-semibold text-ink">@Model.Input.FirstName @Model.Input.LastName</h2>
+                <p class="text-sm text-muted">Mock Interviews account</p>
             </div>
-        }
-        @if(User.IsInRole(RolesConstants.InterviewerRole))
-        {
-            <div style="padding-bottom: 15px;">
-                <label>Company:</label>
-                @if (Model.Input.Company != null)
-                {
-                    <span>@Model.Input.Company</span>
-                }
-                else
-                {
-                    <span>No company specified</span>
-                }
-            </div>
-        }
-
-        <div style="padding-bottom: 15px;">
-            <label>Profile Picture:</label>
-            <br />
-            <img src="~/images/SabanHeadshot.jpg"
-                 alt="Default profile picture"
-                 style="width: 350px; height: 350px; object-fit: cover" />
         </div>
+        <dl class="grid gap-x-8 gap-y-5 pt-6 sm:grid-cols-2">
+            <div><dt class="text-sm font-semibold text-ink">Phone number</dt><dd class="mt-1 text-sm text-muted">@(Model.Input.PhoneNumber ?? "Not provided")</dd></div>
+            @if (User.IsInRole(RolesConstants.StudentRole))
+            {
+                <div><dt class="text-sm font-semibold text-ink">Class</dt><dd class="mt-1 text-sm text-muted">@(Model.Input.Class != 0 ? ClassConstants.GetClassText(Model.Input.Class) : "Not provided")</dd></div>
+            }
+            @if (User.IsInRole(RolesConstants.InterviewerRole))
+            {
+                <div><dt class="text-sm font-semibold text-ink">Company</dt><dd class="mt-1 text-sm text-muted">@(Model.Input.Company ?? "Not provided")</dd></div>
+            }
+        </dl>
+        <a asp-page="./ProfileEdit" ui-variant="Primary" class="mt-6">Edit profile</a>
     </div>
 </div>

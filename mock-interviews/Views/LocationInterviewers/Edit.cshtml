@@ -1,40 +1,23 @@
-﻿@model MockInterviews.Models.ViewModels.LocationInterviewersController.LocationInterviewerCreateViewModel
+@model MockInterviews.Models.ViewModels.LocationInterviewersController.LocationInterviewerCreateViewModel
 
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Update room assignment";
 }
 
-<h1>Update</h1>
+<section class="max-w-xl space-y-6">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Update room assignment", $"Choose a room for {Model.InterviewerName}.")' />
 
-<h4>Choose @Model.InterviewerName's Location</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="LocationInterviewer.Id" />
-            <input type="hidden" asp-for="LocationInterviewer.InterviewerId" />
-            <input type="hidden" asp-for="LocationInterviewer.EventId" />
-            <input type="hidden" asp-for="LocationInterviewer.Preference" />
-@*            <div class="form-group">
-                <label asp-for="@Model.LocationInterviewer.InterviewerId" class="control-label">Interviewer</label>
-                <select asp-for="@Model.LocationInterviewer.InterviewerId" class="form-control" asp-items="@Model.InterviewerNames"></select>
-            </div>
-*@            <div class="form-group">
-                <label asp-for="@Model.LocationInterviewer.LocationId" class="control-label">Location</label>
-                <select asp-for="@Model.LocationInterviewer.LocationId" class="form-control" asp-items="@Model.Locations"></select>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Update" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
-
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+    <form asp-action="Edit" method="post" class="space-y-5 rounded-card border border-line bg-surface p-6 shadow-card">
+        <input asp-for="LocationInterviewer.Id" type="hidden" />
+        <input asp-for="LocationInterviewer.InterviewerId" type="hidden" />
+        <input asp-for="LocationInterviewer.EventId" type="hidden" />
+        <input asp-for="LocationInterviewer.Preference" type="hidden" />
+        <div asp-validation-summary="ModelOnly" class="border-l-4 border-negative pl-4 text-sm text-negative"></div>
+        <div>
+            <label asp-for="LocationInterviewer.LocationId" class="block text-sm font-semibold text-ink">Room or location</label>
+            <select asp-for="LocationInterviewer.LocationId" asp-items="Model.Locations" class="mt-2 block min-h-11 w-full rounded-md border border-line px-3 py-2"><option value="">Leave unassigned</option></select>
+        </div>
+        <div class="flex gap-3"><a asp-action="Index" ui-variant="Secondary">Cancel</a><button type="submit" ui-variant="Primary">Save assignment</button></div>
+    </form>
+</section>

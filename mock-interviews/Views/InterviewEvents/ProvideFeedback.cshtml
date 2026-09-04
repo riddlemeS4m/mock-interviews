@@ -1,80 +1,76 @@
-﻿@model MockInterviews.Models.ViewModels.InterviewEventsController.InterviewEventViewModel
+@model FeedbackFormViewModel
 
 @{
-    ViewData["Title"] = "ProvideFeedback";
+    ViewData["Title"] = "Give feedback";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Provide Feedback</h1>
-
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <dl>
-            <dt>Date</dt>
-            <dd>@Model.InterviewEvent.InterviewerTimeslot?.Timeslot.Event.Date</dd>
-            <dt>Time</dt>
-            <dd>@Model.InterviewEvent.InterviewerTimeslot?.Timeslot.Time</dd>
-            <dt>Interviewer</dt>
-            <dd>@Model.InterviewerName</dd>
-            <dt>Focus</dt>
-            <dd>@Model.InterviewEvent.Type</dd>
-        </dl>
-        
-        <form asp-action="ProvideFeedback">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" name="id" value="@Model.InterviewEvent.Id" />
-            <input type="hidden" name="Id" value="@Model.InterviewEvent.Id" />
-@*            <input type="hidden" asp-for="InterviewEvent.SignupInterviewerTimeslot.SignupInterviewer.InterviewerId" />
-*@
-            @*<div class="form-group">
-                <label asp-for="InterviewEvent.InterviewType" class="control-label"></label>
-                <select asp-for="InterviewEvent.InterviewType" class="form-control" asp-items='@InterviewTypesConstants.GetInterviewTypesOptions()'>
-                    <option value="">-- Select One --</option>
-                </select>
-                <span asp-validation-for="InterviewEvent.InterviewType" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="InterviewEvent.Status" class="control-label"></label>
-                <select asp-for="InterviewEvent.Status" class="form-control" asp-items='@StatusConstants.GetStatusOptions()'>
-                    <option value="">-- Select One --</option>
-                </select>
-                <span asp-validation-for="InterviewEvent.Status" class="text-danger"></span>
-            </div>*@
-            <div class="form-group">
-            <label asp-for="InterviewEvent.InterviewerRating" class="control-label"></label>
-            <input name="InterviewerRating" value="@Model.InterviewEvent.InterviewerRating" class="form-control" />
-            </div>
-            <div class="form-group">
-            <label asp-for="InterviewEvent.InterviewerFeedback" class="control-label"></label>
-            <input name="InterviewerFeedback" value="@Model.InterviewEvent.InterviewerFeedback" class="form-control" />
-            </div>
-            <div class="form-group">
-            <label asp-for="InterviewEvent.ProcessFeedback" class="control-label"></label>
-            <input name="ProcessFeedback" value="@Model.InterviewEvent.ProcessFeedback" class="form-control" />
-            </div>
-            @*<div class="form-group">
-                <label asp-for="InterviewEvent.SignupInterviewerTimeslot.SignupInterviewer.InterviewerId" class="control-label"></label>
-                <select asp-for="InterviewEvent.SignupInterviewerTimeslot.SignupInterviewer.InterviewerId" class="form-control" asp-items="@Model.InterviewerNames"></select>
-                <span asp-validation-for="InterviewEvent.SignupInterviewerTimeslot.SignupInterviewer.InterviewerId" class="text-danger"></span>
-            </div>*@
-            @*<div class="form-group">
-                <label asp-for="InterviewerId" class="control-label"></label>
-                <select asp-for="InterviewerId" class="form-control" asp-items="@Model.InterviewerNames"></select>
-                <span asp-validation-for="InterviewerId" class="text-danger"></span>
-            </div>*@
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
+<section class="mx-auto max-w-3xl space-y-8">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader"
+                 model='new UiPageHeaderViewModel("Give feedback", "Tell us about this completed interview. A rating of 1 is poor and 5 is excellent.")' />
+        <a asp-action="FeedbackIndex" class="shrink-0 text-sm font-semibold text-ink hover:underline">Back to feedback</a>
     </div>
-</div>
 
-<div>
-    <a asp-controller="InterviewEvents" asp-action="FeedbackIndex">Return to Feedback Portal</a>
-</div>
+    <div class="rounded-card border border-line bg-surface p-5 shadow-card">
+        <dl class="grid gap-4 text-sm sm:grid-cols-2">
+            <div>
+                <dt class="font-semibold text-ink">Date and time</dt>
+                <dd class="mt-1 text-muted"><time datetime="@Model.Date.ToString("yyyy-MM-dd")">@Model.Date.ToString("MMM d, yyyy")</time> at @Model.Time.ToString("h:mm tt")</dd>
+            </div>
+            <div>
+                <dt class="font-semibold text-ink">Interviewer</dt>
+                <dd class="mt-1 text-muted">@Model.InterviewerName</dd>
+            </div>
+            <div>
+                <dt class="font-semibold text-ink">Interview focus</dt>
+                <dd class="mt-1 text-muted">@Model.InterviewType</dd>
+            </div>
+        </dl>
+    </div>
+
+    <form asp-action="ProvideFeedback" asp-route-id="@Model.Id" class="space-y-6 rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
+        <div asp-validation-summary="ModelOnly" class="border-l-4 border-l-negative pl-4 text-sm text-negative"></div>
+        <input asp-for="Id" type="hidden" />
+
+        <fieldset>
+            <legend class="text-base font-semibold text-ink">@Html.DisplayNameFor(model => model.InterviewerRating)</legend>
+            <p id="rating-scale-help" class="mt-1 text-sm text-muted">Choose one rating: 1 is poor and 5 is excellent.</p>
+            <div class="mt-4 grid grid-cols-5 gap-2" aria-describedby="rating-scale-help">
+                @for (var rating = 1; rating <= 5; rating++)
+                {
+                    var ratingValue = rating.ToString();
+                    var ratingId = $"rating-{rating}";
+                    <label for="@ratingId" class="flex min-h-12 cursor-pointer items-center justify-center rounded-md border border-line bg-surface font-semibold text-ink hover:bg-canvas has-[:checked]:border-ink has-[:checked]:bg-soft">
+                        <input asp-for="InterviewerRating" id="@ratingId" value="@ratingValue" type="radio" class="sr-only" />
+                        <span aria-hidden="true">@rating</span><span class="sr-only">@rating out of 5</span>
+                    </label>
+                }
+            </div>
+            <span asp-validation-for="InterviewerRating" class="mt-2 block text-sm text-negative"></span>
+        </fieldset>
+
+        <div>
+            <label asp-for="InterviewerFeedback" class="block text-base font-semibold text-ink"></label>
+            <p class="mt-1 text-sm text-muted">Optional: share specific observations that may help the interviewer.</p>
+            <textarea asp-for="InterviewerFeedback" rows="5" class="mt-3 block w-full rounded-md border border-line bg-surface px-3 py-2 text-ink shadow-sm placeholder:text-muted focus:border-ink focus:outline-none focus:ring-3 focus:ring-ink/10"></textarea>
+            <span asp-validation-for="InterviewerFeedback" class="mt-2 block text-sm text-negative"></span>
+        </div>
+
+        <div>
+            <label asp-for="ProcessFeedback" class="block text-base font-semibold text-ink"></label>
+            <p class="mt-1 text-sm text-muted">Optional: tell us what worked well or could improve in the scheduling and interview process.</p>
+            <textarea asp-for="ProcessFeedback" rows="5" class="mt-3 block w-full rounded-md border border-line bg-surface px-3 py-2 text-ink shadow-sm placeholder:text-muted focus:border-ink focus:outline-none focus:ring-3 focus:ring-ink/10"></textarea>
+            <span asp-validation-for="ProcessFeedback" class="mt-2 block text-sm text-negative"></span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4">
+            <button type="submit" ui-variant="Primary">Save feedback</button>
+            <a asp-action="FeedbackIndex" class="text-sm font-semibold text-ink hover:underline">Cancel</a>
+        </div>
+    </form>
+</section>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <partial name="_ValidationScriptsPartial" />
 }

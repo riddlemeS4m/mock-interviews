@@ -1,66 +1,32 @@
-﻿@model MockInterviews.Models.Entities.InterviewerTimeslot
+@model MockInterviews.Models.Entities.InterviewerTimeslot
 
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Cancel availability";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-@*<h1>Interviewer Cancellation</h1>
-*@
-<div style="display: flex; justify-content: center;">
-    <h2>Are you sure you want to cancel your interview?</h2>
-</div>
+<section class="mx-auto max-w-2xl space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Cancel availability", "Confirm removal of this 30-minute interviewer availability block.")' />
 
-<div>
-@*    <hr />
-*@    <dl class="row">
-        <dt class="col-sm-2">
-            Name
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.InterviewerSignup.FirstName) @Html.DisplayFor(model => model.InterviewerSignup.LastName)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Timeslot.Time)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Timeslot.Time)
-        </dd>
-        <dt class="col-sm-2">
-            @Html.DisplayNameFor(model => model.Timeslot.Event.Date)
-        </dt>
-        <dd class="col-sm-10">
-            @Html.DisplayFor(model => model.Timeslot.Event.Date)
-        </dd>
-        <dt>
-            @Html.DisplayNameFor(model => model.InterviewerSignup.Type)
-        </dt>
-        <dd>
-            @Html.DisplayFor(model => model.InterviewerSignup.Type)
-        </dd>
-        <dt>
-            In-Person or Virtual:
-        </dt>
-
-        @if (Model.InterviewerSignup.IsVirtual)
-        {
-            <dd>Virtual</dd>
-        }
-        else if (Model.InterviewerSignup.InPerson)
-        {
-            <dd>In Person</dd>
-        }
+    <dl class="grid gap-px overflow-hidden rounded-card border border-line bg-line shadow-card sm:grid-cols-2">
+        <div class="bg-surface p-5">
+            <dt class="text-sm text-muted">Interviewer</dt>
+            <dd class="mt-1 font-semibold text-ink">@Model.InterviewerSignup.FirstName @Model.InterviewerSignup.LastName</dd>
+        </div>
+        <div class="bg-surface p-5">
+            <dt class="text-sm text-muted">Time</dt>
+            <dd class="mt-1 font-semibold text-ink">@Model.Timeslot.Event.Date.ToString("MMM d, yyyy") · @Model.Timeslot.Time.ToString("h:mm tt")</dd>
+        </div>
+        <div class="bg-surface p-5 sm:col-span-2">
+            <dt class="text-sm text-muted">Interview types</dt>
+            <dd class="mt-1 font-semibold text-ink">@Model.InterviewerSignup.Type</dd>
+        </div>
     </dl>
 
-    <div style="display: flex; justify-content: center">
-        <form asp-action="UserDeleteConfirmed">
-            <input type="hidden" asp-for="Id" />
-            <input type="submit" value="Yes, Cancel" class="btn btn-primary" style="margin-right: 15px"/> 
-            @Html.ActionLink("Return to Home",
-            "Index",   // <-- ActionMethod
-            "Home",  // <-- Controller Name.
-            null, // <-- Route arguments.
-            null
-            )
-        </form>
-    </div>
-</div>
+    <form asp-action="UserDeleteConfirmed" method="post" class="flex gap-3">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" ui-variant="Destructive">Cancel availability</button>
+        <a asp-controller="Home" asp-action="Index" ui-variant="Quiet">Keep it</a>
+    </form>
+</section>

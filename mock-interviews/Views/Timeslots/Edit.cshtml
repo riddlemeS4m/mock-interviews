@@ -1,36 +1,4 @@
-﻿@model MockInterviews.Models.Entities.Timeslot
-
-@{
-    ViewData["Title"] = "Edit";
-}
-
-<h1>Edit Timeslot</h1>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" />
-            <input type="hidden" asp-for="EventId"/>
-            <input type="hidden" asp-for="IsActive" />
-            <input type="hidden" asp-for="IsVolunteer" />
-            <input type="hidden" asp-for="IsInterviewer" />
-            <input type="hidden" asp-for="IsStudent" />
-            <input type="hidden" asp-for="Time" />
-
-            <div class="form-group">
-                <label asp-for="MaxSignUps" class="control-label"></label>
-                <input type="number" class="form-control" asp-for="MaxSignUps" />
-                <span asp-validation-for="MaxSignUps" class="text-danger"></span>
-            </div>
-            
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" /> | <a asp-action="Index">Back to List</a>
-            </div>
-        </form>
-    </div>
-</div>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}
+@model MockInterviews.Models.ViewModels.TimeslotsController.TimeslotEditViewModel
+@{ ViewData["Title"] = "Edit timeslot"; }
+<section class="max-w-xl space-y-6"><partial name="DesignSystem/_PageHeader" model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Edit timeslot", "Capacity changes apply only to this selected half-hour block.")' /><form asp-action="Edit" method="post" class="space-y-5 rounded-card border border-line bg-surface p-6 shadow-card"><input asp-for="Id" type="hidden" /><div asp-validation-summary="ModelOnly" class="border-l-4 border-negative pl-4 text-sm text-negative"></div><dl class="divide-y divide-line rounded-lg border border-line"><div class="px-4 py-3"><dt class="text-sm text-muted">Event</dt><dd class="mt-1 font-semibold text-ink">@Model.EventName</dd></div><div class="px-4 py-3"><dt class="text-sm text-muted">Time</dt><dd class="mt-1 text-ink">@Model.EventDate.ToString("MMMM d, yyyy") at @Model.Time.ToString("h:mm tt")</dd></div></dl><div><label asp-for="MaxSignUps" class="block text-sm font-semibold text-ink"></label><input asp-for="MaxSignUps" type="number" min="0" class="mt-2 block min-h-11 w-full rounded-md border border-line px-3 py-2" /><span asp-validation-for="MaxSignUps" class="mt-1 block text-sm text-negative"></span></div><div class="flex gap-3"><a asp-action="Index" ui-variant="Secondary">Cancel</a><button type="submit" ui-variant="Primary">Save capacity</button></div></form></section>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

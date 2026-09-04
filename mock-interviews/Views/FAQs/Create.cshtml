@@ -1,49 +1,41 @@
-﻿@using MockInterviews.Data.Constants;
-@using MockInterviews.Models.Entities
-@model Question
+@using MockInterviews.Data.Constants
+@model MockInterviews.Models.Entities.Question
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Ask a question";
+    var canAnswer = User.IsInRole(RolesConstants.AdminRole) || User.IsInRole(RolesConstants.SystemAdminRole);
+    var pageHeader = new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel(
+        canAnswer ? "Add FAQ" : "Ask a question",
+        canAnswer ? "Publish a new FAQ or save a question to answer later." : "Submit a question for the mock interviews team.");
 }
 
-<h1>Create</h1>
+<section class="mx-auto max-w-2xl space-y-6">
+    <partial name="DesignSystem/_PageHeader" model="pageHeader" />
 
-<h4 id="center-everything">FAQs</h4>
-<hr />
-<div class="row" id="center-everything">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Q" class="control-label"></label>
-                <input asp-for="Q" class="form-control" />
-                <span asp-validation-for="Q" class="text-danger"></span>
+    <form asp-action="Create" method="post" class="space-y-5 rounded-card border border-line bg-surface p-6 shadow-card">
+        <div asp-validation-summary="ModelOnly" class="border-l-4 border-negative pl-4 text-sm text-negative"></div>
+
+        <div>
+            <label asp-for="Q" class="block text-sm font-semibold text-ink">Question</label>
+            <textarea asp-for="Q" rows="4" class="mt-2 block w-full rounded-md border border-line px-3 py-2"></textarea>
+            <span asp-validation-for="Q" class="text-sm text-negative"></span>
+        </div>
+
+        @if (canAnswer)
+        {
+            <div>
+                <label asp-for="A" class="block text-sm font-semibold text-ink">Answer <span class="font-normal text-muted">(optional)</span></label>
+                <textarea asp-for="A" rows="5" class="mt-2 block w-full rounded-md border border-line px-3 py-2"></textarea>
             </div>
-            <p></p>
-            @if(User.IsInRole(RolesConstants.AdminRole))
-            {
-                <div class="form-group">
-                    <label asp-for="A" class="control-label"></label>
-                    <input asp-for="A" class="form-control" />
-                    <span asp-validation-for="A" class="text-danger"></span>
-                </div>
-                <p></p>
-            }
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
-</div>
+        }
 
-@if(User.IsInRole(RolesConstants.AdminRole))
-{
-    <div id="center-everything">
-        <a asp-action="Index">Back to List</a>
-    </div>
-}
-
+        <div class="flex gap-3">
+            <a asp-action="Resources" ui-variant="Secondary">Cancel</a>
+            <button type="submit" ui-variant="Primary">@(canAnswer ? "Save FAQ" : "Submit question")</button>
+        </div>
+    </form>
+</section>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
 }

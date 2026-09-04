@@ -1,58 +1,39 @@
-﻿@page
+@page
 @model ExternalLoginsModel
 @{
-    ViewData["Title"] = "Manage your external logins";
+    ViewData["Title"] = "External sign-ins";
     ViewData["ActivePage"] = ManageNavPages.ExternalLogins;
 }
 
-<partial name="_StatusMessage" for="StatusMessage" />
-@if (Model.CurrentLogins?.Count > 0)
-{
-    <h3>Registered Logins</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Provider</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var login in Model.CurrentLogins)
-            {
-                <tr>
-                    <td id="@($"login-provider-{login.LoginProvider}")">@login.ProviderDisplayName</td>
-                    @*<td>
-                        @if (Model.ShowRemoveButton)
-                        {
-                            <form id="@($"remove-login-{login.LoginProvider}")" asp-page-handler="RemoveLogin" method="post">
-                                <div>
-                                    <input asp-for="@login.LoginProvider" name="LoginProvider" type="hidden" />
-                                    <input asp-for="@login.ProviderKey" name="ProviderKey" type="hidden" />
-                                    <button type="submit" class="btn btn-primary" title="Remove this @login.ProviderDisplayName login from your account">Remove</button>
-                                </div>
-                            </form>
-                        }
-                        else
-                        {
-                            @: &nbsp;
-                        }
-                    </td>*@
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-@if (Model.OtherLogins?.Count > 0)
-{
-    <h4>Add another service to log in.</h4>
-    <hr />
-    <form id="link-login-form" asp-page-handler="LinkLogin" method="post" class="form-horizontal">
-        <div id="socialLoginList">
-            <p>
+<div class="max-w-2xl space-y-6">
+    <div><h1 class="text-2xl font-semibold text-ink">External sign-ins</h1><p class="mt-1 text-sm text-muted">Connect an optional provider as another way to access this account.</p></div>
+    <partial name="_StatusMessage" for="StatusMessage" />
+    @if (Model.CurrentLogins?.Count > 0)
+    {
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-sm">
+            <div class="border-b border-line px-5 py-4"><h2 class="font-semibold text-ink">Connected providers</h2></div>
+            <ul class="divide-y divide-line">
+                @foreach (var login in Model.CurrentLogins)
+                {
+                    <li class="flex items-center justify-between px-5 py-4"><span id="@($"login-provider-{login.LoginProvider}")" class="font-medium text-ink">@login.ProviderDisplayName</span><span class="flex items-center gap-2 text-sm text-muted"><span class="size-2 rounded-full bg-positive"></span>Connected</span></li>
+                }
+            </ul>
+        </div>
+    }
+    @if (Model.OtherLogins?.Count > 0)
+    {
+        <div class="rounded-card border border-line bg-surface p-5 shadow-sm">
+            <h2 class="font-semibold text-ink">Add a provider</h2>
+            <form id="link-login-form" asp-page-handler="LinkLogin" method="post" class="mt-4 flex flex-wrap gap-3">
                 @foreach (var provider in Model.OtherLogins)
                 {
-                    <button id="@($"link-login-button-{provider.Name}")" type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                    <button id="@($"link-login-button-{provider.Name}")" type="submit" ui-variant="Secondary" name="provider" value="@provider.Name">Connect @provider.DisplayName</button>
                 }
-            </p>
+            </form>
         </div>
-    </form>
-}
+    }
+    @if ((Model.CurrentLogins?.Count ?? 0) == 0 && (Model.OtherLogins?.Count ?? 0) == 0)
+    {
+        <div class="py-10 text-center"><ui-icon name="link" class="mx-auto size-9 text-muted"></ui-icon><p class="mt-3 text-muted">No external sign-in providers are configured.</p></div>
+    }
+</div>

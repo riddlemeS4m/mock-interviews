@@ -1,29 +1,21 @@
-﻿@{
-    if (ViewData.TryGetValue("ParentLayout", out var parentLayout) && parentLayout !=  null)
-    {
-        Layout = parentLayout.ToString();
-    }
-    else
-    {
-        Layout = "/Areas/Identity/Pages/_Layout.cshtml";
-    }
+@{
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Manage your account</h1>
+<section class="space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new UiPageHeaderViewModel("Account settings", "Manage your profile, sign-in methods, security, and personal data.")' />
 
-<div>
-    <h2>Change your account settings</h2>
-    <hr />
-    <div class="row">
-        <div class="col-md-3">
+    <div class="grid gap-8 md:grid-cols-[14rem_minmax(0,1fr)]">
+        <aside>
             <partial name="_ManageNav" />
-        </div>
-        <div class="col-md-9">
+        </aside>
+        <div class="min-w-0">
             @RenderBody()
         </div>
     </div>
-</div>
+</section>
 
 @section Scripts {
-    @RenderSection("Scripts", required: false)
+    @await RenderSectionAsync("Scripts", required: false)
 }

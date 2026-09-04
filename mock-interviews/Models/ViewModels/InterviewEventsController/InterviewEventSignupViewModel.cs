@@ -1,13 +1,13 @@
-using MockInterviews.Models.Entities;
-using MockInterviews.Models.Identity;
+using MockInterviews.Data.Constants;
+using MockInterviews.Models.ViewModels.Shared;
 
 namespace MockInterviews.Models.ViewModels.InterviewEventsController
 {
     public class InterviewEventSignupViewModel
     {
-        public List<Timeslot> Timeslots { get; set; } = [];
-        public int SelectedEventIds { get; set; }
-        public ApplicationUser ApplicationUser { get; set; } = null!; // Assigned when the controller composes the signup page.
+        public IReadOnlyList<EventDaySelectionViewModel> EventDays { get; set; } = [];
+        public int[] SelectedTimeslotIds { get; set; } = [];
+        public Classes StudentClass { get; set; }
         public bool SignedUp { get; set; }
         public bool For221 { get; set; }
     }

@@ -1,33 +1,35 @@
-﻿@using MockInterviews.Models.ViewModels.UserRolesController;
-@model List<ManageUserRolesViewModel>
+@model List<MockInterviews.Models.ViewModels.UserRolesController.ManageUserRolesViewModel>
+
 @{
-    ViewData["Title"] = "Manage";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Manage roles";
 }
-<form method="post">
-    <div class="card">
-        <div class="card-header">
-            <h2>Manage User Roles</h2>
-            Add/Remove Roles for User / @ViewBag.UserName.
-        </div>
-        <div class="card-body">
-            @for (int i = 0; i < Model.Count; i++)
+
+<section class="max-w-xl space-y-6">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Manage roles", $"Update roles for {ViewData["UserName"]}.")' />
+
+    <form method="post" class="space-y-5 rounded-card border border-line bg-surface p-6 shadow-card">
+        <input type="hidden" name="userId" value="@Context.Request.Query["userId"]" />
+        <div asp-validation-summary="All" class="border-l-4 border-negative pl-4 text-sm text-negative"></div>
+
+        <fieldset class="space-y-3">
+            <legend class="text-sm font-semibold text-ink">Application roles</legend>
+
+            @for (var index = 0; index < Model.Count; index++)
             {
-                <div class="form-check m-1">
-                    <input type="hidden" asp-for="@Model[i].RoleId" />
-                    <input type="hidden" asp-for="@Model[i].RoleName" />
-                    <input asp-for="@Model[i].Selected" class="form-check-input" />
-                    <label class="form-check-label" asp-for="@Model[i].Selected">
-                        @Model[i].RoleName
-                    </label>
-                </div>
+                <input asp-for="@Model[index].RoleId" type="hidden" />
+                <input asp-for="@Model[index].RoleName" type="hidden" />
+
+                <label class="flex items-center gap-3 rounded-lg border border-line p-4">
+                    <input asp-for="@Model[index].Selected" class="size-4" />
+                    <span class="font-semibold text-ink">@Model[index].RoleName</span>
+                </label>
             }
-            <div asp-validation-summary="All" class="text-danger"></div>
+        </fieldset>
+
+        <div class="flex gap-3">
+            <a asp-action="Index" ui-variant="Secondary">Cancel</a>
+            <button type="submit" ui-variant="Primary">Save roles</button>
         </div>
-        <div class="card-footer">
-            <input type="submit" value="Update" class="btn btn-primary"
-                   style="width:auto" />
-            <a asp-action="Index" class="btn btn-primary" style="width:auto">Cancel</a>
-        </div>
-    </div>
-</form>
+    </form>
+</section>

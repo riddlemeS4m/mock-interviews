@@ -1,62 +1,55 @@
-﻿@model MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsController.LunchReportViewModel
+@model MockInterviews.Models.ViewModels.SignupInterviewerTimeslotsController.LunchReportViewModel
 
 @{
-    ViewData["Title"] = "LunchReport";
+    ViewData["Title"] = "Lunch report";
+    Layout = "/Views/Shared/_TailwindLayout.cshtml";
 }
 
-<h1>Lunch Report</h1>
-<hr />
-@if(Model.AnyLunches)
-{
-    <div>
-        <h3>
-            Lunches needed for @Model.Day1Name: @Model.Day1TotalLunchCount
-        </h3>
-        @if (Model.Day2TotalLunchCount != null && Model.Day2Name != null)
-        {
-            <h3>
-                Lunches needed for @Model.Day2Name: @Model.Day2TotalLunchCount
-            </h3>
-        }
-    </div>
+<section class="space-y-8">
+    <partial name="DesignSystem/_PageHeader"
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Lunch report", "Interviewer lunch preferences for each active non-MIS 221 event.")' />
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>
-                    @Html.DisplayNameFor(model => model.LunchReports[0].Name)
-                </th>
-                <th>
-                    @Html.DisplayNameFor(model => model.LunchReports[0].LunchDesire)
-                </th>
-                <th>
-                    @Html.DisplayNameFor(model => model.LunchReports[0].ForDate)
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model.LunchReports)
+    @if (Model.LunchReports.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new MockInterviews.Models.ViewModels.Shared.UiEmptyStateViewModel("users", "No interviewer availability", "Lunch preferences will appear here after interviewers sign up.")' />
+    }
+    else
+    {
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            @foreach (var total in Model.LunchTotals)
             {
-                <tr>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.Name)
-                    </td>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.LunchDesire)
-                    </td>
-                    <td>
-                        @Html.DisplayFor(modelItem => item.ForDate)
-                    </td>
-                </tr>
+                <article class="rounded-card border border-line bg-surface p-5 shadow-card">
+                    <p class="text-sm font-semibold text-muted">@total.EventName</p>
+                    <p class="mt-1 text-sm text-muted">@total.Date.ToString("MMM d, yyyy")</p>
+                    <p class="mt-4 text-3xl font-semibold text-ink">@total.Count</p>
+                    <p class="text-sm text-muted">lunches needed</p>
+                </article>
             }
-        </tbody>
-    </table>
-}
-else
-{
-    <div>
-        <p>
-            No interviewers have signed up.
-        </p>
-    </div>
-}
+        </div>
+
+        <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="border-b border-line bg-soft text-sm text-muted">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">Interviewer</th>
+                            <th class="px-5 py-3 font-semibold">Lunch</th>
+                            <th class="px-5 py-3 font-semibold">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        @foreach (var lunch in Model.LunchReports)
+                        {
+                            <tr>
+                                <th scope="row" class="px-5 py-4 font-semibold text-ink">@lunch.Name</th>
+                                <td class="px-5 py-4 text-muted">@(lunch.LunchDesire ? "Requested" : "Not requested")</td>
+                                <td class="px-5 py-4 text-muted">@lunch.ForDate.ToString("MMM d, yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</section>

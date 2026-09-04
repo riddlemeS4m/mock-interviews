@@ -1,48 +1,135 @@
-﻿@using MockInterviews.Models.Entities
-@model IEnumerable<Location>
+@model LocationsIndexViewModel
 
 @{
-    ViewData["Title"] = "Room Locations";
+    ViewData["Title"] = "Rooms";
 }
 
-<h1>Available Rooms</h1>
+<section class="space-y-8">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <partial name="DesignSystem/_PageHeader"
+                 model='new UiPageHeaderViewModel("Rooms", "Manage the physical rooms and virtual locations available for interview assignments.")' />
+        <a asp-action="Create"
+           ui-variant="Primary"
+           class="shrink-0"
+           data-dialog-target="location-create-dialog">
+            <ui-icon name="plus" class="size-4" />
+            Add room
+        </a>
+    </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Room)
-            </th>
-            <th>
-                Virtual Interviewer
-            </th>
-            <th>
-                In-Person Interviewer
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Room)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsVirtual)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.InPerson)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-@*                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-*@                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
+    @if (TempData["StatusMessage"] is string statusMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new UiFeedbackViewModel(UiFeedbackKind.Success, statusMessage, string.Empty)" />
+    }
+
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <partial name="DesignSystem/_Feedback"
+                 model="new UiFeedbackViewModel(UiFeedbackKind.Error, errorMessage, string.Empty)" />
+    }
+
+    @if (Model.Locations.Count == 0)
+    {
+        <partial name="DesignSystem/_EmptyState"
+                 model='new UiEmptyStateViewModel("building-2", "No rooms yet", "Add the first room or virtual location to make it available for assignments.")' />
+    }
+    else
+    {
+        <div class="space-y-4">
+            <div class="max-w-sm">
+                <label for="location-search" class="sr-only">Search rooms</label>
+                <div class="relative">
+                    <ui-icon name="search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                    <input id="location-search"
+                           type="search"
+                           class="block min-h-11 w-full rounded-md border border-line bg-surface py-2 pr-3 pl-10 text-ink shadow-sm placeholder:text-muted focus:border-ink focus:outline-none focus:ring-3 focus:ring-ink/10"
+                           placeholder="Search rooms"
+                           autocomplete="off"
+                           data-location-search />
+                </div>
+                <p class="sr-only" aria-live="polite" data-location-result-count>@Model.Locations.Count rooms shown</p>
+            </div>
+
+            <div class="overflow-hidden rounded-card border border-line bg-surface shadow-card">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-left">
+                        <thead class="border-b border-line bg-soft text-sm text-muted">
+                            <tr>
+                                <th scope="col" class="px-5 py-3 font-semibold">Room or location</th>
+                                <th scope="col" class="px-5 py-3 font-semibold">Virtual</th>
+                                <th scope="col" class="px-5 py-3 font-semibold">In person</th>
+                                <th scope="col" class="px-5 py-3 text-right font-semibold">
+                                    <span class="sr-only">Actions</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-line">
+                            @foreach (var location in Model.Locations)
+                            {
+                                var virtualValue = location.IsVirtual ? "true" : "false";
+                                var inPersonValue = location.InPerson ? "true" : "false";
+                                var virtualLabel = location.IsVirtual ? "Supported" : "Not supported";
+                                var inPersonLabel = location.InPerson ? "Supported" : "Not supported";
+
+                                <tr data-location-row data-search-text="@location.Room">
+                                    <th scope="row" class="whitespace-nowrap px-5 py-4 font-semibold text-ink">@location.Room</th>
+                                    <td class="px-5 py-4">
+                                        <span class="inline-flex items-center gap-2 text-sm text-ink">
+                                            <span class="size-2 rounded-full @(location.IsVirtual ? "bg-positive" : "bg-muted")" aria-hidden="true"></span>
+                                            @virtualLabel
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <span class="inline-flex items-center gap-2 text-sm text-ink">
+                                            <span class="size-2 rounded-full @(location.InPerson ? "bg-positive" : "bg-muted")" aria-hidden="true"></span>
+                                            @inPersonLabel
+                                        </span>
+                                    </td>
+                                    <td class="whitespace-nowrap px-5 py-4 text-right">
+                                        <div class="inline-flex items-center gap-4">
+                                            <a asp-action="Details"
+                                               asp-route-id="@location.Id"
+                                               class="text-sm font-semibold text-ink hover:underline"
+                                               data-dialog-target="location-details-dialog"
+                                               data-dialog-value-room="@location.Room"
+                                               data-dialog-value-virtual-label="@virtualLabel"
+                                               data-dialog-value-in-person-label="@inPersonLabel">View</a>
+                                            <a asp-action="Edit"
+                                               asp-route-id="@location.Id"
+                                               class="text-sm font-semibold text-ink hover:underline"
+                                               data-dialog-target="location-edit-dialog"
+                                               data-dialog-value-id="@location.Id"
+                                               data-dialog-value-room="@location.Room"
+                                               data-dialog-value-virtual="@virtualValue"
+                                               data-dialog-value-in-person="@inPersonValue">Edit</a>
+                                            <a asp-action="Delete"
+                                               asp-route-id="@location.Id"
+                                               class="text-sm font-semibold text-negative hover:underline"
+                                               data-dialog-target="location-delete-dialog"
+                                               data-dialog-value-id="@location.Id"
+                                               data-dialog-value-room="@location.Room">Delete</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="hidden py-8 text-center" data-location-search-empty>
+                <ui-icon name="search" class="mx-auto size-8 text-muted" />
+                <p class="mt-3 font-semibold text-ink">No matching rooms</p>
+                <p class="mt-1 text-sm text-muted">Try a different room name.</p>
+            </div>
+        </div>
+    }
+</section>
+
+<partial name="_Dialogs" model="Model" />
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/locations.js" asp-append-version="true"></script>
 }
-    </tbody>
-</table>
