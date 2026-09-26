@@ -157,6 +157,7 @@ namespace MockInterviews.Controllers
         public async Task<IActionResult> AssessFeedback()
         {
             var interviewEvents = await _context.Interviews
+                .AsNoTracking()
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
                 .ThenInclude(i => i!.InterviewerSignup)
@@ -199,6 +200,7 @@ namespace MockInterviews.Controllers
             }
 
             var interviews = await _context.Interviews
+                .AsNoTracking()
                 .Include(v => v.InterviewerTimeslot)
                 .ThenInclude(v => v!.InterviewerSignup)
                 .Include(v => v.Timeslot)
@@ -243,6 +245,7 @@ namespace MockInterviews.Controllers
             }
 
             var interviewEvent = await _context.Interviews
+                .AsNoTracking()
                 .Include(x => x.InterviewerTimeslot)
                 .ThenInclude(x => x!.InterviewerSignup)
                 .Include(x => x.Location)
@@ -486,6 +489,7 @@ namespace MockInterviews.Controllers
         {
             var isFirstSemesterStudent = user.Class == Classes.NotYetMIS || user.Class == Classes.FirstSem;
             var timeslots = await _context.Timeslots
+                .AsNoTracking()
                 .Where(timeslot => timeslot.IsStudent && timeslot.IsActive)
                 .Include(timeslot => timeslot.Event)
                 .Where(timeslot => _context.Interviews.Count(interview => interview.TimeslotId == timeslot.Id) < timeslot.MaxSignUps)
@@ -573,6 +577,7 @@ namespace MockInterviews.Controllers
             }
 
             var interviewEvent = await _context.Interviews
+                .AsNoTracking()
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
                 .ThenInclude(i => i!.InterviewerSignup)
@@ -782,6 +787,7 @@ namespace MockInterviews.Controllers
         {
             var students = await _userService.GetUsersByRole(RolesConstants.StudentRole);
             var activeTimeslots = await _context.Timeslots
+                .AsNoTracking()
                 .Include(timeslot => timeslot.Event)
                 .Where(timeslot => timeslot.IsActive && timeslot.Event.IsActive)
                 .OrderBy(timeslot => timeslot.Event.Date)
@@ -880,6 +886,7 @@ namespace MockInterviews.Controllers
         public async Task<IActionResult> GetCompletedInterviews()
         {
             var interviewEvents = await _context.Interviews
+                .AsNoTracking()
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
                 // EF Core parses Include expressions without dereferencing an optional navigation.

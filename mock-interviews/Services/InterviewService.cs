@@ -17,7 +17,7 @@ namespace MockInterviews.Services
         public async Task<Interview?> GetByIdAsync(int id)
         {
             // EF Core parses Include expressions; it does not dereference an optional navigation while materializing this query.
-            return await _dbSet.Include(x => x.InterviewerTimeslot)
+            return await _dbSet.AsNoTracking().Include(x => x.InterviewerTimeslot)
                 .ThenInclude(x => x!.InterviewerSignup)
                 .Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
@@ -37,7 +37,7 @@ namespace MockInterviews.Services
 
         public async Task<IEnumerable<Interview>> GetTopNonCompletedInterviews(int numberOfInterviews)
         {
-            return await _dbSet.Include(i => i.Location)
+            return await _dbSet.AsNoTracking().Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
                 .ThenInclude(i => i!.InterviewerSignup)
                 .Include(i => i.Timeslot)
@@ -58,7 +58,7 @@ namespace MockInterviews.Services
         /// <returns>A collection of active <see cref="Interview"/> entities.</returns>
         public async Task<IEnumerable<Interview>> GetAllActiveInterviews()
         {
-            var interviewEvents = await _dbSet
+            var interviewEvents = await _dbSet.AsNoTracking()
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
                 .ThenInclude(i => i!.InterviewerSignup)
@@ -74,7 +74,7 @@ namespace MockInterviews.Services
 
         public async Task<IEnumerable<Interview>> GetAllActiveInterviewsByIds(List<int> ids)
         {
-            var interviewEvents = await _dbSet
+            var interviewEvents = await _dbSet.AsNoTracking()
                 .Include(i => i.Location)
                 .Include(i => i.InterviewerTimeslot)
                 .ThenInclude(i => i!.InterviewerSignup)
@@ -90,7 +90,7 @@ namespace MockInterviews.Services
 
         public async Task<IEnumerable<Interview>> GetActiveInterviewsForOneStudent(string userId)
         {
-            return await _dbSet.Include(x => x.Timeslot)
+            return await _dbSet.AsNoTracking().Include(x => x.Timeslot)
                 .ThenInclude(x => x.Event)
                 .Where(x => x.StudentId == userId
                     && x.Timeslot != null && x.Timeslot.Event != null && x.Timeslot.Event.IsActive)

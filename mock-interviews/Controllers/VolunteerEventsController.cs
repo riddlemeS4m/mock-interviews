@@ -52,6 +52,7 @@ namespace MockInterviews.Controllers
         public async Task<IActionResult> Index()
         {
             var volunteerEvents = await _context.VolunteerTimeslots
+                .AsNoTracking()
                 .Include(v => v.Timeslot)
                 .ThenInclude(y => y.Event)
                 .Where(y => y.Timeslot.Event.IsActive == true)
@@ -76,6 +77,7 @@ namespace MockInterviews.Controllers
             }
 
             var volunteerEvent = await _context.VolunteerTimeslots
+                .AsNoTracking()
                 .Include(v => v.Timeslot)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (volunteerEvent?.Timeslot is null)
@@ -84,6 +86,7 @@ namespace MockInterviews.Controllers
             }
 
             var specificTimeslot = await _context.Timeslots
+                .AsNoTracking()
                 .Include(v => v.Event)
                 .FirstOrDefaultAsync(m => m.Id == volunteerEvent.Timeslot.Id);
             if (specificTimeslot is null)
@@ -107,6 +110,7 @@ namespace MockInterviews.Controllers
             }
 
             var timeslots = await _context.Timeslots
+                .AsNoTracking()
                 .Where(x => x.IsVolunteer && x.IsActive)
                 .Include(y => y.Event)
                 .Where(x => !_context.VolunteerTimeslots.Any(y => y.TimeslotId == x.Id && y.StudentId == userId))
@@ -250,8 +254,7 @@ namespace MockInterviews.Controllers
             {
                 return NotFound();
             }
-            ViewData["TimeslotId"] = new SelectList(_context.Timeslots, "Id", "Id", volunteerEvent.TimeslotId);
-            return View(volunteerEvent);
+            return View(await BuildEditViewModelAsync(volunteerEvent));
         }
 
         // POST: VolunteerEvents/Edit/5
@@ -260,9 +263,9 @@ namespace MockInterviews.Controllers
         [Authorize(Roles = RolesConstants.AdministrationRoles)]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,StudentId,TimeslotId")] VolunteerTimeslot volunteerEvent)
+        public async Task<IActionResult> Edit(int id, VolunteerEventEditViewModel model)
         {
-            if (id != volunteerEvent.Id)
+            if (id != model.Id)
             {
                 return NotFound();
             }
@@ -271,12 +274,17 @@ namespace MockInterviews.Controllers
             {
                 try
                 {
-                    _context.Update(volunteerEvent);
+                    _context.Update(new VolunteerTimeslot
+                    {
+                        Id = model.Id,
+                        StudentId = model.StudentId,
+                        TimeslotId = model.TimeslotId
+                    });
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!VolunteerEventExists(volunteerEvent.Id))
+                    if (!VolunteerEventExists(model.Id))
                     {
                         return NotFound();
                     }
@@ -288,8 +296,28 @@ namespace MockInterviews.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewData["TimeslotId"] = new SelectList(_context.Timeslots, "Id", "Id", volunteerEvent.TimeslotId);
-            return View(volunteerEvent);
+            return View(await BuildEditViewModelAsync(model));
+        }
+
+        private async Task<VolunteerEventEditViewModel> BuildEditViewModelAsync(VolunteerTimeslot volunteerEvent) =>
+            await BuildEditViewModelAsync(new VolunteerEventEditViewModel
+            {
+                Id = volunteerEvent.Id,
+                StudentId = volunteerEvent.StudentId,
+                TimeslotId = volunteerEvent.TimeslotId
+            });
+
+        private async Task<VolunteerEventEditViewModel> BuildEditViewModelAsync(VolunteerEventEditViewModel model)
+        {
+            model.TimeslotOptions = await _context.Timeslots.AsNoTracking()
+                .OrderBy(timeslot => timeslot.Id)
+                .Select(timeslot => new SelectListItem
+                {
+                    Value = timeslot.Id.ToString(),
+                    Text = timeslot.Id.ToString()
+                })
+                .ToListAsync();
+            return model;
         }
 
         // GET: VolunteerEvents/Delete/5

@@ -92,10 +92,12 @@ namespace MockInterviews.Controllers
         public async Task<IActionResult> SignupReport()
         {
             var timeslots = await _context.Timeslots
+                .AsNoTracking()
                 .Include(t => t.Event)
                 .Where(x => x.Event.IsActive)
                 .ToListAsync();
             var eventdates = await _context.Events
+                .AsNoTracking()
                 .Where(x => x.IsActive)
                 .ToListAsync();
 
@@ -113,6 +115,7 @@ namespace MockInterviews.Controllers
         public async Task<IActionResult> AllocationReport()
         {
             var timeslots = await _context.Timeslots
+                .AsNoTracking()
                 .Include(t => t.Event)
                 .Where(x => x.Event.For221 == For221.n &&
                     x.IsInterviewer &&

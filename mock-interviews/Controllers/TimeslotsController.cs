@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MockInterviews.Data.Constants;
 using MockInterviews.Data.Contexts;
@@ -63,23 +62,18 @@ public class TimeslotsController(
     // POST: Timeslots/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("Time,EventId,IsActive,IsVolunteer,IsInterviewer,IsStudent,MaxSignUps")] Timeslot timeslot)
+    public async Task<IActionResult> Create(TimeslotCreateViewModel model)
     {
-        if (!await context.Events.AnyAsync(@event => @event.Id == timeslot.EventId && @event.IsActive))
+        if (!await context.Events.AnyAsync(@event => @event.Id == model.EventId && @event.IsActive))
         {
-            ModelState.AddModelError(nameof(timeslot.EventId), "Choose a current active event.");
-        }
-        if (timeslot.MaxSignUps < 0)
-        {
-            ModelState.AddModelError(nameof(timeslot.MaxSignUps), "Maximum signups must be zero or greater.");
+            ModelState.AddModelError(nameof(model.EventId), "Choose a current active event.");
         }
         if (!ModelState.IsValid)
         {
-            return View(await BuildCreateViewModelAsync(timeslot));
+            return View(await BuildCreateViewModelAsync(model));
         }
 
-        timeslot.Time = DateTime.SpecifyKind(timeslot.Time, DateTimeKind.Utc);
-        context.Timeslots.Add(timeslot);
+        context.Timeslots.Add(model.ToTimeslot());
         await context.SaveChangesAsync();
         TempData["StatusMessage"] = "Timeslot was created.";
         return RedirectToAction(nameof(Index));
@@ -180,10 +174,18 @@ public class TimeslotsController(
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task<Timeslot> BuildCreateViewModelAsync(Timeslot? timeslot = null)
+    private async Task<TimeslotCreateViewModel> BuildCreateViewModelAsync(TimeslotCreateViewModel? model = null)
     {
-        ViewBag.EventOptions = new SelectList(await context.Events.AsNoTracking().Where(@event => @event.IsActive)
-            .OrderBy(@event => @event.Date).ToListAsync(), nameof(Event.Id), nameof(Event.Name));
-        return timeslot ?? new Timeslot { IsActive = true, IsVolunteer = true };
+        model ??= new TimeslotCreateViewModel();
+        model.EventOptions = await context.Events.AsNoTracking()
+            .Where(@event => @event.IsActive)
+            .OrderBy(@event => @event.Date)
+            .Select(@event => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = @event.Id.ToString(),
+                Text = @event.Name
+            })
+            .ToListAsync();
+        return model;
     }
 }

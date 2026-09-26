@@ -201,7 +201,7 @@ namespace MockInterviews.Controllers
             var user = await _userManager.FindByIdAsync(model.UserId);
             if (user == null)
             {
-                ViewBag.ErrorMessage = "User not found.";
+                ModelState.AddModelError(string.Empty, "User not found.");
                 return View(model);
             }
 

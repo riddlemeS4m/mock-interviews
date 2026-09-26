@@ -15,6 +15,7 @@ public sealed class LegacyFrontendCleanupSpecs(MockInterviewsWebApplicationFacto
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("/css/tailwind.css", html);
         Assert.DoesNotContain("bootstrap", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("jquery", html, StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]
@@ -30,6 +31,31 @@ public sealed class LegacyFrontendCleanupSpecs(MockInterviewsWebApplicationFacto
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("/css/tailwind.css", html);
         Assert.DoesNotContain("bootstrap", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("jquery", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Identity_validation_loads_jquery_before_the_validation_plugins()
+    {
+        using var client = Factory.CreateAnonymousClient();
+
+        var response = await client.GetAsync("/Identity/Account/Login");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        AssertValidationStackOrder(html);
+    }
+
+    [Fact]
+    public async Task Mvc_validation_loads_jquery_before_the_validation_plugins()
+    {
+        using var client = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
+
+        var response = await client.GetAsync("/Locations/Create");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        AssertValidationStackOrder(html);
     }
 
     [Fact]
@@ -84,5 +110,16 @@ public sealed class LegacyFrontendCleanupSpecs(MockInterviewsWebApplicationFacto
         var response = await client.GetAsync(path);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    private static void AssertValidationStackOrder(string html)
+    {
+        var jqueryIndex = html.IndexOf("/lib/jquery/dist/jquery.min.js", StringComparison.Ordinal);
+        var validationIndex = html.IndexOf("/lib/jquery-validation/dist/jquery.validate.min.js", StringComparison.Ordinal);
+        var unobtrusiveIndex = html.IndexOf("/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js", StringComparison.Ordinal);
+
+        Assert.True(jqueryIndex >= 0, "The validation page did not load jQuery.");
+        Assert.True(validationIndex > jqueryIndex, "jQuery Validation must load after jQuery.");
+        Assert.True(unobtrusiveIndex > validationIndex, "Unobtrusive Validation must load after jQuery Validation.");
     }
 }

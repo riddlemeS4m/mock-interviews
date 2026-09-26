@@ -15,7 +15,7 @@ namespace MockInterviews.Services
 
         public async Task<Setting> GetSettingByName(string name, string defaultValue = "")
         {
-            var setting = await _dbSet.FirstOrDefaultAsync(x => x.Name == name);
+            var setting = await _dbSet.AsNoTracking().FirstOrDefaultAsync(x => x.Name == name);
 
             if (setting == null && string.IsNullOrEmpty(defaultValue))
             {

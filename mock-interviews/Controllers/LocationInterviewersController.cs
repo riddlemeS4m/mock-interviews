@@ -27,6 +27,7 @@ namespace MockInterviews.Controllers
         public async Task<IActionResult> Index()
         {
             var locationInterviewers = await _context.InterviewerLocations
+                .AsNoTracking()
                 .Include(v => v.Location)
                 .Include(v => v.Event)
                 .Where(v => v.Event != null && v.Event.IsActive)
@@ -53,6 +54,7 @@ namespace MockInterviews.Controllers
 
             var locationInterviewersWithNames = query.ToList();
             var locations = await _context.Locations
+                .AsNoTracking()
                 .OrderBy(u => u.Room)
                 .ToListAsync();
 
@@ -73,6 +75,7 @@ namespace MockInterviews.Controllers
             }
 
             var locationInterviewer = await _context.InterviewerLocations
+                .AsNoTracking()
                 .Include(l => l.Location)
                 .Include(l => l.Event)
                 .FirstOrDefaultAsync(m => m.Id == id);
@@ -190,6 +193,7 @@ namespace MockInterviews.Controllers
             }
 
             var locationInterviewer = await _context.InterviewerLocations
+                .AsNoTracking()
                 .Include(l => l.Location)
                 .Include(e => e.Event)
                 .FirstOrDefaultAsync(m => m.Id == id);

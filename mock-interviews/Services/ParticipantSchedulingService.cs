@@ -9,6 +9,7 @@ public sealed class ParticipantSchedulingService(MockInterviewsDbContext context
 {
     public Task<Timeslot?> FindAdjacentStudentInterviewTimeslotAsync(Timeslot selectedTimeslot)
         => context.Timeslots
+            .AsNoTracking()
             .Include(timeslot => timeslot.Event)
             .SingleOrDefaultAsync(timeslot =>
                 timeslot.EventId == selectedTimeslot.EventId &&
@@ -27,6 +28,7 @@ public sealed class ParticipantSchedulingService(MockInterviewsDbContext context
 
         var eventIds = starts.Select(timeslot => timeslot.EventId).Distinct().ToList();
         var eventTimeslots = await context.Timeslots
+            .AsNoTracking()
             .Include(timeslot => timeslot.Event)
             .Where(timeslot => eventIds.Contains(timeslot.EventId) && timeslot.IsActive && timeslot.Event.IsActive)
             .ToListAsync();

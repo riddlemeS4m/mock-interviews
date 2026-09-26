@@ -1,4 +1,4 @@
-@model MockInterviews.Models.Entities.VolunteerTimeslot
+@model MockInterviews.Models.ViewModels.VolunteerEventsController.VolunteerEventEditViewModel
 
 @{
     ViewData["Title"] = "Edit volunteer availability";
@@ -16,7 +16,7 @@
 
         <div>
             <label asp-for="TimeslotId" class="block text-sm font-semibold text-ink">Timeslot</label>
-            <select asp-for="TimeslotId" asp-items="ViewBag.TimeslotId" class="mt-2 min-h-11 w-full rounded-md border border-line px-3 py-2"></select>
+            <select asp-for="TimeslotId" asp-items="Model.TimeslotOptions" class="mt-2 min-h-11 w-full rounded-md border border-line px-3 py-2"></select>
             <span asp-validation-for="TimeslotId" class="text-sm text-negative"></span>
         </div>
 

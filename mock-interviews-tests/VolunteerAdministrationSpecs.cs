@@ -69,4 +69,31 @@ public sealed class VolunteerAdministrationSpecs(MockInterviewsWebApplicationFac
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Invalid_volunteer_edit_redisplays_the_timeslot_options()
+    {
+        var availability = await Factory.InDatabaseScopeAsync(async context =>
+        {
+            await TestData.AddUserAsync(context, "volunteer-1");
+            var (_, timeslots) = await TestData.AddEventWithTimeslotsAsync(context, For221.n);
+            var assignment = new VolunteerTimeslot { StudentId = "volunteer-1", TimeslotId = timeslots[0].Id };
+            context.VolunteerTimeslots.Add(assignment);
+            await context.SaveChangesAsync();
+            return (assignment, timeslots);
+        });
+        using var client = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
+
+        var response = await client.PostFormWithAntiforgeryAsync($"/VolunteerEvents/Edit/{availability.assignment.Id}", new[]
+        {
+            new KeyValuePair<string, string>("Id", availability.assignment.Id.ToString()),
+            new KeyValuePair<string, string>("StudentId", availability.assignment.StudentId),
+            new KeyValuePair<string, string>("TimeslotId", "0")
+        });
+
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains($"value=\"{availability.timeslots[0].Id}\"", html);
+        Assert.Contains("TimeslotId", html);
+    }
 }

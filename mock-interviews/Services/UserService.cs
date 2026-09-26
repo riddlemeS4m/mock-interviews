@@ -25,7 +25,7 @@ namespace MockInterviews.Services
 
         public async Task<Dictionary<string, ApplicationUser>> GetUsersByIds(IEnumerable<string> userIds)
         {
-            return await _context.Users.Where(x => userIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, x => x);
+            return await _context.Users.AsNoTracking().Where(x => userIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, x => x);
         }
 
         public async Task<IEnumerable<ApplicationUser>> GetUsersByRole(string roleName)

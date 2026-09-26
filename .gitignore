@@ -6,6 +6,9 @@
 # localhost certs
 localhost+*.pem
 
+# macOS Finder metadata
+.DS_Store
+
 # Local development environment values
 /.env
 /.env.*

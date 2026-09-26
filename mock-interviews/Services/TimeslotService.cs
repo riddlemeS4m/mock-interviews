@@ -19,7 +19,7 @@ namespace MockInterviews.Services
         /// </summary>
         public async Task<IEnumerable<Timeslot>> GetAvailableStudentsTimeslotsByClass(For221 for221)
         {
-            return await _dbSet
+            return await _dbSet.AsNoTracking()
                 .Where(x => x.IsStudent)
                 .Include(y => y.Event)
                 .Where(x => _context.Interviews.Count(y => y.TimeslotId == x.Id) < x.MaxSignUps)
@@ -34,7 +34,7 @@ namespace MockInterviews.Services
 
         public async Task<IEnumerable<Timeslot>> GetActiveTimeslots()
         {
-            return await _dbSet
+            return await _dbSet.AsNoTracking()
                 .Include(x => x.Event)
                 .Where(x => x.Event.IsActive)
                 .ToListAsync();
@@ -52,7 +52,7 @@ namespace MockInterviews.Services
             if (isStudent)
             {
                 _logger.LogInformation("Returning all active student timeslots...");
-                return await _dbSet
+                return await _dbSet.AsNoTracking()
                     .Include(x => x.Event)
                     .Where(x => x.Event.IsActive && x.IsStudent)
                     .ToListAsync();
@@ -60,7 +60,7 @@ namespace MockInterviews.Services
             else if (isInterviewer)
             {
                 _logger.LogInformation("Returning all active interviewer timeslots...");
-                return await _dbSet
+                return await _dbSet.AsNoTracking()
                     .Include(x => x.Event)
                     .Where(x => x.Event.IsActive && x.IsInterviewer)
                     .ToListAsync();
@@ -68,7 +68,7 @@ namespace MockInterviews.Services
             else
             {
                 _logger.LogInformation("Returning all active volunteer timeslots...");
-                return await _dbSet
+                return await _dbSet.AsNoTracking()
                     .Include(x => x.Event)
                     .Where(x => x.Event.IsActive && x.IsVolunteer)
                     .ToListAsync();

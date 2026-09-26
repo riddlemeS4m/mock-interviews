@@ -19,7 +19,7 @@ namespace MockInterviews.Services
         /// <returns>A collection of active <see cref="InterviewerTimeslot"/> entities.</returns>
         public async Task<IEnumerable<InterviewerTimeslot>> GetAllActiveInterviewers()
         {
-            var allInterviewers = await _dbSet
+            var allInterviewers = await _dbSet.AsNoTracking()
                 .Include(s => s.InterviewerSignup)
                 .Include(s => s.Timeslot)
                 .ThenInclude(s => s.Event)
@@ -32,7 +32,7 @@ namespace MockInterviews.Services
 
         public async Task<IEnumerable<InterviewerTimeslot>> GetAllActiveInterviewersByIds(List<string> ids)
         {
-            var allInterviewers = await _dbSet
+            var allInterviewers = await _dbSet.AsNoTracking()
                 .Include(s => s.InterviewerSignup)
                 .Include(s => s.Timeslot)
                 .ThenInclude(s => s.Event)

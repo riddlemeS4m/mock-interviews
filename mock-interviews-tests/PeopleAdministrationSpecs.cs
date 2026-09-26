@@ -31,9 +31,9 @@ public sealed class PeopleAdministrationSpecs(MockInterviewsWebApplicationFactor
 
         var response = await client.PostFormWithAntiforgeryAsync("/UserRoles/Manage?userId=managed-user", new[]
         {
-            new KeyValuePair<string, string>("userId", "managed-user"),
-            new KeyValuePair<string, string>("[0].RoleName", RolesConstants.StudentRole),
-            new KeyValuePair<string, string>("[0].Selected", "true")
+            new KeyValuePair<string, string>("UserId", "managed-user"),
+            new KeyValuePair<string, string>("Roles[0].RoleName", RolesConstants.StudentRole),
+            new KeyValuePair<string, string>("Roles[0].Selected", "true")
         });
 
         Assert.True(response.StatusCode == HttpStatusCode.Redirect, await response.Content.ReadAsStringAsync());
@@ -63,6 +63,20 @@ public sealed class PeopleAdministrationSpecs(MockInterviewsWebApplicationFactor
     }
 
     [Fact]
+    public async Task Missing_password_reset_user_returns_a_model_state_error()
+    {
+        using var client = Factory.CreateAuthenticatedClient("admin-1", RolesConstants.AdminRole);
+
+        var response = await client.PostFormWithAntiforgeryAsync(
+            "/Users/CreateProvisionaryUser",
+            "/Users/ResetUserPassword",
+            [new KeyValuePair<string, string>("UserId", "missing-user")]);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("User not found.", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task System_admin_cannot_remove_their_own_final_system_admin_role()
     {
         await Factory.InDatabaseScopeAsync(async context =>
@@ -76,12 +90,13 @@ public sealed class PeopleAdministrationSpecs(MockInterviewsWebApplicationFactor
 
         var response = await client.PostFormWithAntiforgeryAsync("/UserRoles/Manage?userId=system-admin-1", new[]
         {
-            new KeyValuePair<string, string>("userId", "system-admin-1"),
-            new KeyValuePair<string, string>("[0].RoleName", RolesConstants.StudentRole),
-            new KeyValuePair<string, string>("[0].Selected", "true")
+            new KeyValuePair<string, string>("UserId", "system-admin-1"),
+            new KeyValuePair<string, string>("Roles[0].RoleName", RolesConstants.StudentRole),
+            new KeyValuePair<string, string>("Roles[0].Selected", "true")
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("system-admin-1@example.test", await response.Content.ReadAsStringAsync());
         var roleNames = await Factory.InDatabaseScopeAsync(async context => await (
             from userRole in context.UserRoles
             join role in context.Roles on userRole.RoleId equals role.Id

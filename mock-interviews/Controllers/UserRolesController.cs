@@ -55,7 +55,11 @@ namespace MockInterviews.Controllers
             {
                 return NotFound();
             }
-            var model = new List<ManageUserRolesViewModel>();
+            var model = new ManageUserRolesPageViewModel
+            {
+                UserId = user.Id,
+                UserName = user.Email ?? user.UserName ?? string.Empty
+            };
             var allowedRoles = User.IsInRole(RolesConstants.SystemAdminRole)
                 ? new[] { RolesConstants.AdminRole, RolesConstants.SystemAdminRole, RolesConstants.StudentRole, RolesConstants.InterviewerRole }
                 : new[] { RolesConstants.StudentRole, RolesConstants.InterviewerRole };
@@ -80,26 +84,26 @@ namespace MockInterviews.Controllers
                 {
                     userRolesViewModel.Selected = false;
                 }
-                model.Add(userRolesViewModel);
+                model.Roles.Add(userRolesViewModel);
             }
-            ViewData["UserName"] = user.Email ?? user.UserName;
             return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Manage(List<ManageUserRolesViewModel> model, string userId)
+        public async Task<IActionResult> Manage(ManageUserRolesPageViewModel model)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager.FindByIdAsync(model.UserId);
             if (user == null)
             {
-                return View();
+                return NotFound();
             }
+            model.UserName = user.Email ?? user.UserName ?? string.Empty;
             var isSystemAdmin = User.IsInRole(RolesConstants.SystemAdminRole);
             var allowedRoles = isSystemAdmin
                 ? new[] { RolesConstants.AdminRole, RolesConstants.SystemAdminRole, RolesConstants.StudentRole, RolesConstants.InterviewerRole }
                 : new[] { RolesConstants.StudentRole, RolesConstants.InterviewerRole };
-            var selectedRoles = model.Where(item => item.Selected && allowedRoles.Contains(item.RoleName, StringComparer.OrdinalIgnoreCase))
+            var selectedRoles = model.Roles.Where(item => item.Selected && allowedRoles.Contains(item.RoleName, StringComparer.OrdinalIgnoreCase))
                 .Select(item => item.RoleName).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             var roles = await _userManager.GetRolesAsync(user);
             var manageableExistingRoles = roles.Where(role => allowedRoles.Contains(role, StringComparer.OrdinalIgnoreCase)).ToList();

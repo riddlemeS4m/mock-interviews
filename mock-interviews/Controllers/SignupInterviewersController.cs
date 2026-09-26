@@ -36,6 +36,7 @@ namespace MockInterviews.Controllers
                 .ToListAsync();
 
             var sis = await _context.InterviewerSignups
+                .AsNoTracking()
                 .Where(s => sits.Contains(s.Id))
                 .ToListAsync();
 
@@ -52,6 +53,7 @@ namespace MockInterviews.Controllers
             }
 
             var signupInterviewer = await _context.InterviewerSignups
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (signupInterviewer == null)
             {
@@ -75,7 +77,7 @@ namespace MockInterviews.Controllers
                 return NotFound();
             }
 
-            var signupInterviewer = await _context.InterviewerSignups.FindAsync(id);
+            var signupInterviewer = await _context.InterviewerSignups.AsNoTracking().FirstOrDefaultAsync(item => item.Id == id);
             if (signupInterviewer == null)
             {
                 return NotFound();
@@ -131,6 +133,7 @@ namespace MockInterviews.Controllers
             }
 
             var signupInterviewer = await _context.InterviewerSignups
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (signupInterviewer == null)
             {

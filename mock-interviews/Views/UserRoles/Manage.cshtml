@@ -1,4 +1,4 @@
-@model List<MockInterviews.Models.ViewModels.UserRolesController.ManageUserRolesViewModel>
+@model MockInterviews.Models.ViewModels.UserRolesController.ManageUserRolesPageViewModel
 
 @{
     ViewData["Title"] = "Manage roles";
@@ -6,23 +6,23 @@
 
 <section class="max-w-xl space-y-6">
     <partial name="DesignSystem/_PageHeader"
-             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Manage roles", $"Update roles for {ViewData["UserName"]}.")' />
+             model='new MockInterviews.Models.ViewModels.Shared.UiPageHeaderViewModel("Manage roles", $"Update roles for {Model.UserName}.")' />
 
     <form method="post" class="space-y-5 rounded-card border border-line bg-surface p-6 shadow-card">
-        <input type="hidden" name="userId" value="@Context.Request.Query["userId"]" />
+        <input asp-for="UserId" type="hidden" />
         <div asp-validation-summary="All" class="border-l-4 border-negative pl-4 text-sm text-negative"></div>
 
         <fieldset class="space-y-3">
             <legend class="text-sm font-semibold text-ink">Application roles</legend>
 
-            @for (var index = 0; index < Model.Count; index++)
+            @for (var index = 0; index < Model.Roles.Count; index++)
             {
-                <input asp-for="@Model[index].RoleId" type="hidden" />
-                <input asp-for="@Model[index].RoleName" type="hidden" />
+                <input asp-for="Roles[index].RoleId" type="hidden" />
+                <input asp-for="Roles[index].RoleName" type="hidden" />
 
                 <label class="flex items-center gap-3 rounded-lg border border-line p-4">
-                    <input asp-for="@Model[index].Selected" class="size-4" />
-                    <span class="font-semibold text-ink">@Model[index].RoleName</span>
+                    <input asp-for="Roles[index].Selected" class="size-4" />
+                    <span class="font-semibold text-ink">@Model.Roles[index].RoleName</span>
                 </label>
             }
         </fieldset>

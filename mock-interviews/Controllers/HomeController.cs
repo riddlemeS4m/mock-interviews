@@ -152,6 +152,7 @@ namespace MockInterviews.Controllers
                     continue;
                 }
                 var interviews = await _context.Interviews
+                    .AsNoTracking()
                     .Include(x => x.Timeslot)
                     .ThenInclude(x => x.Event)
                     .Where(x => x.StudentId == user)
@@ -186,6 +187,7 @@ namespace MockInterviews.Controllers
                     continue;
                 }
                 var interviews = await _context.InterviewerTimeslots
+                    .AsNoTracking()
                     .Include(x => x.Timeslot)
                     .ThenInclude(x => x.Event)
                     .Include(x => x.InterviewerSignup)
